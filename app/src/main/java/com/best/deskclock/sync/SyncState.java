@@ -76,7 +76,7 @@ public final class SyncState {
     }
 
     public void putAlarmUuid(long dbId, String uuid) {
-        object("alarmUuids").put(String.valueOf(dbId), uuid);
+        putQuiet(object("alarmUuids"), String.valueOf(dbId), uuid);
     }
 
     public void removeAlarmUuid(long dbId) {
@@ -98,7 +98,7 @@ public final class SyncState {
     }
 
     public void putAlarmUpdatedAt(String uuid, long ts) {
-        object("alarmTs").put(uuid, ts);
+        putQuiet(object("alarmTs"), uuid, ts);
     }
 
     public void removeAlarmUpdatedAt(String uuid) {
@@ -110,7 +110,7 @@ public final class SyncState {
     }
 
     public void putAlarmFingerprint(String uuid, String fingerprint) {
-        object("alarmFp").put(uuid, fingerprint);
+        putQuiet(object("alarmFp"), uuid, fingerprint);
     }
 
     public void removeAlarmFingerprint(String uuid) {
@@ -126,7 +126,7 @@ public final class SyncState {
     }
 
     public void putAlarmTombstone(String uuid, long ts) {
-        object("alarmTombs").put(uuid, ts);
+        putQuiet(object("alarmTombs"), uuid, ts);
     }
 
     // ---------------------------------------------------------------- timers
@@ -136,7 +136,7 @@ public final class SyncState {
     }
 
     public void putTimerUuid(int timerId, String uuid) {
-        object("timerUuids").put(String.valueOf(timerId), uuid);
+        putQuiet(object("timerUuids"), String.valueOf(timerId), uuid);
     }
 
     public void removeTimerUuid(int timerId) {
@@ -158,7 +158,7 @@ public final class SyncState {
     }
 
     public void putTimerUpdatedAt(String uuid, long ts) {
-        object("timerTs").put(uuid, ts);
+        putQuiet(object("timerTs"), uuid, ts);
     }
 
     public void removeTimerUpdatedAt(String uuid) {
@@ -170,7 +170,7 @@ public final class SyncState {
     }
 
     public void putTimerFingerprint(String uuid, String fingerprint) {
-        object("timerFp").put(uuid, fingerprint);
+        putQuiet(object("timerFp"), uuid, fingerprint);
     }
 
     public void removeTimerFingerprint(String uuid) {
@@ -186,7 +186,7 @@ public final class SyncState {
     }
 
     public void putTimerTombstone(String uuid, long ts) {
-        object("timerTombs").put(uuid, ts);
+        putQuiet(object("timerTombs"), uuid, ts);
     }
 
     // ---------------------------------------------------------------- stopwatch
@@ -196,7 +196,7 @@ public final class SyncState {
     }
 
     public void putStopwatchUpdatedAt(long ts) {
-        data().put("stopwatchTs", ts);
+        putQuiet(data(), "stopwatchTs", ts);
     }
 
     public String getStopwatchFingerprint() {
@@ -204,7 +204,7 @@ public final class SyncState {
     }
 
     public void putStopwatchFingerprint(String fingerprint) {
-        data().put("stopwatchFp", fingerprint);
+        putQuiet(data(), "stopwatchFp", fingerprint);
     }
 
     // ---------------------------------------------------------------- cities
@@ -214,7 +214,7 @@ public final class SyncState {
     }
 
     public void putCitiesUpdatedAt(long ts) {
-        data().put("citiesTs", ts);
+        putQuiet(data(), "citiesTs", ts);
     }
 
     public String getCitiesFingerprint() {
@@ -222,7 +222,7 @@ public final class SyncState {
     }
 
     public void putCitiesFingerprint(String fingerprint) {
-        data().put("citiesFp", fingerprint);
+        putQuiet(data(), "citiesFp", fingerprint);
     }
 
     // ---------------------------------------------------------------- settings
@@ -266,5 +266,19 @@ public final class SyncState {
             result.put(key, o.optLong(key, 0));
         }
         return result;
+    }
+
+    private static void putQuiet(JSONObject o, String key, long value) {
+        try {
+            o.put(key, value);
+        } catch (JSONException ignored) {
+        }
+    }
+
+    private static void putQuiet(JSONObject o, String key, String value) {
+        try {
+            o.put(key, value);
+        } catch (JSONException ignored) {
+        }
     }
 }
