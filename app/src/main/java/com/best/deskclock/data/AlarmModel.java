@@ -8,7 +8,10 @@ package com.best.deskclock.data;
 
 import android.content.SharedPreferences;
 import android.net.Uri;
-import android.provider.Settings;
+
+import com.best.deskclock.DeskClockApplication;
+import com.best.deskclock.R;
+import com.best.deskclock.utils.RingtoneUtils;
 
 /**
  * All alarm data will eventually be accessed via this model.
@@ -47,7 +50,7 @@ final class AlarmModel {
      */
     Uri getDefaultAlarmRingtoneUriFromSettings() {
         if (mDefaultAlarmSettingsRingtoneUri == null) {
-            mDefaultAlarmSettingsRingtoneUri = Settings.System.DEFAULT_ALARM_ALERT_URI;
+            mDefaultAlarmSettingsRingtoneUri = RingtoneUtils.getResourceUri(DeskClockApplication.getAppContext(), R.raw.alarm01);
         }
         return mDefaultAlarmSettingsRingtoneUri;
     }

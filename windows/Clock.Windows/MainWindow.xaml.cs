@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
@@ -31,11 +32,21 @@ public partial class MainWindow : Window
         _state = App.State;
         _state.UiDispatcher = Dispatcher;
         Loaded += OnLoaded;
+        Closing += OnWindowClosing;
         Closed += (_, _) =>
         {
             _syncEngine?.Dispose();
             _state.Save();
         };
+    }
+
+    // Clicking X keeps the app running in the background: the window is hidden, no tray
+    // icon and no notification. Re-launching the exe brings the hidden window back.
+    private void OnWindowClosing(object? sender, CancelEventArgs e)
+    {
+        if (App.AllowExit) return;
+        e.Cancel = true;
+        Hide();
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)

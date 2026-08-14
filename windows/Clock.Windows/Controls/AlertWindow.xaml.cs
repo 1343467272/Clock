@@ -1,7 +1,7 @@
-using System.Media;
 using System.Windows;
 using System.Windows.Threading;
 using Clock.Windows.Localization;
+using Clock.Windows.Services;
 
 namespace Clock.Windows.Controls;
 
@@ -17,7 +17,7 @@ public partial class AlertWindow : Window
         _soundTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) };
         _soundTimer.Tick += (_, _) =>
         {
-            try { SystemSounds.Asterisk.Play(); } catch { }
+            if (!SoundService.IsLooping) SoundService.PlayFallback();
         };
     }
 
@@ -29,11 +29,11 @@ public partial class AlertWindow : Window
         w.SnoozeButton.Visibility = Visibility.Visible;
         w._onDismiss = onDismiss;
         w._onSnooze = onSnooze;
-        w.Closed += (_, _) => w._soundTimer?.Stop();
+        w.Closed += (_, _) => { w._soundTimer?.Stop(); SoundService.Stop(); };
         w.Show();
         w.Activate();
         w._soundTimer.Start();
-        try { SystemSounds.Asterisk.Play(); } catch { }
+        SoundService.Start();
         return w;
     }
 
@@ -44,11 +44,11 @@ public partial class AlertWindow : Window
         w.MessageText.Text = string.IsNullOrWhiteSpace(label) ? Text.TimesUp : $"{label}\n{Text.TimesUp}";
         w.SnoozeButton.Visibility = Visibility.Collapsed;
         w._onDismiss = onDismiss;
-        w.Closed += (_, _) => w._soundTimer?.Stop();
+        w.Closed += (_, _) => { w._soundTimer?.Stop(); SoundService.Stop(); };
         w.Show();
         w.Activate();
         w._soundTimer.Start();
-        try { SystemSounds.Exclamation.Play(); } catch { }
+        SoundService.Start();
         return w;
     }
 

@@ -483,7 +483,7 @@ final class TimerModel {
      */
     Uri getDefaultTimerRingtoneUri() {
         if (mDefaultTimerRingtoneUri == null) {
-            mDefaultTimerRingtoneUri = RingtoneUtils.getResourceUri(mContext, R.raw.timer_expire);
+            mDefaultTimerRingtoneUri = RingtoneUtils.getResourceUri(mContext, R.raw.alarm01);
         }
 
         return mDefaultTimerRingtoneUri;
