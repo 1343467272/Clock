@@ -4,6 +4,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>Clock.Windows</RootNamespace>
     <AssemblyName>Clock.Windows</AssemblyName>
     <Nullable>enable</Nullable>
@@ -14,6 +15,8 @@
 
   <ItemGroup>
     <Resource Include="Assets\icon.ico" />
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
   </ItemGroup>
 
   <ItemGroup>

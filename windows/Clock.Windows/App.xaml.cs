@@ -3,7 +3,7 @@ using Clock.Windows.Data;
 
 namespace Clock.Windows;
 
-public partial class App : Application
+public partial class App : System.Windows.Application
 {
     public static AppState State { get; private set; } = new();
 
