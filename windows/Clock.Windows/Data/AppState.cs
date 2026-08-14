@@ -21,8 +21,18 @@ public class AppState
 
     private static readonly string FilePath = Path.Combine(Dir, "windows.json");
 
+    /// <summary>Raised on the UI thread whenever local data changes (user or remote).</summary>
     public event Action? Changed;
+
+    /// <summary>Raised on the UI thread only for local, user-initiated changes. Remote-apply
+    /// notifications are suppressed so the sync engine does not push back what it just received.</summary>
+    public event Action? UserChanged;
+
     public event Action? Ticked;
+
+    /// <summary>True while a remote snapshot is being applied, so the merge's own refresh does not
+    /// count as a user change.</summary>
+    public bool ApplyingRemote { get; private set; }
 
     private readonly object _lock = new();
     private DispatcherTimer? _ticker;
@@ -58,9 +68,17 @@ public class AppState
         Save();
     }
 
+    public void BeginRemoteApply() => ApplyingRemote = true;
+    public void EndRemoteApply() => ApplyingRemote = false;
+
     public void NotifyChanged()
     {
-        UiDispatcher.BeginInvoke(() => Changed?.Invoke());
+        var isRemote = ApplyingRemote;
+        UiDispatcher.BeginInvoke(() =>
+        {
+            Changed?.Invoke();
+            if (!isRemote) UserChanged?.Invoke();
+        });
         Save();
     }
 

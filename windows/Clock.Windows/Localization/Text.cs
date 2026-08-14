@@ -91,6 +91,12 @@ public static class Text
     public const string SyncingWith = "正在与 {0} 同步…";
     public const string LastSeen = " · 上次出现于 {0}";
     public const string SyncedWith = "已与 {0} 在 {1} 同步";
+    public const string Pair = "配对";
+    public const string Unpair = "取消配对";
+    public const string PeerPaired = "已配对";
+    public const string PeerUnpaired = "未配对";
+    public const string PeerConnected = "已连接";
+    public const string PairingHint = "配对设备后，应用运行期间会自动连接该设备。未配对设备仅在此界面显示。";
 
     // Alarm edit window
     public const string Time = "时间";

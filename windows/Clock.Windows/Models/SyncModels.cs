@@ -11,6 +11,12 @@ public class SyncPeerInfo
     public string Address { get; set; } = "";
     public int Port { get; set; }
     public DateTime LastSeen { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Local trust marker (one-way, like the Android app): only paired peers are auto-connected
+    /// while the settings panel is hidden.
+    /// </summary>
+    public bool Paired { get; set; }
 }
 
 /// <summary>Wire record for one alarm.</summary>

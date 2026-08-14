@@ -118,7 +118,15 @@ public static class SyncMerge
     {
         lock (state)
         {
-            return ApplySnapshotLocked(state, remote);
+            state.BeginRemoteApply();
+            try
+            {
+                return ApplySnapshotLocked(state, remote);
+            }
+            finally
+            {
+                state.EndRemoteApply();
+            }
         }
     }
 

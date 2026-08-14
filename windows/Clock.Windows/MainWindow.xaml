@@ -481,14 +481,20 @@
                             </StackPanel>
                             <TextBlock x:Name="SyncStatusText" Foreground="{DynamicResource BkOnSurfaceVariant}" Margin="0,8,0,8" TextWrapping="Wrap"/>
                             <TextBlock Text="{x:Static l:Text.DiscoveredDevices}" FontWeight="SemiBold" Margin="0,8,0,4"/>
+                            <TextBlock Text="{x:Static l:Text.PairingHint}" FontSize="11" Foreground="{DynamicResource BkOnSurfaceVariant}" TextWrapping="Wrap" Margin="0,0,0,8"/>
                             <ItemsControl x:Name="PeerList">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Border Background="{DynamicResource BkCard}" BorderBrush="{DynamicResource BkBorder}" BorderThickness="1" CornerRadius="10" Padding="10" Margin="0,0,0,6">
-                                            <StackPanel>
-                                                <TextBlock Text="{Binding DeviceName}" FontWeight="SemiBold" Foreground="{DynamicResource BkOnSurface}"/>
-                                                <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource BkOnSurfaceVariant}"/>
-                                            </StackPanel>
+                                            <DockPanel>
+                                                <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0">
+                                                    <Button Content="{Binding PairText}" Tag="{Binding DeviceId}" Click="OnTogglePeerPair" Style="{StaticResource OutlinedButton}"/>
+                                                </StackPanel>
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding DeviceName}" FontWeight="SemiBold" Foreground="{DynamicResource BkOnSurface}"/>
+                                                    <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource BkOnSurfaceVariant}"/>
+                                                </StackPanel>
+                                            </DockPanel>
                                         </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>

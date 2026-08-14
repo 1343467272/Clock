@@ -5,8 +5,20 @@
 package com.best.deskclock.sync;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.database.ContentObserver;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
+
+import com.best.deskclock.DeskClockApplication;
+import com.best.deskclock.data.CityListener;
+import com.best.deskclock.data.DataModel;
+import com.best.deskclock.data.StopwatchListener;
+import com.best.deskclock.data.Timer;
+import com.best.deskclock.data.TimerListener;
+import com.best.deskclock.provider.Alarm;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -40,6 +52,12 @@ public final class SyncEngine implements SyncDiscovery.PeerListener {
     private static final long SYNC_RATE_LIMIT_MS = 20_000;
 
     /**
+     * How long to wait after the last local change before pushing a snapshot to peers, so a burst
+     * of edits collapses into a single sync.
+     */
+    private static final long DATA_CHANGE_DEBOUNCE_MS = 500;
+
+    /**
      * A paired peer is considered connected while its last successful sync is fresher than this.
      */
     private static final long CONNECTED_TIMEOUT_MS = 60_000;
@@ -66,6 +84,18 @@ public final class SyncEngine implements SyncDiscovery.PeerListener {
     private volatile long mLastPairedSyncMs;
     private volatile PeersListener mPeersListener;
 
+    private final Runnable mDataChangedRunnable = () -> {
+        Log.d("ClockSync", "debounce fired at " + System.currentTimeMillis());
+        if (mRunning) {
+            syncNow();
+        }
+    };
+    private ContentObserver mAlarmObserver;
+    private SharedPreferences.OnSharedPreferenceChangeListener mPrefsListener;
+    private TimerListener mTimerListener;
+    private StopwatchListener mStopwatchListener;
+    private CityListener mCityListener;
+
     public SyncEngine(Context context) {
         mContext = context.getApplicationContext();
         mDiscovery = new SyncDiscovery(mContext);
@@ -79,6 +109,7 @@ public final class SyncEngine implements SyncDiscovery.PeerListener {
         mRunning = true;
         mDiscovery.setPeerListener(this);
         mDiscovery.start();
+        registerDataChangeListeners();
 
         try {
             mServerSocket = new ServerSocket(SyncSettings.getPort(mContext));
@@ -98,6 +129,7 @@ public final class SyncEngine implements SyncDiscovery.PeerListener {
     public void stop() {
         mRunning = false;
         mDiscovery.stop();
+        unregisterDataChangeListeners();
         if (mServerSocket != null) {
             try {
                 mServerSocket.close();
@@ -117,6 +149,91 @@ public final class SyncEngine implements SyncDiscovery.PeerListener {
             if (shouldConnect(peer)) {
                 mExecutor.execute(() -> syncWithPeer(peer, true));
             }
+        }
+    }
+
+    /**
+     * Collapses a burst of local changes into a single push shortly after the last one. Fires on
+     * the main thread and is a no-op while the engine is stopped.
+     */
+    private void scheduleDataSync() {
+        Log.d("ClockSync", "scheduleDataSync at " + System.currentTimeMillis());
+        if (!mRunning) {
+            return;
+        }
+        mMainHandler.removeCallbacks(mDataChangedRunnable);
+        mMainHandler.postDelayed(mDataChangedRunnable, DATA_CHANGE_DEBOUNCE_MS);
+    }
+
+    /**
+     * Watches the data sources that can change locally: alarms (content provider), timers,
+     * stopwatch and world cities (DataModel) and the synced settings (default preferences).
+     * A remote merge writes the same places, so it triggers this path too — the resulting echo
+     * push is harmless because the peer's LWW merge sees equal timestamps and skips it.
+     */
+    private void registerDataChangeListeners() {
+        final Context context = mContext;
+
+        mAlarmObserver = new ContentObserver(mMainHandler) {
+            @Override
+            public void onChange(boolean selfChange, Uri uri) {
+                scheduleDataSync();
+            }
+        };
+        context.getContentResolver().registerContentObserver(Alarm.CONTENT_URI, true, mAlarmObserver);
+
+        final DataModel dataModel = DataModel.getDataModel();
+        mTimerListener = new TimerListener() {
+            @Override
+            public void timerAdded(Timer timer) {
+                scheduleDataSync();
+            }
+
+            @Override
+            public void timerUpdated(Timer before, Timer after) {
+                scheduleDataSync();
+            }
+
+            @Override
+            public void timerRemoved(Timer timer) {
+                scheduleDataSync();
+            }
+        };
+        dataModel.addTimerListener(mTimerListener);
+
+        mStopwatchListener = after -> scheduleDataSync();
+        dataModel.addStopwatchListener(mStopwatchListener);
+
+        mCityListener = () -> scheduleDataSync();
+        dataModel.addCityListener(mCityListener);
+
+        mPrefsListener = (prefs, key) -> scheduleDataSync();
+        DeskClockApplication.getDefaultSharedPreferences(context)
+                .registerOnSharedPreferenceChangeListener(mPrefsListener);
+    }
+
+    private void unregisterDataChangeListeners() {
+        mMainHandler.removeCallbacks(mDataChangedRunnable);
+        if (mAlarmObserver != null) {
+            mContext.getContentResolver().unregisterContentObserver(mAlarmObserver);
+            mAlarmObserver = null;
+        }
+        if (mTimerListener != null) {
+            DataModel.getDataModel().removeTimerListener(mTimerListener);
+            mTimerListener = null;
+        }
+        if (mStopwatchListener != null) {
+            DataModel.getDataModel().removeStopwatchListener(mStopwatchListener);
+            mStopwatchListener = null;
+        }
+        if (mCityListener != null) {
+            DataModel.getDataModel().removeCityListener(mCityListener);
+            mCityListener = null;
+        }
+        if (mPrefsListener != null) {
+            DeskClockApplication.getDefaultSharedPreferences(mContext)
+                    .unregisterOnSharedPreferenceChangeListener(mPrefsListener);
+            mPrefsListener = null;
         }
     }
 
@@ -206,6 +323,7 @@ public final class SyncEngine implements SyncDiscovery.PeerListener {
             if (remote == null || !"state".equals(remote.type)) {
                 return;
             }
+            Log.d("ClockSync", "handleServer received state from " + remote.deviceId + " at " + System.currentTimeMillis());
             SyncMerger.merge(mContext, remote);
             SyncWire.writeSnapshot(socket.getOutputStream(), SyncSnapshotBuilder.build(mContext));
             SyncWire.readDone(socket.getInputStream());
@@ -267,6 +385,7 @@ public final class SyncEngine implements SyncDiscovery.PeerListener {
         }
 
         try {
+            Log.d("ClockSync", "syncWithPeer connect to " + peer.address + ":" + peer.port + " at " + System.currentTimeMillis());
             final Socket socket = new Socket();
             socket.connect(new InetSocketAddress(InetAddress.getByName(peer.address), peer.port), CONNECT_TIMEOUT_MS);
             try (socket) {
@@ -278,10 +397,12 @@ public final class SyncEngine implements SyncDiscovery.PeerListener {
                 }
                 SyncWire.writeDone(socket.getOutputStream());
             }
+            Log.d("ClockSync", "syncWithPeer done with " + peer.deviceId + " at " + System.currentTimeMillis());
             if (peer.paired && shouldAdoptConnection(peer.deviceId)) {
                 markConnected(peer.deviceId);
             }
         } catch (IOException e) {
+            Log.d("ClockSync", "syncWithPeer FAILED " + peer.deviceId + " at " + System.currentTimeMillis() + ": " + e);
             synchronized (mLastSyncByPeer) {
                 mLastSyncByPeer.remove(key);
             }

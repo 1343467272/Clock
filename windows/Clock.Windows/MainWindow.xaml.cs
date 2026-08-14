@@ -224,8 +224,17 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OnSettingsToggle(object sender, RoutedEventArgs e) => SettingsOverlay.Visibility = Visibility.Visible;
-    private void OnSettingsClose(object sender, RoutedEventArgs e) => SettingsOverlay.Visibility = Visibility.Collapsed;
+    private void OnSettingsToggle(object sender, RoutedEventArgs e)
+    {
+        SettingsOverlay.Visibility = Visibility.Visible;
+        _syncEngine?.SetSettingsScreenVisible(true);
+    }
+
+    private void OnSettingsClose(object sender, RoutedEventArgs e)
+    {
+        SettingsOverlay.Visibility = Visibility.Collapsed;
+        _syncEngine?.SetSettingsScreenVisible(false);
+    }
 
     private void UpdateClockText()
     {
@@ -545,27 +554,55 @@ public partial class MainWindow : Window
 
     private void OnSyncNow(object sender, RoutedEventArgs e)
     {
-        var peer = _state.Peers.OrderByDescending(p => p.LastSeen).FirstOrDefault();
-        if (peer == null)
+        if (_state.Peers.Count == 0)
         {
             SyncStatusText.Text = Text.NoDevicesDiscovered;
             return;
         }
 
-        SyncStatusText.Text = string.Format(Text.SyncingWith, peer.DeviceName);
-        _syncEngine?.PeerDiscovered(peer);
+        var peers = _state.Peers.ToList();
+        _syncEngine?.SyncAllNow();
+        SyncStatusText.Text = string.Format(Text.SyncingWith, string.Join(", ", peers.Select(p => p.DeviceName)));
+    }
+
+    private void OnTogglePeerPair(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string deviceId } btn) return;
+        var peer = _state.Peers.FirstOrDefault(p => p.DeviceId == deviceId);
+        if (peer == null) return;
+
+        peer.Paired = !peer.Paired;
+        _state.Save();
+        _syncEngine?.OnPeerPairedChanged(deviceId, peer.Paired);
+        if (peer.Paired)
+        {
+            _syncEngine?.ConnectToPeer(peer);
+        }
+        RefreshPeers();
     }
 
     private void RefreshPeers()
     {
+        var connectedId = _syncEngine?.ConnectedDeviceId;
         var items = _state.Peers
             .OrderByDescending(p => p.LastSeen)
             .Select(p => new
             {
+                p.DeviceId,
                 p.DeviceName,
-                Detail = $"{p.Address}:{p.Port}{string.Format(Text.LastSeen, p.LastSeen.ToLocalTime().ToString("HH:mm:ss"))}",
+                p.Paired,
+                PairText = p.Paired ? Text.Unpair : Text.Pair,
+                Detail = BuildPeerDetail(p, connectedId),
             })
             .ToList();
         PeerList.ItemsSource = items;
+    }
+
+    private string BuildPeerDetail(SyncPeerInfo peer, string? connectedId)
+    {
+        var status = peer.DeviceId == connectedId ? Text.PeerConnected
+            : peer.Paired ? Text.PeerPaired
+            : Text.PeerUnpaired;
+        return $"{peer.Address}:{peer.Port} · {status}{string.Format(Text.LastSeen, peer.LastSeen.ToLocalTime().ToString("HH:mm:ss"))}";
     }
 }
