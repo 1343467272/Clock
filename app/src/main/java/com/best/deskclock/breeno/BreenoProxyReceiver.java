@@ -26,8 +26,6 @@ public class BreenoProxyReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        android.util.Log.i("BreenoProxyReceiver", "onReceive action=" + intent.getAction()
-            + " method=" + intent.getStringExtra(EXTRA_METHOD));
         if (!ACTION.equals(intent.getAction())) {
             return;
         }
@@ -38,7 +36,6 @@ public class BreenoProxyReceiver extends BroadcastReceiver {
         final String method = intent.getStringExtra(EXTRA_METHOD);
         final Bundle args = intent.getBundleExtra(EXTRA_ARGS);
         final Bundle result = BreenoProxyProvider.handle(context, method, args);
-        android.util.Log.i("BreenoProxyReceiver", "result=" + (result == null ? "null" : result.size()));
         setResultExtras(result);
         setResultCode(Activity.RESULT_OK);
     }
