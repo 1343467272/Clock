@@ -25,12 +25,6 @@ public partial class MainWindow : Window
         public string LapTime { get; set; } = "";
     }
 
-    private sealed class WeekStartItem
-    {
-        public string Value { get; init; } = "";
-        public string Display { get; init; } = "";
-    }
-
     public MainWindow()
     {
         InitializeComponent();
@@ -422,14 +416,12 @@ public partial class MainWindow : Window
     {
         _loading = true;
         Is24HourBox.IsChecked = _state.Settings.Is24Hour;
-        var weekStarts = new[]
+        WeekStartBox.SelectedIndex = _state.Settings.WeekStart switch
         {
-            new WeekStartItem { Value = "sunday", Display = Text.WeekStartSunday },
-            new WeekStartItem { Value = "monday", Display = Text.WeekStartMonday },
-            new WeekStartItem { Value = "saturday", Display = Text.WeekStartSaturday },
+            "monday" => 1,
+            "saturday" => 2,
+            _ => 0,
         };
-        WeekStartBox.ItemsSource = weekStarts;
-        WeekStartBox.SelectedItem = weekStarts.FirstOrDefault(w => w.Value == _state.Settings.WeekStart);
         ThemeBox.SelectedIndex = _state.Settings.Theme switch
         {
             "light" => 1,
@@ -456,10 +448,10 @@ public partial class MainWindow : Window
             SyncMerge.RecordSetting(_state, "is24Hour", System.Text.Json.JsonSerializer.SerializeToElement(_state.Settings.Is24Hour));
         }
 
-        if (sender == WeekStartBox && WeekStartBox.SelectedItem is WeekStartItem ws)
+        if (sender == WeekStartBox && WeekStartBox.SelectedItem is ComboBoxItem { Tag: string weekStart })
         {
-            _state.Settings.WeekStart = ws.Value;
-            SyncMerge.RecordSetting(_state, "weekStart", System.Text.Json.JsonSerializer.SerializeToElement(ws.Value));
+            _state.Settings.WeekStart = weekStart;
+            SyncMerge.RecordSetting(_state, "weekStart", System.Text.Json.JsonSerializer.SerializeToElement(weekStart));
         }
 
         if (sender == ThemeBox)
@@ -578,6 +570,16 @@ public partial class MainWindow : Window
         {
             _syncEngine?.ConnectToPeer(peer);
         }
+        RefreshPeers();
+    }
+
+    private void OnDeletePeer(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string deviceId } btn) return;
+
+        _state.Peers.RemoveAll(p => p.DeviceId == deviceId);
+        _state.Save();
+        _syncEngine?.OnPeerRemoved(deviceId);
         RefreshPeers();
     }
 

@@ -289,7 +289,7 @@ public final class LanSyncSettingsFragment extends BaseSettingsScreenFragment
         final Context context = requireContext();
         mPeersDialogBinding = LanSyncPeersDialogBinding.inflate(getLayoutInflater());
         mPeersDialogBinding.peersList.setLayoutManager(new LinearLayoutManager(context));
-        mPeersAdapter = new LanSyncPeersAdapter(this::onPairClicked);
+        mPeersAdapter = new LanSyncPeersAdapter(this::onPairClicked, this::onDeleteClicked);
         mPeersDialogBinding.peersList.setAdapter(mPeersAdapter);
 
         refreshPeersDialog();
@@ -338,6 +338,17 @@ public final class LanSyncSettingsFragment extends BaseSettingsScreenFragment
             if (pair) {
                 engine.connectToPeer(peer);
             }
+        }
+        refreshPeersDialog();
+        updateSummaries();
+    }
+
+    private void onDeleteClicked(SyncPeerInfo peer) {
+        final Context context = requireContext();
+        SyncSettings.removePeer(context, peer.deviceId);
+        final SyncEngine engine = getSyncEngine();
+        if (engine != null) {
+            engine.onPeerPairedChanged(peer.deviceId, false);
         }
         refreshPeersDialog();
         updateSummaries();

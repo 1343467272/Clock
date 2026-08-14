@@ -27,12 +27,18 @@ public final class LanSyncPeersAdapter extends RecyclerView.Adapter<LanSyncPeers
         void onPairClicked(SyncPeerInfo peer);
     }
 
+    public interface DeleteClickListener {
+        void onDeleteClicked(SyncPeerInfo peer);
+    }
+
     private final List<SyncPeerInfo> mPeers = new ArrayList<>();
     private final PairClickListener mPairClickListener;
+    private final DeleteClickListener mDeleteClickListener;
     private String mConnectedDeviceId;
 
-    public LanSyncPeersAdapter(PairClickListener pairClickListener) {
+    public LanSyncPeersAdapter(PairClickListener pairClickListener, DeleteClickListener deleteClickListener) {
         mPairClickListener = pairClickListener;
+        mDeleteClickListener = deleteClickListener;
     }
 
     @Override
@@ -49,6 +55,7 @@ public final class LanSyncPeersAdapter extends RecyclerView.Adapter<LanSyncPeers
             holder.binding.pairButton.setText(context.getString(R.string.lan_sync_pair));
         }
         holder.binding.pairButton.setOnClickListener(v -> mPairClickListener.onPairClicked(peer));
+        holder.binding.deleteButton.setOnClickListener(v -> mDeleteClickListener.onDeleteClicked(peer));
     }
 
     @NonNull

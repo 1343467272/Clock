@@ -143,7 +143,7 @@ public class AppState
                     state.Timers = loaded.Timers ?? new List<TimerModel>();
                     state.Stopwatch = loaded.Stopwatch ?? new StopwatchModel();
                     state.Cities = loaded.Cities ?? new List<string>();
-                    state.Peers = loaded.Peers ?? new List<SyncPeerInfo>();
+                    state.Peers = DedupePeers(loaded.Peers ?? new List<SyncPeerInfo>());
                     state.AlarmTombstones = loaded.AlarmTombstones ?? new List<Tombstone>();
                     state.TimerTombstones = loaded.TimerTombstones ?? new List<Tombstone>();
                     state.CitiesUpdatedAt = loaded.CitiesUpdatedAt;
@@ -161,6 +161,20 @@ public class AppState
 
         state.RehydrateRuntime();
         return state;
+    }
+
+    /// <summary>Drops stale duplicate peers left behind when a device re-registered
+    /// with a new id (e.g. data reset or reinstalled app).</summary>
+    private static List<SyncPeerInfo> DedupePeers(List<SyncPeerInfo> peers)
+    {
+        var result = new List<SyncPeerInfo>();
+        var seen = new HashSet<string>();
+        foreach (var p in peers)
+        {
+            if (string.IsNullOrEmpty(p.DeviceId) || !seen.Add(p.DeviceId)) continue;
+            result.Add(p);
+        }
+        return result;
     }
 
     /// <summary>Restores derived runtime fields (timer due times, stopwatch start time).</summary>

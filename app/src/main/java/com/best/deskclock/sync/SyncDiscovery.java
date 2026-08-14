@@ -292,10 +292,12 @@ public final class SyncDiscovery {
             if (deviceId.isEmpty() || deviceId.equals(SyncSettings.getDeviceId(mContext))) {
                 return;
             }
+            final String deviceName = o.optString("deviceName", "");
+            final String helloAddress = address.getHostAddress();
             final SyncPeerInfo peer = new SyncPeerInfo(
                 deviceId,
-                o.optString("deviceName", ""),
-                address.getHostAddress(),
+                deviceName,
+                helloAddress,
                 o.optInt("port", SyncSettings.DEFAULT_PORT),
                 System.currentTimeMillis()
             );
@@ -304,17 +306,32 @@ public final class SyncDiscovery {
                     return;
                 }
                 final List<SyncPeerInfo> peers = SyncSettings.getPeers(mContext);
-                boolean found = false;
+                int index = -1;
                 for (int i = 0; i < peers.size(); i++) {
                     final SyncPeerInfo stored = peers.get(i);
                     if (stored.deviceId.equals(deviceId)) {
-                        peer.paired = stored.paired;
-                        peers.set(i, peer);
-                        found = true;
+                        index = i;
                         break;
                     }
                 }
-                if (!found) {
+                if (index < 0) {
+                    // The same physical device may re-register with a new id (e.g. app
+                    // reinstall or data reset). Match by device name + address so it does
+                    // not show up again as a duplicate "identical" device.
+                    for (int i = 0; i < peers.size(); i++) {
+                        final SyncPeerInfo stored = peers.get(i);
+                        if (!deviceName.isEmpty()
+                            && deviceName.equals(stored.deviceName)
+                            && helloAddress.equals(stored.address)) {
+                            index = i;
+                            break;
+                        }
+                    }
+                }
+                if (index >= 0) {
+                    peer.paired = peers.get(index).paired;
+                    peers.set(index, peer);
+                } else {
                     peers.add(peer);
                 }
                 SyncSettings.savePeers(mContext, peers);

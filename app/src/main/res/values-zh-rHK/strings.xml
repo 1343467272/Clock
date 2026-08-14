@@ -239,6 +239,7 @@
     <string name="lan_sync_connected_to">已連接到 %1$s</string>
     <string name="lan_sync_pair">配對</string>
     <string name="lan_sync_unpair">取消配對</string>
+    <string name="lan_sync_delete">刪除</string>
     <string name="lan_sync_pairing_hint">配對裝置後，App 執行期間會自動連接該裝置。未配對裝置只會喺呢個畫面顯示。</string>
 
     <string name="about_github_link">檢視 GitHub</string>

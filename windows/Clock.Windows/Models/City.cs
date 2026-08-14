@@ -23,6 +23,8 @@ public class City
 
     [JsonIgnore]
     public string LocalTime => GetNow().ToString("HH:mm:ss");
+
+    public override string ToString() => string.IsNullOrEmpty(DisplayName) ? Name : DisplayName;
 }
 
 public static class CityCatalog
@@ -45,7 +47,8 @@ public static class CityCatalog
             {
                 try
                 {
-                    var parsed = JsonSerializer.Deserialize<List<City>>(File.ReadAllText(path));
+                    var parsed = JsonSerializer.Deserialize<List<City>>(File.ReadAllText(path),
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                     if (parsed != null) list = parsed;
                 }
                 catch

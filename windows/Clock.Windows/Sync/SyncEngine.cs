@@ -123,6 +123,20 @@ public class SyncEngine : IDisposable
         PeersChanged?.Invoke();
     }
 
+    /// <summary>Called after the user deletes a device so the engine drops it immediately.</summary>
+    public void OnPeerRemoved(string deviceId)
+    {
+        lock (_connectedLock)
+        {
+            if (deviceId == _connectedDeviceId)
+            {
+                _connectedDeviceId = null;
+                _lastConnectedAt = DateTime.MinValue;
+            }
+        }
+        PeersChanged?.Invoke();
+    }
+
     /// <summary>Immediately syncs with a specific peer, bypassing the rate limit. Used after pairing.</summary>
     public void ConnectToPeer(SyncPeerInfo peer) => _ = SyncWithPeerAsync(peer.DeviceId, peer.Address, peer.Port, force: true);
 

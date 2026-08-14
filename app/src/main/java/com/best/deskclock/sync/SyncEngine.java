@@ -28,8 +28,11 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * P2P sync engine, mirroring the Windows {@code SyncEngine}: a TCP server on the configured sync
@@ -324,14 +327,17 @@ public final class SyncEngine implements SyncDiscovery.PeerListener {
                 return;
             }
             Log.d("ClockSync", "handleServer received state from " + remote.deviceId + " at " + System.currentTimeMillis());
-            SyncMerger.merge(mContext, remote);
+            // SyncMerger touches main-thread-only state (e.g. constructing alarms), so the merge
+            // must run on the main thread even though this handler is on a pool thread.
+            runOnMainAndWait(() -> SyncMerger.merge(mContext, remote));
             SyncWire.writeSnapshot(socket.getOutputStream(), SyncSnapshotBuilder.build(mContext));
             SyncWire.readDone(socket.getInputStream());
             if (remote.deviceId != null && SyncSettings.isPeerPaired(mContext, remote.deviceId)
                 && shouldAdoptConnection(remote.deviceId)) {
                 markConnected(remote.deviceId);
             }
-        } catch (IOException ignored) {
+        } catch (Throwable e) {
+            Log.w("ClockSync", "handleServer failed: " + e);
         }
     }
 
@@ -393,7 +399,7 @@ public final class SyncEngine implements SyncDiscovery.PeerListener {
                 SyncWire.writeSnapshot(socket.getOutputStream(), SyncSnapshotBuilder.build(mContext));
                 final SyncModels.SyncSnapshot remote = SyncWire.readSnapshot(socket.getInputStream());
                 if (remote != null && "state".equals(remote.type)) {
-                    SyncMerger.merge(mContext, remote);
+                    runOnMainAndWait(() -> SyncMerger.merge(mContext, remote));
                 }
                 SyncWire.writeDone(socket.getOutputStream());
             }
@@ -406,6 +412,8 @@ public final class SyncEngine implements SyncDiscovery.PeerListener {
             synchronized (mLastSyncByPeer) {
                 mLastSyncByPeer.remove(key);
             }
+        } catch (Throwable e) {
+            Log.w("ClockSync", "syncWithPeer merge failed for " + peer.deviceId + ": " + e);
         }
     }
 
@@ -413,6 +421,43 @@ public final class SyncEngine implements SyncDiscovery.PeerListener {
         mConnectedDeviceId = deviceId;
         mLastPairedSyncMs = System.currentTimeMillis();
         notifyPeersChanged();
+    }
+
+    /**
+     * Runs a task on the main thread and blocks the calling thread until it finishes. The sync
+     * snapshot merge touches main-thread-only state, so both the inbound and outbound paths use
+     * this to perform the merge on the main looper.
+     */
+    private void runOnMainAndWait(Runnable runnable) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            runnable.run();
+            return;
+        }
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicReference<Throwable> error = new AtomicReference<>();
+        mMainHandler.post(() -> {
+            try {
+                runnable.run();
+            } catch (Throwable t) {
+                error.set(t);
+            } finally {
+                latch.countDown();
+            }
+        });
+        try {
+            latch.await(15, TimeUnit.SECONDS);
+        } catch (InterruptedException ignored) {
+        }
+        final Throwable t = error.get();
+        if (t instanceof RuntimeException runtimeException) {
+            throw runtimeException;
+        }
+        if (t instanceof Error error1) {
+            throw error1;
+        }
+        if (t != null) {
+            throw new RuntimeException(t);
+        }
     }
 
     private void notifyPeersChanged() {

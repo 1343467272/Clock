@@ -193,6 +193,13 @@ public class SyncDiscovery : IDisposable
                 lock (_state)
                 {
                     var existing = _state.Peers.FirstOrDefault(p => p.DeviceId == hello.DeviceId);
+                    if (existing == null && !string.IsNullOrEmpty(hello.DeviceName))
+                    {
+                        // A device may re-register with a new id (reinstall/data reset).
+                        // Match by name + address so it does not show up twice.
+                        existing = _state.Peers.FirstOrDefault(p =>
+                            p.DeviceName == hello.DeviceName && p.Address == address);
+                    }
                     if (existing == null)
                     {
                         _state.Peers.Add(new SyncPeerInfo
@@ -206,6 +213,7 @@ public class SyncDiscovery : IDisposable
                     }
                     else
                     {
+                        existing.DeviceId = hello.DeviceId;
                         existing.DeviceName = hello.DeviceName;
                         existing.Address = address;
                         existing.Port = hello.Port;

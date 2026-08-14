@@ -13,7 +13,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -79,11 +81,19 @@ public final class SyncSettings {
         }
         try {
             final JSONArray array = new JSONArray(json);
+            final Set<String> seenIds = new HashSet<>();
             for (int i = 0; i < array.length(); i++) {
                 final JSONObject o = array.optJSONObject(i);
-                if (o != null) {
-                    peers.add(SyncPeerInfo.fromJson(o));
+                if (o == null) {
+                    continue;
                 }
+                final SyncPeerInfo peer = SyncPeerInfo.fromJson(o);
+                // Drop stale duplicates that can accumulate when a device re-registers
+                // with a new id (e.g. app reinstall or data reset).
+                if (peer.deviceId.isEmpty() || !seenIds.add(peer.deviceId)) {
+                    continue;
+                }
+                peers.add(peer);
             }
         } catch (Exception ignored) {
         }
@@ -131,6 +141,20 @@ public final class SyncSettings {
                 peer.paired = paired;
                 changed = true;
                 break;
+            }
+        }
+        if (changed) {
+            savePeers(context, peers);
+        }
+    }
+
+    public static void removePeer(Context context, String deviceId) {
+        final List<SyncPeerInfo> peers = getPeers(context);
+        boolean changed = false;
+        for (int i = peers.size() - 1; i >= 0; i--) {
+            if (peers.get(i).deviceId.equals(deviceId)) {
+                peers.remove(i);
+                changed = true;
             }
         }
         if (changed) {

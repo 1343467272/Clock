@@ -684,6 +684,7 @@
     <string name="lan_sync_connected_to">已连接到 %1$s</string>
     <string name="lan_sync_pair">配对</string>
     <string name="lan_sync_unpair">取消配对</string>
+    <string name="lan_sync_delete">删除</string>
     <string name="lan_sync_pairing_hint">配对设备后，应用运行期间会自动连接该设备。未配对设备仅在此界面显示。</string>
 
     <string name="add_time_button_title">"添加时间"按钮</string>
