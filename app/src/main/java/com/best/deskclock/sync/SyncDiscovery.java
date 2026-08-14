@@ -68,16 +68,10 @@ public final class SyncDiscovery {
     public void stop() {
         mRunning = false;
         if (mListener != null) {
-            try {
-                mListener.close();
-            } catch (IOException ignored) {
-            }
+            mListener.close();
         }
         if (mSender != null) {
-            try {
-                mSender.close();
-            } catch (IOException ignored) {
-            }
+            mSender.close();
         }
         if (mMulticastLock != null) {
             try {
