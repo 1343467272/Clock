@@ -691,26 +691,32 @@ public class BreenoProxyProvider extends ContentProvider {
         out.putLongArray("alarm_time_list", times);
         out.putStringArray("alarm_uuid_list", uuids);
 
-        // OPPO-only feature arrays; empty lists so Breeno treats the alarms as basic.
-        out.putIntArray("alarm_enableAssociate_list", new int[0]);
-        out.putIntArray("workday_switch_list", new int[0]);
-        out.putIntArray("holiday_switch_list", new int[0]);
-        out.putIntArray("alarm_snoonze_items_list", new int[0]);
-        out.putIntArray("alarm_snoonze_time_list", new int[0]);
-        out.putIntArray("alarm_snooze_time_list", new int[0]);
-        out.putIntArray("alarm_workday_type_list", new int[0]);
-        out.putLongArray("alarm_workday_update_time_list", new long[0]);
-        out.putStringArray("alarm_special_alarm_days_list", new String[0]);
-        out.putIntArray("alarm_default_alarm_list", new int[0]);
-        out.putIntArray("alarm_ring_num_list", new int[0]);
-        out.putIntArray("alarm_update_type", new int[0]);
-        out.putIntArray("alarm_loop_switch_list", new int[0]);
-        out.putIntArray("alarm_loop_cycle_days_list", new int[0]);
-        out.putIntArray("alarm_loop_id_list", new int[0]);
-        out.putIntArray("alarm_loop_work_days_list", new int[0]);
-        out.putIntArray("alarm_loop_alarm_number_list", new int[0]);
-        out.putIntArray("alarm_loop_day_list", new int[0]);
-        out.putStringArray("alarm_loop_reset_days_list", new String[0]);
+        // Fill every OPPO array with per-alarm values so Breeno sees a complete native alarm list.
+        final int[] zeroInts = new int[size];
+        final long[] zeroLongs = new long[size];
+        final String[] hashStrings = new String[size];
+        for (int i = 0; i < size; i++) {
+            hashStrings[i] = "#";
+        }
+        out.putIntArray("alarm_enableAssociate_list", zeroInts);
+        out.putIntArray("workday_switch_list", zeroInts);
+        out.putIntArray("holiday_switch_list", zeroInts);
+        out.putIntArray("alarm_snoonze_items_list", zeroInts);
+        out.putIntArray("alarm_snoonze_time_list", zeroInts);
+        out.putIntArray("alarm_snooze_time_list", zeroInts);
+        out.putIntArray("alarm_workday_type_list", zeroInts);
+        out.putLongArray("alarm_workday_update_time_list", zeroLongs);
+        out.putStringArray("alarm_special_alarm_days_list", hashStrings);
+        out.putIntArray("alarm_default_alarm_list", zeroInts);
+        out.putIntArray("alarm_ring_num_list", zeroInts);
+        out.putIntArray("alarm_update_type", zeroInts);
+        out.putIntArray("alarm_loop_switch_list", zeroInts);
+        out.putIntArray("alarm_loop_cycle_days_list", zeroInts);
+        out.putIntArray("alarm_loop_id_list", zeroInts);
+        out.putIntArray("alarm_loop_work_days_list", zeroInts);
+        out.putIntArray("alarm_loop_alarm_number_list", zeroInts);
+        out.putIntArray("alarm_loop_day_list", zeroInts);
+        out.putStringArray("alarm_loop_reset_days_list", hashStrings);
     }
 
     private static String repeatText(Weekdays days) {
