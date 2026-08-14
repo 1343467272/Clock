@@ -1,0 +1,15 @@
+<Window x:Class="Clock.Windows.Controls.AlertWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Clock" Width="420" SizeToContent="Height"
+        WindowStartupLocation="CenterScreen" Topmost="True"
+        ResizeMode="NoResize" ShowInTaskbar="False">
+    <StackPanel Margin="24">
+        <TextBlock x:Name="TitleText" FontSize="22" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,12"/>
+        <TextBlock x:Name="MessageText" FontSize="32" FontWeight="Bold" TextWrapping="Wrap" Margin="0,0,0,24"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="SnoozeButton" Content="Snooze" Click="OnSnooze" Visibility="Collapsed"/>
+            <Button x:Name="DismissButton" Content="Dismiss" IsDefault="True" Click="OnDismiss"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

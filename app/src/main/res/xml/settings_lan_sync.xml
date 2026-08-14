@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    SPDX-License-Identifier: GPL-3.0-only
+-->
+
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <PreferenceCategory
+        android:title="@string/lan_sync_general_category_title"
+        app:allowDividerAbove="false"
+        app:iconSpaceReserved="false">
+
+        <SwitchPreferenceCompat
+            android:key="sync_enabled"
+            android:layout="@layout/settings_preference_layout"
+            android:title="@string/lan_sync_enabled"
+            android:summaryOn="@string/lan_sync_enabled_summary_on"
+            android:summaryOff="@string/lan_sync_enabled_summary_off"
+            android:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="false" />
+
+        <Preference
+            android:key="sync_device_name"
+            android:layout="@layout/settings_preference_layout"
+            android:title="@string/lan_sync_device_name"
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="false"
+            tools:summary="Device name" />
+
+        <Preference
+            android:key="sync_port"
+            android:layout="@layout/settings_preference_layout"
+            android:title="@string/lan_sync_port"
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="false"
+            tools:summary="7846" />
+
+        <Preference
+            android:key="key_lan_sync_now"
+            android:layout="@layout/settings_preference_layout"
+            android:title="@string/lan_sync_now"
+            android:summary="@string/lan_sync_now_summary"
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="false" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/lan_sync_peers_category_title"
+        app:allowDividerAbove="false"
+        app:iconSpaceReserved="false">
+
+        <Preference
+            android:key="sync_peers"
+            android:layout="@layout/settings_preference_layout"
+            android:title="@string/lan_sync_peers"
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="false"
+            tools:summary="No devices detected yet" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

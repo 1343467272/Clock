@@ -1494,6 +1494,49 @@
     <string name="first_launch_dialog_title">Quit</string>
     <string name="first_launch_dialog_message">Are you sure you want to leave the application?</string>
 
+    <!-- ************************* -->
+    <!-- **     LAN SYNC         ** -->
+    <!-- ************************* -->
+
+    <!-- LAN sync preference title in the settings -->
+    <string name="lan_sync_settings">LAN sync</string>
+    <!-- LAN sync preference summary in the settings -->
+    <string name="lan_sync_settings_summary">Synchronize alarms, timers, stopwatch, world clock cities and settings with other devices on the same network</string>
+    <!-- Title of the LAN sync settings screen -->
+    <string name="lan_sync_title">LAN sync</string>
+    <!-- General category title in the LAN sync settings -->
+    <string name="lan_sync_general_category_title">General</string>
+    <!-- Setting title to enable LAN sync -->
+    <string name="lan_sync_enabled">Synchronize with other devices</string>
+    <!-- Setting summary when LAN sync is enabled -->
+    <string name="lan_sync_enabled_summary_on">This device will announce itself on the local network and exchange data with detected devices</string>
+    <!-- Setting summary when LAN sync is disabled -->
+    <string name="lan_sync_enabled_summary_off">Turn on to synchronize this device with others on the same network</string>
+    <!-- Setting title for the device name -->
+    <string name="lan_sync_device_name">Device name</string>
+    <!-- Dialog title for the device name -->
+    <string name="lan_sync_device_name_dialog_title">Device name</string>
+    <!-- Setting title for the sync port -->
+    <string name="lan_sync_port">Sync port</string>
+    <!-- Dialog title for the sync port -->
+    <string name="lan_sync_port_dialog_title">Sync port</string>
+    <!-- Error message when the entered port is invalid -->
+    <string name="lan_sync_port_invalid">Enter a valid port between 1024 and 65535</string>
+    <!-- Peers category title in the LAN sync settings -->
+    <string name="lan_sync_peers_category_title">Detected devices</string>
+    <!-- Setting title for the detected devices list -->
+    <string name="lan_sync_peers">Devices on this network</string>
+    <!-- Summary when no devices have been detected yet -->
+    <string name="lan_sync_peers_empty_summary">No devices detected yet</string>
+    <!-- Summary showing the number of detected devices -->
+    <string name="lan_sync_peers_count">%1$d device(s) on this network</string>
+    <!-- Toast message shown after a manual sync -->
+    <string name="lan_sync_now_toast">Sync started</string>
+    <!-- Setting title to force a manual sync -->
+    <string name="lan_sync_now">Sync now</string>
+    <!-- Summary of the sync now action -->
+    <string name="lan_sync_now_summary">Exchange data with all detected devices immediately</string>
+
     <!-- ****************************** -->
     <!-- **     BACK UP & RESTORE    ** -->
     <!-- ****************************** -->

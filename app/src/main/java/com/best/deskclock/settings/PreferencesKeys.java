@@ -26,6 +26,8 @@ public class PreferencesKeys {
     public static final String KEY_WIDGETS_SETTINGS = "key_widgets_settings";
     public static final String KEY_PERMISSIONS_MANAGEMENT = "key_permissions_management";
     public static final String KEY_BACKUP_RESTORE_PREFERENCES = "key_backup_restore_preferences";
+    public static final String KEY_LAN_SYNC_SETTINGS = "key_lan_sync_settings";
+    public static final String KEY_LAN_SYNC_NOW = "key_lan_sync_now";
     public static final String KEY_WIDGET_COLOR_CATEGORY = "key_widget_color_category";
 
     // About

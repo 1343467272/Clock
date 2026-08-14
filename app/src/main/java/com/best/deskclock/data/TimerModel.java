@@ -275,6 +275,36 @@ final class TimerModel {
     }
 
     /**
+     * Adds a timer that was received over the LAN sync channel, preserving its exact state.
+     *
+     * @param timer the timer to be added, including its desired state
+     * @return the newly added timer, including its generated id
+     */
+    Timer addTimerFromSync(Timer timer) {
+        // Store the timer exactly as received (state, start times, remaining time, etc.).
+        timer = TimerDAO.addTimer(mPrefs, timer);
+
+        // Add the timer to the cache.
+        getMutableTimers().add(0, timer);
+
+        // Schedule the expiration callback for running timers.
+        updateAlarmManager();
+
+        // Update the timer notification.
+        updateNotification();
+
+        // Update the timer tile.
+        updateQuickSettingsTile();
+
+        // Notify listeners of the change.
+        for (TimerListener timerListener : mTimerListeners) {
+            timerListener.timerAdded(timer);
+        }
+
+        return timer;
+    }
+
+    /**
      * @param service used to start foreground notifications related to expired timers
      * @param timer   the timer to be expired
      */

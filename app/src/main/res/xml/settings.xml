@@ -81,6 +81,14 @@
         app:singleLineTitle="false" />
 
     <Preference
+        android:key="key_lan_sync_settings"
+        android:layout="@layout/settings_preference_layout"
+        android:title="@string/lan_sync_settings"
+        android:summary="@string/lan_sync_settings_summary"
+        android:icon="@drawable/ic_sync"
+        app:singleLineTitle="false" />
+
+    <Preference
         android:key="key_backup_restore_preferences"
         android:layout="@layout/settings_preference_layout"
         android:title="@string/backup_restore_title"

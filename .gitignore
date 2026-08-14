@@ -35,3 +35,8 @@ app/build
 app/release
 app/debug
 app/nightly
+
+# Windows / .NET
+windows/**/bin/
+windows/**/obj/
+.vs/

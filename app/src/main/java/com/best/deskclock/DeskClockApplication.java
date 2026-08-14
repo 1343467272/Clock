@@ -31,6 +31,8 @@ import com.best.deskclock.controller.Controller;
 import com.best.deskclock.data.DataModel;
 import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.events.LogEventTracker;
+import com.best.deskclock.sync.SyncEngine;
+import com.best.deskclock.sync.SyncSettings;
 import com.best.deskclock.uidata.UiDataModel;
 import com.best.deskclock.utils.LogUtils;
 import com.best.deskclock.utils.NotificationUtils;
@@ -45,6 +47,7 @@ public class DeskClockApplication extends Application implements Application.Act
 
     private int mStartedActivities = 0;
     private boolean mIsChangingConfiguration = false;
+    private SyncEngine mSyncEngine;
 
     @Override
     public void onCreate() {
@@ -65,6 +68,11 @@ public class DeskClockApplication extends Application implements Application.Act
 
         if (SdkUtils.isAtLeastAndroid8()) {
             NotificationUtils.updateNotificationChannels(this);
+        }
+
+        if (SyncSettings.isSyncEnabled(this)) {
+            mSyncEngine = new SyncEngine(this);
+            mSyncEngine.start();
         }
 
         registerActivityLifecycleCallbacks(this);
@@ -127,6 +135,23 @@ public class DeskClockApplication extends Application implements Application.Act
 
     public static Context getAppContext() {
         return sInstance;
+    }
+
+    /**
+     * Starts or stops the LAN sync engine; used by the settings screen when the user toggles sync.
+     */
+    public void setSyncEnabled(boolean enabled) {
+        if (enabled && mSyncEngine == null) {
+            mSyncEngine = new SyncEngine(this);
+            mSyncEngine.start();
+        } else if (!enabled && mSyncEngine != null) {
+            mSyncEngine.stop();
+            mSyncEngine = null;
+        }
+    }
+
+    public SyncEngine getSyncEngine() {
+        return mSyncEngine;
     }
 
     /**

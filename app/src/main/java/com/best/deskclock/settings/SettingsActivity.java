@@ -140,6 +140,7 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
         Preference mPermissionsManagement;
         Preference mPermissionMessage;
         Preference mBackupRestorePref;
+        Preference mLanSyncSettings;
 
         private AlertDialog mRestartDialog;
 
@@ -255,6 +256,7 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
             mPermissionsManagement = findPreference(KEY_PERMISSIONS_MANAGEMENT);
             mPermissionMessage = findPreference(KEY_PERMISSION_MESSAGE);
             mBackupRestorePref = findPreference(KEY_BACKUP_RESTORE_PREFERENCES);
+            mLanSyncSettings = findPreference(KEY_LAN_SYNC_SETTINGS);
 
             if (savedInstanceState != null) {
                 mShowBackupRestoreDialog = savedInstanceState.getBoolean(KEY_SHOW_BACKUP_RESTORE_DIALOG, false);
@@ -309,7 +311,7 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
         public void onDestroy() {
             nullifyPreferenceListeners(mInterfaceCustomizationPref, mClockSettingsPref, mAlarmSettingsPref, mTimerSettingsPref,
                 mStopwatchSettingsPref, mScreensaverSettings, mWidgetsSettings, mPermissionsManagement, mPermissionMessage,
-                mBackupRestorePref);
+                mBackupRestorePref, mLanSyncSettings);
 
             nullifyAllPrefs();
 
@@ -337,6 +339,8 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
                     animateAndShowFragment(new PermissionsManagementActivity.PermissionsManagementFragment());
 
                 case KEY_BACKUP_RESTORE_PREFERENCES -> showBackupRestoreDialog();
+
+                case KEY_LAN_SYNC_SETTINGS -> animateAndShowFragment(new LanSyncSettingsFragment());
             }
 
             return true;
@@ -362,6 +366,8 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
             mPermissionsManagement.setOnPreferenceClickListener(this);
 
             mBackupRestorePref.setOnPreferenceClickListener(this);
+
+            mLanSyncSettings.setOnPreferenceClickListener(this);
         }
 
         private void updateSettingsVisibility() {
@@ -576,6 +582,7 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
             mPermissionsManagement = null;
             mPermissionMessage = null;
             mBackupRestorePref = null;
+            mLanSyncSettings = null;
         }
     }
 

@@ -552,6 +552,65 @@ public final class DataModel {
     }
 
     /**
+     * Adds a timer received over the LAN sync channel, preserving its exact state.
+     * Safe to call from any thread; the mutation is executed on the main thread.
+     *
+     * @param timer the timer to be added, including its desired state
+     * @return the newly added timer, including its generated id
+     */
+    public Timer addTimerFromSync(Timer timer) {
+        final Timer[] result = new Timer[1];
+        run(() -> result[0] = mTimerModel.addTimerFromSync(timer));
+        return result[0];
+    }
+
+    /**
+     * Updates a timer received over the LAN sync channel.
+     * Safe to call from any thread; the mutation is executed on the main thread.
+     *
+     * @param timer the updated timer to store
+     */
+    public void updateTimerFromSync(Timer timer) {
+        run(() -> mTimerModel.updateTimer(timer));
+    }
+
+    /**
+     * Removes a timer received as deleted over the LAN sync channel.
+     * Safe to call from any thread; the mutation is executed on the main thread.
+     *
+     * @param timer the timer to be removed
+     */
+    public void removeTimerFromSync(Timer timer) {
+        run(() -> mTimerModel.removeTimer(timer, 0));
+    }
+
+    /**
+     * Applies a stopwatch state and its recorded laps received over the LAN sync channel.
+     * Safe to call from any thread; the mutation is executed on the main thread.
+     *
+     * @param stopwatch the stopwatch state to apply
+     * @param laps      the recorded laps in the order they were recorded
+     */
+    public void applyStopwatchFromSync(Stopwatch stopwatch, List<Lap> laps) {
+        run(() -> {
+            mStopwatchModel.setStopwatch(stopwatch);
+            if (laps != null) {
+                mStopwatchModel.replaceLaps(laps);
+            }
+        });
+    }
+
+    /**
+     * Applies a selected-cities order received over the LAN sync channel.
+     * Safe to call from any thread; the mutation is executed on the main thread.
+     *
+     * @param cities the selected cities in their display order
+     */
+    public void applyCitiesFromSync(Collection<City> cities) {
+        run(() -> mCityModel.setSelectedCities(cities));
+    }
+
+    /**
      * @return the uri of the default ringtone to play for all timers when no user selection exists
      */
     public Uri getDefaultTimerRingtoneUri() {

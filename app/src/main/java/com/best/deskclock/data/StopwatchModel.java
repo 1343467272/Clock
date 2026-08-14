@@ -120,6 +120,33 @@ final class StopwatchModel {
     }
 
     /**
+     * Replaces all recorded laps with the given set, in the order they were recorded.
+     * Used when laps arrive over the LAN sync channel.
+     *
+     * @param laps the laps to store; lap numbers are 1-based and monotonically increasing
+     */
+    void replaceLaps(List<Lap> laps) {
+        StopwatchDAO.clearLaps(mPrefs);
+        for (Lap lap : laps) {
+            StopwatchDAO.addLap(mPrefs, lap.getLapNumber(), lap.getAccumulatedTime());
+        }
+
+        // The lap cache is ordered newest-first, so it must be reloaded.
+        mLaps = null;
+
+        // Refresh the stopwatch notification to reflect the latest laps.
+        if (!mNotificationModel.isApplicationInForeground()) {
+            updateNotification();
+        }
+
+        // Notify listeners of the change.
+        final Stopwatch stopwatch = getStopwatch();
+        for (StopwatchListener stopwatchListener : mStopwatchListeners) {
+            stopwatchListener.stopwatchUpdated(stopwatch);
+        }
+    }
+
+    /**
      * @param stopwatch the new state of the stopwatch
      */
     void setStopwatch(Stopwatch stopwatch) {
