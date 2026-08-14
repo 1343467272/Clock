@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,8 +8,6 @@ using Clock.Windows.Localization;
 using Clock.Windows.Models;
 using Clock.Windows.Services;
 using Clock.Windows.Sync;
-using Drawing = System.Drawing;
-using Forms = System.Windows.Forms;
 
 namespace Clock.Windows;
 
@@ -20,9 +17,6 @@ public partial class MainWindow : Window
     private AlarmService? _alarmService;
     private SyncEngine? _syncEngine;
     private readonly List<AlertWindow> _openAlerts = new();
-    private Forms.NotifyIcon? _trayIcon;
-    private bool _exiting;
-    private bool _trayBalloonShown;
     private bool _loading;
 
     private class LapView
@@ -37,65 +31,11 @@ public partial class MainWindow : Window
         _state = App.State;
         _state.UiDispatcher = Dispatcher;
         Loaded += OnLoaded;
-        Closing += OnWindowClosing;
         Closed += (_, _) =>
         {
             _syncEngine?.Dispose();
             _state.Save();
-            DisposeTrayIcon();
         };
-        SetupTrayIcon();
-    }
-
-    // ---------- System tray (X minimizes to background, alarms keep working) ----------
-
-    private void SetupTrayIcon()
-    {
-        _trayIcon = new Forms.NotifyIcon
-        {
-            Icon = Drawing.Icon.ExtractAssociatedIcon(Environment.ProcessPath ?? ""),
-            Text = Text.AppTitle,
-            Visible = true,
-        };
-        var menu = new Forms.ContextMenuStrip();
-        menu.Items.Add(Text.TrayShow, null, (_, _) => ShowFromTray());
-        menu.Items.Add(new Forms.ToolStripSeparator());
-        menu.Items.Add(Text.TrayExit, null, (_, _) => ExitApplication());
-        _trayIcon.ContextMenuStrip = menu;
-        _trayIcon.DoubleClick += (_, _) => ShowFromTray();
-    }
-
-    private void OnWindowClosing(object? sender, CancelEventArgs e)
-    {
-        if (_exiting) return;
-        e.Cancel = true;
-        Hide();
-        if (!_trayBalloonShown)
-        {
-            _trayBalloonShown = true;
-            _trayIcon?.ShowBalloonTip(3000, Text.AppTitle, Text.TrayBalloon, Forms.ToolTipIcon.Info);
-        }
-    }
-
-    private void ShowFromTray()
-    {
-        Show();
-        WindowState = WindowState.Normal;
-        Activate();
-    }
-
-    private void ExitApplication()
-    {
-        _exiting = true;
-        App.Current.Shutdown();
-    }
-
-    private void DisposeTrayIcon()
-    {
-        if (_trayIcon == null) return;
-        _trayIcon.Visible = false;
-        _trayIcon.Dispose();
-        _trayIcon = null;
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)

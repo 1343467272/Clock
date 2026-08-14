@@ -111,11 +111,6 @@ public static class Text
     public const string Cancel = "取消";
     public const string Save = "保存";
 
-    // System tray
-    public const string TrayShow = "打开时钟";
-    public const string TrayExit = "退出";
-    public const string TrayBalloon = "时钟仍在后台运行，闹钟和定时器将继续生效。点击托盘图标可重新打开。";
-
     // Alert window
     public const string AlertAlarmTitle = "闹钟";
     public const string AlertTimerTitle = "定时器";
