@@ -193,7 +193,9 @@ public final class SyncDiscovery {
                 final List<SyncPeerInfo> peers = SyncSettings.getPeers(mContext);
                 boolean found = false;
                 for (int i = 0; i < peers.size(); i++) {
-                    if (peers.get(i).deviceId.equals(deviceId)) {
+                    final SyncPeerInfo stored = peers.get(i);
+                    if (stored.deviceId.equals(deviceId)) {
+                        peer.paired = stored.paired;
                         peers.set(i, peer);
                         found = true;
                         break;

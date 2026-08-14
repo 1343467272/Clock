@@ -17,6 +17,7 @@ public final class SyncPeerInfo {
     public String address;
     public int port;
     public long lastSeen; // epoch ms
+    public boolean paired; // whether this peer has been paired; only paired peers auto-connect
 
     public SyncPeerInfo() {
     }
@@ -37,6 +38,7 @@ public final class SyncPeerInfo {
             o.put("address", address);
             o.put("port", port);
             o.put("lastSeen", lastSeen);
+            o.put("paired", paired);
         } catch (JSONException ignored) {
         }
         return o;
@@ -49,6 +51,7 @@ public final class SyncPeerInfo {
         p.address = o.optString("address", "");
         p.port = o.optInt("port", 0);
         p.lastSeen = o.optLong("lastSeen", 0);
+        p.paired = o.optBoolean("paired", false);
         return p;
     }
 }

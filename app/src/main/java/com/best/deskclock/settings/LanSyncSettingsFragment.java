@@ -7,16 +7,19 @@ package com.best.deskclock.settings;
 import android.content.Context;
 import android.os.Bundle;
 import android.text.InputType;
+import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 
 import androidx.annotation.NonNull;
 import androidx.preference.Preference;
 import androidx.preference.SwitchPreferenceCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.best.deskclock.DeskClockApplication;
 import com.best.deskclock.R;
 import com.best.deskclock.base.BaseSettingsScreenFragment;
+import com.best.deskclock.databinding.LanSyncPeersDialogBinding;
 import com.best.deskclock.sync.SyncEngine;
 import com.best.deskclock.sync.SyncPeerInfo;
 import com.best.deskclock.sync.SyncSettings;
@@ -26,8 +29,9 @@ import com.best.deskclock.uicomponents.toast.CustomToast;
 import java.util.List;
 
 /**
- * LAN sync settings: enable/disable the sync engine, edit the device name and port, list the
- * detected devices and trigger a manual sync.
+ * LAN sync settings: enable/disable the sync engine, edit the device name and port, pair and unpair
+ * the detected devices and trigger a manual sync. Devices are listed with a pair/unpair action;
+ * paired devices auto-connect while the app is running.
  */
 public final class LanSyncSettingsFragment extends BaseSettingsScreenFragment
     implements Preference.OnPreferenceChangeListener, Preference.OnPreferenceClickListener {
@@ -40,6 +44,8 @@ public final class LanSyncSettingsFragment extends BaseSettingsScreenFragment
     private Preference mPortPref;
     private Preference mPeersPref;
     private Preference mSyncNowPref;
+    private LanSyncPeersAdapter mPeersAdapter;
+    private LanSyncPeersDialogBinding mPeersDialogBinding;
 
     @Override
     protected String getFragmentTitle() {
@@ -63,7 +69,28 @@ public final class LanSyncSettingsFragment extends BaseSettingsScreenFragment
     @Override
     public void onResume() {
         super.onResume();
+        registerWithEngine();
         updateSummaries();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        final SyncEngine engine = getSyncEngine();
+        if (engine != null) {
+            engine.setPeersListener(null);
+            engine.setSettingsScreenVisible(false);
+        }
+    }
+
+    @Override
+    public void onDestroyView() {
+        if (mPeersDialogBinding != null && mPeersDialogBinding.peersList != null) {
+            mPeersDialogBinding.peersList.setAdapter(null);
+        }
+        mPeersDialogBinding = null;
+        mPeersAdapter = null;
+        super.onDestroyView();
     }
 
     @Override
@@ -82,7 +109,12 @@ public final class LanSyncSettingsFragment extends BaseSettingsScreenFragment
             case SyncSettings.KEY_SYNC_ENABLED -> {
                 final boolean enabled = (Boolean) newValue;
                 SyncSettings.setSyncEnabled(requireContext(), enabled);
-                ((DeskClockApplication) requireContext().getApplicationContext()).setSyncEnabled(enabled);
+                final DeskClockApplication application =
+                    (DeskClockApplication) requireContext().getApplicationContext();
+                application.setSyncEnabled(enabled);
+                if (enabled) {
+                    registerWithEngine();
+                }
             }
         }
         return true;
@@ -111,6 +143,20 @@ public final class LanSyncSettingsFragment extends BaseSettingsScreenFragment
         mSyncNowPref.setOnPreferenceClickListener(this);
     }
 
+    private SyncEngine getSyncEngine() {
+        final DeskClockApplication application =
+            (DeskClockApplication) requireContext().getApplicationContext();
+        return application.getSyncEngine();
+    }
+
+    private void registerWithEngine() {
+        final SyncEngine engine = getSyncEngine();
+        if (engine != null) {
+            engine.setPeersListener(this::refreshPeersUi);
+            engine.setSettingsScreenVisible(true);
+        }
+    }
+
     private void updateSummaries() {
         final Context context = requireContext();
         mDeviceNamePref.setSummary(SyncSettings.getDeviceName(context));
@@ -120,9 +166,42 @@ public final class LanSyncSettingsFragment extends BaseSettingsScreenFragment
         mSyncNowPref.setEnabled(enabled);
 
         final List<SyncPeerInfo> peers = SyncSettings.getPeers(context);
-        mPeersPref.setSummary(peers.isEmpty()
-            ? getString(R.string.lan_sync_peers_empty_summary)
-            : getString(R.string.lan_sync_peers_count, peers.size()));
+        int pairedCount = 0;
+        for (SyncPeerInfo peer : peers) {
+            if (peer.paired) {
+                pairedCount++;
+            }
+        }
+        String summary;
+        if (peers.isEmpty()) {
+            summary = getString(R.string.lan_sync_peers_empty_summary);
+        } else {
+            summary = getString(R.string.lan_sync_peers_summary, peers.size(), pairedCount);
+        }
+        final SyncEngine engine = getSyncEngine();
+        if (engine != null && engine.isConnectedToPairedDevice()) {
+            final String connectedDeviceId = engine.getConnectedDeviceId();
+            if (connectedDeviceId != null) {
+                for (SyncPeerInfo peer : peers) {
+                    if (peer.deviceId.equals(connectedDeviceId)) {
+                        summary += " \u00b7 " + getString(R.string.lan_sync_connected_to, peer.deviceName);
+                        break;
+                    }
+                }
+            }
+        }
+        mPeersPref.setSummary(summary);
+    }
+
+    /**
+     * Called (on the main thread) whenever the sync engine notices a peer or connection change.
+     */
+    private void refreshPeersUi() {
+        if (!isAdded()) {
+            return;
+        }
+        updateSummaries();
+        refreshPeersDialog();
     }
 
     private void showDeviceNameDialog() {
@@ -194,6 +273,7 @@ public final class LanSyncSettingsFragment extends BaseSettingsScreenFragment
                 final DeskClockApplication application = (DeskClockApplication) context.getApplicationContext();
                 application.setSyncEnabled(false);
                 application.setSyncEnabled(SyncSettings.isSyncEnabled(context));
+                registerWithEngine();
             },
             getString(android.R.string.cancel),
             null,
@@ -207,43 +287,64 @@ public final class LanSyncSettingsFragment extends BaseSettingsScreenFragment
 
     private void showPeersDialog() {
         final Context context = requireContext();
-        final List<SyncPeerInfo> peers = SyncSettings.getPeers(context);
-        final StringBuilder message = new StringBuilder();
-        if (peers.isEmpty()) {
-            message.append(getString(R.string.lan_sync_peers_empty_summary));
-        } else {
-            for (int i = 0; i < peers.size(); i++) {
-                final SyncPeerInfo peer = peers.get(i);
-                if (i > 0) {
-                    message.append('\n');
-                }
-                message.append(peer.deviceName).append('\n');
-                message.append(peer.address).append(':').append(peer.port);
-            }
-        }
+        mPeersDialogBinding = LanSyncPeersDialogBinding.inflate(getLayoutInflater());
+        mPeersDialogBinding.peersList.setLayoutManager(new LinearLayoutManager(context));
+        mPeersAdapter = new LanSyncPeersAdapter(this::onPairClicked);
+        mPeersDialogBinding.peersList.setAdapter(mPeersAdapter);
+
+        refreshPeersDialog();
 
         mActiveDialog = CustomDialog.create(
             context,
             null,
             null,
             getString(R.string.lan_sync_peers),
-            message,
             null,
+            mPeersDialogBinding.getRoot(),
             getString(android.R.string.ok),
             null,
             null,
             null,
             null,
             null,
-            null,
+            dialog -> dialog.setOnDismissListener(d -> mPeersDialogBinding = null),
             CustomDialog.SoftInputMode.NONE
         );
         mActiveDialog.show();
     }
 
+    private void refreshPeersDialog() {
+        if (mPeersDialogBinding == null || mPeersAdapter == null) {
+            return;
+        }
+        final Context context = requireContext();
+        final List<SyncPeerInfo> peers = SyncSettings.getPeers(context);
+        final SyncEngine engine = getSyncEngine();
+        final String connectedDeviceId = engine == null ? null : engine.getConnectedDeviceId();
+
+        final boolean empty = peers.isEmpty();
+        mPeersDialogBinding.peersEmpty.setVisibility(empty ? View.VISIBLE : View.GONE);
+        mPeersDialogBinding.peersList.setVisibility(empty ? View.GONE : View.VISIBLE);
+        mPeersAdapter.update(peers, connectedDeviceId);
+    }
+
+    private void onPairClicked(SyncPeerInfo peer) {
+        final Context context = requireContext();
+        final boolean pair = !peer.paired;
+        SyncSettings.setPeerPaired(context, peer.deviceId, pair);
+        final SyncEngine engine = getSyncEngine();
+        if (engine != null) {
+            engine.onPeerPairedChanged(peer.deviceId, pair);
+            if (pair) {
+                engine.connectToPeer(peer);
+            }
+        }
+        refreshPeersDialog();
+        updateSummaries();
+    }
+
     private void syncNow() {
-        final DeskClockApplication application = (DeskClockApplication) requireContext().getApplicationContext();
-        final SyncEngine engine = application.getSyncEngine();
+        final SyncEngine engine = getSyncEngine();
         if (engine != null) {
             engine.syncNow();
         }

@@ -1536,6 +1536,22 @@
     <string name="lan_sync_now">Sync now</string>
     <!-- Summary of the sync now action -->
     <string name="lan_sync_now_summary">Exchange data with all detected devices immediately</string>
+    <!-- Summary showing the number of detected devices and how many are paired -->
+    <string name="lan_sync_peers_summary">%1$d device(s) on this network, %2$d paired</string>
+    <!-- Device status shown in the detected devices list -->
+    <string name="lan_sync_paired">Paired</string>
+    <!-- Device status shown in the detected devices list -->
+    <string name="lan_sync_unpaired">Not paired</string>
+    <!-- Device status shown in the detected devices list -->
+    <string name="lan_sync_connected">Connected</string>
+    <!-- Summary of the detected devices list when connected to a paired device -->
+    <string name="lan_sync_connected_to">Connected to %1$s</string>
+    <!-- Action to pair a device in the detected devices list -->
+    <string name="lan_sync_pair">Pair</string>
+    <!-- Action to unpair a device in the detected devices list -->
+    <string name="lan_sync_unpair">Unpair</string>
+    <!-- Help text shown at the top of the detected devices list -->
+    <string name="lan_sync_pairing_hint">Pair a device to let it connect automatically while the app is running. Unpaired devices are only shown on this screen.</string>
 
     <!-- ****************************** -->
     <!-- **     BACK UP & RESTORE    ** -->

@@ -98,4 +98,43 @@ public final class SyncSettings {
         DeskClockApplication.getDefaultSharedPreferences(context)
             .edit().putString(KEY_PEERS, array.toString()).apply();
     }
+
+    public static SyncPeerInfo getPeer(Context context, String deviceId) {
+        for (SyncPeerInfo peer : getPeers(context)) {
+            if (peer.deviceId.equals(deviceId)) {
+                return peer;
+            }
+        }
+        return null;
+    }
+
+    public static List<SyncPeerInfo> getPairedPeers(Context context) {
+        final List<SyncPeerInfo> paired = new ArrayList<>();
+        for (SyncPeerInfo peer : getPeers(context)) {
+            if (peer.paired) {
+                paired.add(peer);
+            }
+        }
+        return paired;
+    }
+
+    public static boolean isPeerPaired(Context context, String deviceId) {
+        final SyncPeerInfo peer = getPeer(context, deviceId);
+        return peer != null && peer.paired;
+    }
+
+    public static void setPeerPaired(Context context, String deviceId, boolean paired) {
+        final List<SyncPeerInfo> peers = getPeers(context);
+        boolean changed = false;
+        for (SyncPeerInfo peer : peers) {
+            if (peer.deviceId.equals(deviceId)) {
+                peer.paired = paired;
+                changed = true;
+                break;
+            }
+        }
+        if (changed) {
+            savePeers(context, peers);
+        }
+    }
 }
