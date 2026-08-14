@@ -42,9 +42,13 @@ alarm_state_list, alarm_repeat_list, alarm_repeat_set_list, alarm_time_list, ...
 
 ## 已知限制
 
-- **语音取消闹钟**：小布对"非 OPPO 时钟数据库中的闹钟"会回退为打开 OPPO 时钟的
-  `AlarmClock` 界面让用户手动取消，而非调用 `close_alarm`。`close_alarm` 方法本身已验证可用
-  （`result=1`），仅小布侧的语音触发路径有限制。
+- **语音取消闹钟**：小布取消闹钟时是客户端决策 —— 先 `get_alarm_list` 拿到闹钟，然后**打开
+  OPPO 时钟的 `AlarmClock` 界面**让用户手动取消，而**不调用 `close_alarm`**（"今天"和"明天"
+  两种场景均验证）。`close_alarm` 方法本身可用（`result=1`）。根因是小布的取消流程需要
+  OPPO 时钟数据库中存在对应的闹钟会话状态；本模块拦截 `add_alarm` 后 OPPO 时钟的数据库是
+  空的，破坏了小布的会话一致性。
+  - 可能的修复方向（未实施，较复杂且脆弱）：在拦截 `add_alarm` 时，同时把闹钟写入 OPPO
+    时钟的数据库（镜像，禁用状态避免双响），使小布状态一致。
 - 定时器：小布先 `check_timer`，若存在活跃定时器则可能复用而非新建；`start_timer` /
   `pause_timer` / `resume_timer` / `cancel_timer` 方法层均验证可用。
 
