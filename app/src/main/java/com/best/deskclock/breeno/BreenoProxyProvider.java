@@ -686,6 +686,9 @@ public class BreenoProxyProvider extends ContentProvider {
         out.putIntArray("alarm_min_list", minutes);
         out.putStringArray("alarm_label_list", labels);
         out.putBooleanArray("alarm_state_list", states);
+        // Breeno's parser reads "alarm_status" (FeatureOption.r() branch) for the enabled state,
+        // not only "alarm_state_list"; without it enabled alarms are filtered out during close.
+        out.putBooleanArray("alarm_status", states);
         out.putStringArray("alarm_repeat_list", repeats);
         out.putIntArray("alarm_repeat_set_list", repeatSets);
         out.putLongArray("alarm_time_list", times);
