@@ -12,6 +12,7 @@ public partial class App : Application
         base.OnStartup(e);
         State = AppState.Load();
         State.Start();
+        new MainWindow().Show();
     }
 
     protected override void OnExit(ExitEventArgs e)
