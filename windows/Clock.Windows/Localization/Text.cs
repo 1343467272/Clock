@@ -12,11 +12,11 @@ public static class Text
     public const string AppTitle = "时钟";
     public const string AlarmWindowTitle = "闹钟";
 
-    // Main tabs
+    // Main tabs (bottom navigation; matches Android menu_alarm/menu_clock/menu_timer/menu_stopwatch)
     public const string TabAlarms = "闹钟";
+    public const string TabClock = "时钟";
     public const string TabTimer = "定时器";
     public const string TabStopwatch = "秒表";
-    public const string TabWorldClock = "世界时钟";
     public const string TabSettings = "设置";
     public const string TabSync = "同步";
 
@@ -56,8 +56,7 @@ public static class Text
     public const string Lap = "一圈";
     public const string LapFormat = "第 {0} 圈";
 
-    // World clock tab
-    public const string WorldClockTitle = "世界时钟";
+    // World clock (inside the clock tab)
     public const string AddCity = "添加城市";
     public const string SearchCity = "搜索城市";
 

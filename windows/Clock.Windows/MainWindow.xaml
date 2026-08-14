@@ -6,262 +6,507 @@
         WindowStartupLocation="CenterScreen" Icon="Assets/icon.ico">
 
     <Window.Resources>
-        <Style TargetType="TextBlock" x:Key="TabTitle">
-            <Setter Property="FontSize" Value="22"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Margin" Value="0,4,0,16"/>
+        <!-- Material 3 light palette (matches Android md_theme_*) -->
+        <SolidColorBrush x:Key="BkBackground" Color="#FEFBFF"/>
+        <SolidColorBrush x:Key="BkSurface" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="BkPrimary" Color="#475D92"/>
+        <SolidColorBrush x:Key="BkOnSurface" Color="#1A1B20"/>
+        <SolidColorBrush x:Key="BkOnSurfaceVariant" Color="#44464F"/>
+        <SolidColorBrush x:Key="BkOutline" Color="#C5C6D0"/>
+        <SolidColorBrush x:Key="BkSurfaceDim" Color="#66000000"/>
+        <SolidColorBrush x:Key="BkHover" Color="#14475D92"/>
+
+        <!-- Tab icons (from Android ic_tab_*_static / ic_settings path data) -->
+        <Geometry x:Key="IconAlarm">M520 504V360q0-17-11.5-28.5T480 320t-28.5 11.5T440 360V519q0 8 3 15.5t9 13.5L564 660q11 11 28 11t28-11 11-28-11-28L520 504ZM480 880q-75 0-140.5-28.5t-114-77-77-114T120 520t28.5-140.5 77-114 114-77T480 160t140.5 28.5 114 77 77 114T840 520t-28.5 140.5-77 114-114 77T480 880ZM82 292q-11-11-11-28t11-28L196 122q11-11 28-11t28 11 11 28-11 28L138 292q-11 11-28 11T82 292Zm796 0q-11 11-28 11t-28-11L708 178q-11-11-11-28t11-28 28-11 28 11L878 236q11 11 11 28t-11 28ZM480 800q117 0 198.5-81.5T760 520 678.5 321.5 480 240 281.5 321.5 200 520t81.5 198.5T480 800Z</Geometry>
+        <Geometry x:Key="IconClock">M520 464V320q0-17-11.5-28.5T480 280t-28.5 11.5T440 320V479q0 8 3 15.5t9 13.5L584 640q11 11 28 11t28-11 11-28-11-28L520 464ZM480 880q-83 0-156-31.5T197 763 111.5 636 80 480t31.5-156T197 197t127-85.5T480 80t156 31.5T763 197t85.5 127T880 480 848.5 636 763 763 636 848.5 480 880Zm0-400Zm0 320q133 0 226.5-93.5T800 480 706.5 253.5 480 160 253.5 253.5 160 480t93.5 226.5T480 800Z</Geometry>
+        <Geometry x:Key="IconTimer">M7.8 6 12 10.5 16.2 6H7.8Zm5.6 6 5.8 6.3c.3.3.4.7.2 1.1-.1.4-.5.6-.9.6H5.5c-.4 0-.8-.2-.9-.6-.2-.4-.1-.8.1-1.1L10.6 12 4.8 5.7c-.3-.3-.4-.7-.2-1.1.1-.4.5-.6.9-.6h13c.4 0 .8.2.9.6.2.4.1.8-.1 1.1L13.4 12Z</Geometry>
+        <Geometry x:Key="IconStopwatch">M400 120q-17 0-28.5-11.5T360 80t11.5-28.5T400 40H560q17 0 28.5 11.5T600 80t-11.5 28.5T560 120H400ZM480 560q17 0 28.5-11.5T520 520V360q0-17-11.5-28.5T480 320t-28.5 11.5T440 360V520q0 17 11.5 28.5T480 560ZM480 880q-74 0-139.5-28.5T226 774 148.5 659.5 120 520t28.5-139.5T226 266t114.5-77.5T480 160q62 0 119 20t107 58l28-28q11-11 28-11t28 11 11 28-11 28l-28 28q38 50 58 107t20 119q0 74-28.5 139.5T734 774 619.5 851.5 480 880ZM480 800q116 0 198-82t82-198-82-198-198-82-198 82-82 198 82 198 198 82Z</Geometry>
+        <Geometry x:Key="IconSettings">m433 880q-27 0-47-18t-24-44l-9-66q-13-5-25-12t-23-15l-62 26q-25 11-50 2t-39-32l-47-82q-14-23-8-49t27-43l53-40q-1-7-1-14t0-14 0-14 1-14l-53-40q-21-17-27-43t8-49l47-82q14-23 39-32t50 2l62 26q11-8 23-15t24-12l9-66q4-26 24-44t47-18h94q27 0 47 18t24 44l9 66q13 5 25 12t23 15l62-26q25-11 50-2t39 32l47 82q14 23 8 49t-27 43l-53 40q1 7 1 14t0 14 0 14-2 14l53 40q21 17 27 43t-8 49l-48 82q-14 23-39 32t-50-2l-60-26q-11 8-23 15t-24 12l-9 66q-4 26-24 44t-47 18H433zm7-80h79l14-106q31-8 58-24t49-38l99 41 39-68-86-65q5-14 7-30t2-32-2-32-7-30l86-65-39-68-99 42q-22-23-49-39t-58-24l-13-106H441l-14 106q-31 8-58 24t-49 38l-99-41-39 68 86 64q-5 15-7 30t-2 32q0 16 2 31t7 30l-86 65 39 68 99-42q22 23 49 39t58 24l13 106zm42-180q58 0 99-41t41-99-41-99-99-41q-59 0-100 41t-41 99 41 99 100 41z</Geometry>
+        <Geometry x:Key="IconAdd">M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z</Geometry>
+
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource BkSurface}"/>
+            <Setter Property="BorderBrush" Value="#14000000"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="14"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
         </Style>
+
+        <Style x:Key="IconButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="20">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#14000000"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FilledButton" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource BkPrimary}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="20" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#3A5580"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="OutlinedButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource BkPrimary}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BkPrimary}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="20" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource BkHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CardButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource BkPrimary}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="14" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource BkHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SwitchToggle" TargetType="ToggleButton">
+            <Setter Property="Foreground" Value="{StaticResource BkPrimary}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Bg" Background="Transparent" BorderBrush="{StaticResource BkOutline}" BorderThickness="1" CornerRadius="14" Padding="12,5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{StaticResource BkPrimary}"/>
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="{StaticResource BkPrimary}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FabStyle" TargetType="Button">
+            <Setter Property="Width" Value="56"/>
+            <Setter Property="Height" Value="56"/>
+            <Setter Property="Background" Value="{StaticResource BkPrimary}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border x:Name="Circle" Background="{TemplateBinding Background}" CornerRadius="28">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="8" ShadowDepth="3" Opacity="0.3"/>
+                                </Border.Effect>
+                            </Border>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Circle" Property="Background" Value="#3A5580"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="BottomNavItem" TargetType="RadioButton">
+            <Setter Property="GroupName" Value="MainNav"/>
+            <Setter Property="Foreground" Value="{StaticResource BkOnSurfaceVariant}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bg" Background="Transparent" Padding="0,8">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#14000000"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#14475D92"/>
+                                <Setter Property="Foreground" Value="{StaticResource BkPrimary}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DimLayer" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource BkSurfaceDim}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="Cursor" Value="Arrow"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <DataTemplate x:Key="AlarmCard">
-            <Border BorderBrush="#33000000" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,8" Background="#0D000000">
+            <Border Style="{StaticResource CardStyle}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding TimeText}" FontSize="28" FontWeight="Bold"/>
-                            <TextBlock Text="{Binding DaysText}" Margin="12,10,0,0" Foreground="#88000000"/>
-                        </StackPanel>
-                        <TextBlock Text="{Binding LabelText}" Margin="2,4,0,0" Foreground="#AA000000"/>
-                        <TextBlock Text="{Binding NextFireText}" Margin="2,4,0,0" Foreground="#77000000" FontSize="11"/>
+                        <TextBlock Text="{Binding TimeText}" FontSize="30" FontWeight="Bold" Foreground="{StaticResource BkPrimary}"/>
+                        <TextBlock Text="{Binding DaysText}" Margin="0,4,0,0" Foreground="{StaticResource BkOnSurfaceVariant}"/>
+                        <TextBlock Text="{Binding LabelText}" Margin="0,2,0,0" Foreground="{StaticResource BkOnSurface}"/>
+                        <TextBlock Text="{Binding NextFireText}" Margin="0,2,0,0" Foreground="{StaticResource BkOnSurfaceVariant}" FontSize="11"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button Content="{x:Static l:Text.Edit}" Tag="{Binding Uuid}" Click="OnEditAlarm"/>
-                        <Button Content="{x:Static l:Text.Delete}" Tag="{Binding Uuid}" Click="OnDeleteAlarm"/>
-                        <ToggleButton Content="{Binding EnabledText}" Tag="{Binding Uuid}" IsChecked="{Binding Enabled}" Click="OnToggleAlarm"/>
+                        <Button Content="{x:Static l:Text.Edit}" Style="{StaticResource CardButton}" Tag="{Binding Uuid}" Click="OnEditAlarm"/>
+                        <Button Content="{x:Static l:Text.Delete}" Style="{StaticResource CardButton}" Tag="{Binding Uuid}" Click="OnDeleteAlarm"/>
+                        <ToggleButton Style="{StaticResource SwitchToggle}" Content="{Binding EnabledText}" Tag="{Binding Uuid}" IsChecked="{Binding Enabled}" Click="OnToggleAlarm"/>
                     </StackPanel>
                 </Grid>
             </Border>
         </DataTemplate>
+
         <DataTemplate x:Key="TimerCard">
-            <Border BorderBrush="#33000000" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,8" Background="#0D000000">
+            <Border Style="{StaticResource CardStyle}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="{Binding RemainingDisplay}" FontSize="28" FontWeight="Bold"/>
-                        <TextBlock Text="{Binding LabelText}" Margin="2,2,0,0" Foreground="#88000000"/>
-                        <TextBlock Text="{Binding MetaText}" Margin="2,2,0,0" Foreground="#77000000" FontSize="11"/>
+                        <TextBlock Text="{Binding RemainingDisplay}" FontSize="30" FontWeight="Bold" Foreground="{StaticResource BkPrimary}"/>
+                        <TextBlock Text="{Binding LabelText}" Margin="0,4,0,0" Foreground="{StaticResource BkOnSurface}"/>
+                        <TextBlock Text="{Binding MetaText}" Margin="0,2,0,0" Foreground="{StaticResource BkOnSurfaceVariant}" FontSize="11"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button Content="{x:Static l:Text.StartPause}" Tag="{Binding Uuid}" Click="OnTimerStartPause"/>
-                        <Button Content="{x:Static l:Text.AddOneMinute}" Tag="{Binding Uuid}" Click="OnTimerAdd"/>
-                        <Button Content="{x:Static l:Text.Reset}" Tag="{Binding Uuid}" Click="OnTimerReset"/>
-                        <Button Content="{x:Static l:Text.Delete}" Tag="{Binding Uuid}" Click="OnTimerDelete"/>
+                        <Button Content="{x:Static l:Text.StartPause}" Style="{StaticResource CardButton}" Tag="{Binding Uuid}" Click="OnTimerStartPause"/>
+                        <Button Content="{x:Static l:Text.AddOneMinute}" Style="{StaticResource CardButton}" Tag="{Binding Uuid}" Click="OnTimerAdd"/>
+                        <Button Content="{x:Static l:Text.Reset}" Style="{StaticResource CardButton}" Tag="{Binding Uuid}" Click="OnTimerReset"/>
+                        <Button Content="{x:Static l:Text.Delete}" Style="{StaticResource CardButton}" Tag="{Binding Uuid}" Click="OnTimerDelete"/>
                     </StackPanel>
                 </Grid>
             </Border>
         </DataTemplate>
+
         <DataTemplate x:Key="CityCard">
-            <Border BorderBrush="#33000000" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,8" Background="#0D000000">
+            <Border Style="{StaticResource CardStyle}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="{Binding DisplayName}" FontSize="18" FontWeight="SemiBold"/>
-                    <TextBlock Grid.Column="1" Text="{Binding LocalTime}" FontSize="18" Margin="12,0"/>
-                    <Button Grid.Column="2" Content="{x:Static l:Text.Remove}" Tag="{Binding Id}" Click="OnRemoveCity"/>
+                    <TextBlock Grid.Column="0" Text="{Binding DisplayName}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{StaticResource BkOnSurface}"/>
+                    <TextBlock Grid.Column="1" Text="{Binding LocalTime}" FontSize="18" FontWeight="SemiBold" Margin="12,0" VerticalAlignment="Center" Foreground="{StaticResource BkPrimary}"/>
+                    <Button Grid.Column="2" Content="{x:Static l:Text.Remove}" Style="{StaticResource CardButton}" Tag="{Binding Id}" Click="OnRemoveCity"/>
                 </Grid>
             </Border>
         </DataTemplate>
     </Window.Resources>
 
-    <Grid Margin="8">
+    <Grid Background="{StaticResource BkBackground}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TabControl Grid.Row="1">
+        <!-- Toolbar: current tab title + settings gear (matches Android MaterialToolbar) -->
+        <Border Grid.Row="0" Background="{StaticResource BkSurface}" BorderBrush="{StaticResource BkOutline}" BorderThickness="0,0,0,1">
+            <DockPanel Margin="16,8,8,8">
+                <TextBlock x:Name="ToolbarTitle" Text="{x:Static l:Text.TabAlarms}" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource BkOnSurface}" VerticalAlignment="Center"/>
+                <Button Style="{StaticResource IconButton}" DockPanel.Dock="Right" Foreground="{StaticResource BkOnSurfaceVariant}" ToolTip="{x:Static l:Text.TabSettings}" Click="OnSettingsToggle">
+                    <Path Data="{StaticResource IconSettings}" Width="22" Height="22" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                </Button>
+            </DockPanel>
+        </Border>
+
+        <!-- Content area -->
+        <Grid Grid.Row="1">
             <!-- ALARMS -->
-            <TabItem Header="{x:Static l:Text.TabAlarms}">
-                <Grid Margin="8">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <StackPanel Grid.Row="0" Orientation="Horizontal">
-                        <TextBlock Text="{x:Static l:Text.AlarmsTitle}" Style="{StaticResource TabTitle}"/>
-                        <Button Content="{x:Static l:Text.AddAlarm}" Click="OnAddAlarm" VerticalAlignment="Center" Margin="12,0,0,0"/>
-                    </StackPanel>
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                        <ItemsControl x:Name="AlarmList" ItemTemplate="{StaticResource AlarmCard}"/>
+            <Grid x:Name="PanelAlarm">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,12,16,88">
+                    <ItemsControl x:Name="AlarmList" ItemTemplate="{StaticResource AlarmCard}"/>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- CLOCK (digital clock + world clock, mirrors Android Clock tab) -->
+            <Grid x:Name="PanelClock" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Margin="0,16,0,0" HorizontalAlignment="Center">
+                    <TextBlock x:Name="ClockText" FontSize="52" FontWeight="Bold" Foreground="{StaticResource BkPrimary}" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="ClockDateText" FontSize="14" Foreground="{StaticResource BkOnSurfaceVariant}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                </StackPanel>
+                <Grid Grid.Row="1" Margin="16,8,16,88">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="340"/>
+                    </Grid.ColumnDefinitions>
+                    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" Padding="0,8,16,0">
+                        <ItemsControl x:Name="CityList" ItemTemplate="{StaticResource CityCard}"/>
                     </ScrollViewer>
+                    <DockPanel Grid.Column="1" Margin="0,8,0,0">
+                        <TextBox x:Name="CitySearchBox" DockPanel.Dock="Top" Margin="0,0,0,8" ToolTip="{x:Static l:Text.SearchCity}" TextChanged="CitySearchBox_TextChanged"/>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ListBox x:Name="CityCatalogList" SelectionMode="Multiple" SelectionChanged="CityCatalogList_SelectionChanged"/>
+                        </ScrollViewer>
+                    </DockPanel>
                 </Grid>
-            </TabItem>
+            </Grid>
 
             <!-- TIMER -->
-            <TabItem Header="{x:Static l:Text.TabTimer}">
-                <Grid Margin="8">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <StackPanel Grid.Row="0" Orientation="Horizontal">
-                        <TextBlock Text="{x:Static l:Text.TimerTitle}" Style="{StaticResource TabTitle}"/>
+            <Grid x:Name="PanelTimer" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Border Grid.Row="0" Style="{StaticResource CardStyle}" Margin="16,12,16,12">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox x:Name="TimerMinutesBox" Width="60" Text="0" ToolTip="{x:Static l:Text.Minutes}" VerticalContentAlignment="Center"/>
+                        <TextBlock Text=":" VerticalAlignment="Center" FontSize="20" Margin="4,0"/>
+                        <TextBox x:Name="TimerSecondsBox" Width="60" Text="0" ToolTip="{x:Static l:Text.Seconds}" VerticalContentAlignment="Center"/>
+                        <TextBox x:Name="TimerLabelBox" Width="180" Margin="12,0,0,0" ToolTip="{x:Static l:Text.LabelOptional}" VerticalContentAlignment="Center"/>
+                        <Button Content="{x:Static l:Text.StartTimer}" Style="{StaticResource FilledButton}" Click="OnStartTimer" VerticalAlignment="Center" Margin="12,0,0,0"/>
                     </StackPanel>
-                    <Border Grid.Row="1" BorderBrush="#33000000" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,10" Background="#0D000000">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBox x:Name="TimerMinutesBox" Width="60" Text="0" ToolTip="{x:Static l:Text.Minutes}"/>
-                            <TextBlock Text=":" VerticalAlignment="Center" FontSize="20"/>
-                            <TextBox x:Name="TimerSecondsBox" Width="60" Text="0" ToolTip="{x:Static l:Text.Seconds}"/>
-                            <TextBox x:Name="TimerLabelBox" Width="180" Margin="12,0,0,0" ToolTip="{x:Static l:Text.LabelOptional}"/>
-                            <Button Content="{x:Static l:Text.StartTimer}" Click="OnStartTimer" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Border>
-                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-                        <ItemsControl x:Name="TimerList" ItemTemplate="{StaticResource TimerCard}"/>
-                    </ScrollViewer>
-                </Grid>
-            </TabItem>
+                </Border>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="16,0,16,88">
+                    <ItemsControl x:Name="TimerList" ItemTemplate="{StaticResource TimerCard}"/>
+                </ScrollViewer>
+            </Grid>
 
             <!-- STOPWATCH -->
-            <TabItem Header="{x:Static l:Text.TabStopwatch}">
-                <Grid Margin="8">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Text="{x:Static l:Text.StopwatchTitle}" Style="{StaticResource TabTitle}"/>
-                    <TextBlock Grid.Row="1" x:Name="StopwatchText" Text="00:00:00.00" FontSize="64" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,20"/>
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
-                        <Button x:Name="StopwatchStartPauseBtn" Content="{x:Static l:Text.Start}" Click="OnStopwatchStartPause" FontSize="16" Padding="20,10"/>
-                        <Button Content="{x:Static l:Text.Lap}" Click="OnStopwatchLap" FontSize="16" Padding="20,10"/>
-                        <Button Content="{x:Static l:Text.Reset}" Click="OnStopwatchReset" FontSize="16" Padding="20,10"/>
-                    </StackPanel>
-                    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="0,16,0,0">
-                        <ItemsControl x:Name="LapList">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
+            <Grid x:Name="PanelStopwatch" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" x:Name="StopwatchText" Text="00:00:00.00" FontSize="56" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,24" Foreground="{StaticResource BkOnSurface}"/>
+                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button x:Name="StopwatchStartPauseBtn" Content="{x:Static l:Text.Start}" Style="{StaticResource FilledButton}" Click="OnStopwatchStartPause" FontSize="15" Padding="24,10"/>
+                    <Button Content="{x:Static l:Text.Lap}" Style="{StaticResource OutlinedButton}" Click="OnStopwatchLap" FontSize="15" Padding="24,10" Margin="12,0"/>
+                    <Button Content="{x:Static l:Text.Reset}" Style="{StaticResource OutlinedButton}" Click="OnStopwatchReset" FontSize="15" Padding="24,10"/>
+                </StackPanel>
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="16,16,16,16">
+                    <ItemsControl x:Name="LapList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{StaticResource BkSurface}" BorderBrush="#14000000" BorderThickness="1" CornerRadius="10" Padding="12,8" Margin="0,0,0,6">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="{Binding LapLabel}" FontSize="16"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding LapTime}" FontSize="16"/>
+                                        <TextBlock Grid.Column="0" Text="{Binding LapLabel}" FontSize="15" Foreground="{StaticResource BkOnSurface}"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding LapTime}" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource BkPrimary}"/>
                                     </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
-                </Grid>
-            </TabItem>
-
-            <!-- WORLD CLOCK -->
-            <TabItem Header="{x:Static l:Text.TabWorldClock}">
-                <Grid Margin="8">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <StackPanel Grid.Row="0" Orientation="Horizontal">
-                        <TextBlock Text="{x:Static l:Text.WorldClockTitle}" Style="{StaticResource TabTitle}"/>
-                        <Button Content="{x:Static l:Text.AddCity}" Click="OnAddCity" VerticalAlignment="Center" Margin="12,0,0,0"/>
-                    </StackPanel>
-                    <Grid Grid.Row="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="340"/>
-                        </Grid.ColumnDefinitions>
-                        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
-                            <ItemsControl x:Name="CityList" ItemTemplate="{StaticResource CityCard}"/>
-                        </ScrollViewer>
-                        <DockPanel Grid.Column="1" Margin="16,0,0,0">
-                            <TextBox x:Name="CitySearchBox" DockPanel.Dock="Top" Margin="0,0,0,8" ToolTip="{x:Static l:Text.SearchCity}" TextChanged="CitySearchBox_TextChanged"/>
-                            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                <ListBox x:Name="CityCatalogList" SelectionMode="Multiple" SelectionChanged="CityCatalogList_SelectionChanged"/>
-                            </ScrollViewer>
-                        </DockPanel>
-                    </Grid>
-                </Grid>
-            </TabItem>
-
-            <!-- SETTINGS -->
-            <TabItem Header="{x:Static l:Text.TabSettings}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="8">
-                    <StackPanel MaxWidth="620" HorizontalAlignment="Left">
-                        <TextBlock Text="{x:Static l:Text.SettingsTitle}" Style="{StaticResource TabTitle}"/>
-                        <CheckBox x:Name="Is24HourBox" Content="{x:Static l:Text.Use24Hour}" Checked="OnSettingChanged" Unchecked="OnSettingChanged"/>
-                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                            <TextBlock Text="{x:Static l:Text.WeekStartsOn}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <ComboBox x:Name="WeekStartBox" SelectionChanged="OnSettingChanged" Width="120" DisplayMemberPath="Display"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                            <TextBlock Text="{x:Static l:Text.Theme}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <ComboBox x:Name="ThemeBox" SelectionChanged="OnSettingChanged" Width="120">
-                                <ComboBoxItem Content="{x:Static l:Text.ThemeSystem}"/>
-                                <ComboBoxItem Content="{x:Static l:Text.ThemeLight}"/>
-                                <ComboBoxItem Content="{x:Static l:Text.ThemeDark}"/>
-                            </ComboBox>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                            <TextBlock Text="{x:Static l:Text.AlarmSnoozeMin}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <TextBox x:Name="AlarmSnoozeBox" Width="60" LostFocus="OnSettingChanged" TextChanged="OnSettingChanged"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                            <TextBlock Text="{x:Static l:Text.AlarmAutoSilenceSec}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <TextBox x:Name="AlarmAutoSilenceBox" Width="60" LostFocus="OnSettingChanged" TextChanged="OnSettingChanged"/>
-                        </StackPanel>
-                        <Separator Margin="0,16"/>
-                        <TextBlock Text="{x:Static l:Text.TimerDefaults}" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,8"/>
-                        <CheckBox x:Name="TimerVibrateBox" Content="{x:Static l:Text.VibrateWhenTimerExpires}" Checked="OnSettingChanged" Unchecked="OnSettingChanged"/>
-                        <CheckBox x:Name="TimerFlashBox" Content="{x:Static l:Text.FlashOnExpiry}" Checked="OnSettingChanged" Unchecked="OnSettingChanged"/>
-                        <CheckBox x:Name="TimerAutoSilenceBox" Content="{x:Static l:Text.AutoSilenceAfter10Min}" Checked="OnSettingChanged" Unchecked="OnSettingChanged"/>
-                        <Separator Margin="0,16"/>
-                        <TextBlock Text="{x:Static l:Text.Data}" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,8"/>
-                        <Button Content="{x:Static l:Text.SaveNow}" Click="OnSaveNow"/>
-                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </ScrollViewer>
-            </TabItem>
+            </Grid>
 
-            <!-- SYNC -->
-            <TabItem Header="{x:Static l:Text.TabSync}">
-                <Grid Margin="8">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Text="{x:Static l:Text.LanSyncTitle}" Style="{StaticResource TabTitle}"/>
-                    <StackPanel Grid.Row="1" Margin="0,0,0,8">
-                        <CheckBox x:Name="SyncEnabledBox" Content="{x:Static l:Text.EnableLanSync}" Checked="OnSettingChanged" Unchecked="OnSettingChanged"/>
-                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                            <TextBlock Text="{x:Static l:Text.DeviceName}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <TextBox x:Name="SyncNameBox" Width="180" LostFocus="OnSettingChanged" TextChanged="OnSettingChanged"/>
-                            <TextBlock Text="{x:Static l:Text.Port}" VerticalAlignment="Center" Margin="12,0,8,0"/>
-                            <TextBox x:Name="SyncPortBox" Width="60" LostFocus="OnSettingChanged" TextChanged="OnSettingChanged"/>
-                            <Button Content="{x:Static l:Text.SyncNow}" Click="OnSyncNow" Margin="16,0,0,0"/>
-                        </StackPanel>
+            <!-- Floating action button (contextual; hidden on the stopwatch tab) -->
+            <Button x:Name="FabButton" Style="{StaticResource FabStyle}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,20" Click="OnFabClick" ToolTip="{x:Static l:Text.AddAlarm}">
+                <Path Data="{StaticResource IconAdd}" Width="24" Height="24" Stretch="Uniform" Fill="White"/>
+            </Button>
+        </Grid>
+
+        <!-- Bottom navigation (matches Android BottomNavigationView) -->
+        <Border Grid.Row="2" Background="{StaticResource BkSurface}" BorderBrush="{StaticResource BkOutline}" BorderThickness="0,1,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <RadioButton Grid.Column="0" Style="{StaticResource BottomNavItem}" Tag="alarm" Checked="OnNavChanged" IsChecked="True">
+                    <StackPanel>
+                        <Path Data="{StaticResource IconAlarm}" Width="22" Height="22" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+                        <TextBlock Text="{x:Static l:Text.TabAlarms}" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
                     </StackPanel>
-                    <TextBlock Grid.Row="2" x:Name="SyncStatusText" Foreground="#666666" Margin="0,4,0,8" TextWrapping="Wrap"/>
-                    <TextBlock Grid.Row="3" Text="{x:Static l:Text.DiscoveredDevices}" FontWeight="SemiBold" Margin="0,8,0,4"/>
-                    <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto">
-                        <ItemsControl x:Name="PeerList">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border BorderBrush="#33000000" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,0,0,6" Background="#0D000000">
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding DeviceName}" FontWeight="SemiBold"/>
-                                            <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="#77000000"/>
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                </RadioButton>
+                <RadioButton Grid.Column="1" Style="{StaticResource BottomNavItem}" Tag="clock" Checked="OnNavChanged">
+                    <StackPanel>
+                        <Path Data="{StaticResource IconClock}" Width="22" Height="22" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+                        <TextBlock Text="{x:Static l:Text.TabClock}" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+                    </StackPanel>
+                </RadioButton>
+                <RadioButton Grid.Column="2" Style="{StaticResource BottomNavItem}" Tag="timer" Checked="OnNavChanged">
+                    <StackPanel>
+                        <Path Data="{StaticResource IconTimer}" Width="22" Height="22" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+                        <TextBlock Text="{x:Static l:Text.TabTimer}" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+                    </StackPanel>
+                </RadioButton>
+                <RadioButton Grid.Column="3" Style="{StaticResource BottomNavItem}" Tag="stopwatch" Checked="OnNavChanged">
+                    <StackPanel>
+                        <Path Data="{StaticResource IconStopwatch}" Width="22" Height="22" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+                        <TextBlock Text="{x:Static l:Text.TabStopwatch}" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+                    </StackPanel>
+                </RadioButton>
+            </Grid>
+        </Border>
+
+        <!-- Settings + LAN sync overlay (mirrors Android SettingsActivity, opened from the gear) -->
+        <Grid x:Name="SettingsOverlay" Grid.RowSpan="3" Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="560"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Style="{StaticResource DimLayer}" Click="OnSettingsClose"/>
+            <Border Grid.Column="1" Background="{StaticResource BkSurface}" BorderBrush="{StaticResource BkOutline}" BorderThickness="1,0,0,0">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="{StaticResource BkPrimary}" Padding="16,10">
+                        <DockPanel>
+                            <TextBlock Text="{x:Static l:Text.SettingsTitle}" Foreground="White" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Foreground="White" ToolTip="{x:Static l:Text.Dismiss}" Click="OnSettingsClose">
+                                <TextBlock Text="✕" FontSize="16"/>
+                            </Button>
+                        </DockPanel>
+                    </Border>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,16">
+                        <StackPanel MaxWidth="620" HorizontalAlignment="Left">
+                            <CheckBox x:Name="Is24HourBox" Content="{x:Static l:Text.Use24Hour}" Checked="OnSettingChanged" Unchecked="OnSettingChanged"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <TextBlock Text="{x:Static l:Text.WeekStartsOn}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <ComboBox x:Name="WeekStartBox" SelectionChanged="OnSettingChanged" Width="120" DisplayMemberPath="Display"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <TextBlock Text="{x:Static l:Text.Theme}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <ComboBox x:Name="ThemeBox" SelectionChanged="OnSettingChanged" Width="120">
+                                    <ComboBoxItem Content="{x:Static l:Text.ThemeSystem}"/>
+                                    <ComboBoxItem Content="{x:Static l:Text.ThemeLight}"/>
+                                    <ComboBoxItem Content="{x:Static l:Text.ThemeDark}"/>
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <TextBlock Text="{x:Static l:Text.AlarmSnoozeMin}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBox x:Name="AlarmSnoozeBox" Width="60" LostFocus="OnSettingChanged" TextChanged="OnSettingChanged"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <TextBlock Text="{x:Static l:Text.AlarmAutoSilenceSec}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBox x:Name="AlarmAutoSilenceBox" Width="60" LostFocus="OnSettingChanged" TextChanged="OnSettingChanged"/>
+                            </StackPanel>
+                            <Separator Margin="0,16"/>
+                            <TextBlock Text="{x:Static l:Text.TimerDefaults}" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,8"/>
+                            <CheckBox x:Name="TimerVibrateBox" Content="{x:Static l:Text.VibrateWhenTimerExpires}" Checked="OnSettingChanged" Unchecked="OnSettingChanged"/>
+                            <CheckBox x:Name="TimerFlashBox" Content="{x:Static l:Text.FlashOnExpiry}" Checked="OnSettingChanged" Unchecked="OnSettingChanged"/>
+                            <CheckBox x:Name="TimerAutoSilenceBox" Content="{x:Static l:Text.AutoSilenceAfter10Min}" Checked="OnSettingChanged" Unchecked="OnSettingChanged"/>
+                            <Separator Margin="0,16"/>
+                            <TextBlock Text="{x:Static l:Text.TabSync}" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,8"/>
+                            <CheckBox x:Name="SyncEnabledBox" Content="{x:Static l:Text.EnableLanSync}" Checked="OnSettingChanged" Unchecked="OnSettingChanged"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <TextBlock Text="{x:Static l:Text.DeviceName}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBox x:Name="SyncNameBox" Width="180" LostFocus="OnSettingChanged" TextChanged="OnSettingChanged"/>
+                                <TextBlock Text="{x:Static l:Text.Port}" VerticalAlignment="Center" Margin="12,0,8,0"/>
+                                <TextBox x:Name="SyncPortBox" Width="60" LostFocus="OnSettingChanged" TextChanged="OnSettingChanged"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <Button Content="{x:Static l:Text.SyncNow}" Style="{StaticResource FilledButton}" Click="OnSyncNow"/>
+                            </StackPanel>
+                            <TextBlock x:Name="SyncStatusText" Foreground="{StaticResource BkOnSurfaceVariant}" Margin="0,8,0,8" TextWrapping="Wrap"/>
+                            <TextBlock Text="{x:Static l:Text.DiscoveredDevices}" FontWeight="SemiBold" Margin="0,8,0,4"/>
+                            <ItemsControl x:Name="PeerList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{StaticResource BkSurface}" BorderBrush="#14000000" BorderThickness="1" CornerRadius="10" Padding="10" Margin="0,0,0,6">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding DeviceName}" FontWeight="SemiBold" Foreground="{StaticResource BkOnSurface}"/>
+                                                <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{StaticResource BkOnSurfaceVariant}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Separator Margin="0,16"/>
+                            <TextBlock Text="{x:Static l:Text.Data}" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,8"/>
+                            <Button Content="{x:Static l:Text.SaveNow}" Style="{StaticResource OutlinedButton}" Click="OnSaveNow" HorizontalAlignment="Left"/>
+                        </StackPanel>
                     </ScrollViewer>
-                </Grid>
-            </TabItem>
-        </TabControl>
+                </DockPanel>
+            </Border>
+        </Grid>
     </Grid>
 </Window>

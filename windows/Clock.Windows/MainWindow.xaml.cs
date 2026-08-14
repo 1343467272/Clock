@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -73,6 +74,7 @@ public partial class MainWindow : Window
         RefreshStopwatch();
         RefreshCityUi();
         RefreshPeers();
+        UpdateClockText();
 
         _state.Changed += () =>
         {
@@ -88,6 +90,7 @@ public partial class MainWindow : Window
             UpdateStopwatchText();
             RefreshTimerList();
             UpdateCityTimes();
+            UpdateClockText();
         };
 
         if (_state.Settings.SyncEnabled)
@@ -167,6 +170,72 @@ public partial class MainWindow : Window
 
     private void DismissAlarm(AlarmModel alarm) => _alarmService?.AlertClosed(alarm, snoozed: false);
     private void SnoozeAlarm(AlarmModel alarm) => _alarmService?.AlertClosed(alarm, snoozed: true);
+
+    // ---------- Navigation & layout ----------
+
+    private void OnNavChanged(object sender, RoutedEventArgs e)
+    {
+        if (sender is not RadioButton rb || rb.IsChecked != true) return;
+        var tab = rb.Tag as string;
+
+        PanelAlarm.Visibility = tab == "alarm" ? Visibility.Visible : Visibility.Collapsed;
+        PanelClock.Visibility = tab == "clock" ? Visibility.Visible : Visibility.Collapsed;
+        PanelTimer.Visibility = tab == "timer" ? Visibility.Visible : Visibility.Collapsed;
+        PanelStopwatch.Visibility = tab == "stopwatch" ? Visibility.Visible : Visibility.Collapsed;
+
+        ToolbarTitle.Text = tab switch
+        {
+            "clock" => Text.TabClock,
+            "timer" => Text.TabTimer,
+            "stopwatch" => Text.TabStopwatch,
+            _ => Text.TabAlarms,
+        };
+
+        FabButton.Visibility = tab == "stopwatch" ? Visibility.Collapsed : Visibility.Visible;
+        FabButton.ToolTip = tab switch
+        {
+            "clock" => Text.AddCity,
+            "timer" => Text.Minutes,
+            _ => Text.AddAlarm,
+        };
+    }
+
+    private string GetSelectedTab()
+    {
+        if (PanelClock.Visibility == Visibility.Visible) return "clock";
+        if (PanelTimer.Visibility == Visibility.Visible) return "timer";
+        if (PanelStopwatch.Visibility == Visibility.Visible) return "stopwatch";
+        return "alarm";
+    }
+
+    private void OnFabClick(object sender, RoutedEventArgs e)
+    {
+        switch (GetSelectedTab())
+        {
+            case "clock":
+                CitySearchBox.Focus();
+                break;
+            case "timer":
+                TimerMinutesBox.Focus();
+                break;
+            default:
+                OnAddAlarm(sender, e);
+                break;
+        }
+    }
+
+    private void OnSettingsToggle(object sender, RoutedEventArgs e) => SettingsOverlay.Visibility = Visibility.Visible;
+    private void OnSettingsClose(object sender, RoutedEventArgs e) => SettingsOverlay.Visibility = Visibility.Collapsed;
+
+    private void UpdateClockText()
+    {
+        var now = DateTime.Now;
+        var culture = CultureInfo.GetCultureInfo("zh-CN");
+        ClockText.Text = _state.Settings.Is24Hour
+            ? now.ToString("HH:mm:ss", culture)
+            : now.ToString("h:mm:ss tt", culture);
+        ClockDateText.Text = now.ToString("yyyy年M月d日 dddd", culture);
+    }
 
     // ---------- Timers ----------
 
