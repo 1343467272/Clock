@@ -40,3 +40,7 @@ app/nightly
 windows/**/bin/
 windows/**/obj/
 .vs/
+
+# Local publish / release output
+publish/
+release/
