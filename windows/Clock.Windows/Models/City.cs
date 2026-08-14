@@ -11,6 +11,12 @@ public class City
     public string Tz { get; set; } = "";
 
     [JsonIgnore]
+    public string LocalName { get; set; } = "";
+
+    [JsonIgnore]
+    public string DisplayName => string.IsNullOrEmpty(LocalName) ? Name : LocalName;
+
+    [JsonIgnore]
     public TimeZoneInfo? Zone { get; set; }
 
     public DateTimeOffset GetNow() => TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, Zone ?? TimeZoneInfo.Local);
@@ -22,6 +28,7 @@ public class City
 public static class CityCatalog
 {
     private static List<City>? _all;
+    private static Dictionary<string, string>? _localNames;
 
     public static IReadOnlyList<City> All
     {
@@ -47,8 +54,10 @@ public static class CityCatalog
                 }
             }
 
+            var localNames = LoadLocalNames();
             foreach (var c in list)
             {
+                if (localNames.TryGetValue(c.Id, out var local)) c.LocalName = local;
                 try { c.Zone = TimeZoneInfo.FindSystemTimeZoneById(c.Tz); }
                 catch (TimeZoneNotFoundException) { c.Zone = null; }
             }
@@ -56,6 +65,32 @@ public static class CityCatalog
             _all = list;
             return _all;
         }
+    }
+
+    /// <summary>Loads the Chinese display-name map (id → Chinese name), if present.</summary>
+    private static Dictionary<string, string> LoadLocalNames()
+    {
+        if (_localNames != null) return _localNames;
+
+        var map = new Dictionary<string, string>();
+        var baseDir = AppContext.BaseDirectory;
+        var path = Path.Combine(baseDir, "Data", "cities.zh-CN.json");
+        if (!File.Exists(path)) path = Path.Combine(baseDir, "cities.zh-CN.json");
+        if (File.Exists(path))
+        {
+            try
+            {
+                var parsed = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(path));
+                if (parsed != null) map = parsed;
+            }
+            catch
+            {
+                // No local names; fall back to English display names.
+            }
+        }
+
+        _localNames = map;
+        return _localNames;
     }
 
     public static City? ById(string id) => All.FirstOrDefault(c => c.Id == id);

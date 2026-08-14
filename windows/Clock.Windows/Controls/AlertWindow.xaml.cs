@@ -1,6 +1,7 @@
 using System.Media;
 using System.Windows;
 using System.Windows.Threading;
+using Clock.Windows.Localization;
 
 namespace Clock.Windows.Controls;
 
@@ -23,7 +24,7 @@ public partial class AlertWindow : Window
     public static AlertWindow ShowAlarm(string label, string timeText, Action onDismiss, Action onSnooze)
     {
         var w = new AlertWindow();
-        w.TitleText.Text = "Alarm";
+        w.TitleText.Text = Text.AlertAlarmTitle;
         w.MessageText.Text = string.IsNullOrWhiteSpace(label) ? timeText : $"{label}\n{timeText}";
         w.SnoozeButton.Visibility = Visibility.Visible;
         w._onDismiss = onDismiss;
@@ -39,8 +40,8 @@ public partial class AlertWindow : Window
     public static AlertWindow ShowTimer(string label, Action onDismiss)
     {
         var w = new AlertWindow();
-        w.TitleText.Text = "Timer";
-        w.MessageText.Text = string.IsNullOrWhiteSpace(label) ? "Time's up!" : $"{label}\nTime's up!";
+        w.TitleText.Text = Text.AlertTimerTitle;
+        w.MessageText.Text = string.IsNullOrWhiteSpace(label) ? Text.TimesUp : $"{label}\n{Text.TimesUp}";
         w.SnoozeButton.Visibility = Visibility.Collapsed;
         w._onDismiss = onDismiss;
         w.Closed += (_, _) => w._soundTimer?.Stop();

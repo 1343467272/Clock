@@ -656,4 +656,25 @@
     <string name="display_timer_end_time_title">显示定时器结束时间</string>
     <string name="timer_missed_channel">错过的定时器</string>
     <string name="settings_language_hebrew">希伯来语</string>
+
+    <!-- LAN sync -->
+    <string name="lan_sync_settings">局域网同步</string>
+    <string name="lan_sync_settings_summary">与同一网络上的其他设备同步闹钟、定时器、秒表、世界时钟城市和设置</string>
+    <string name="lan_sync_title">局域网同步</string>
+    <string name="lan_sync_general_category_title">常规</string>
+    <string name="lan_sync_enabled">与其他设备同步</string>
+    <string name="lan_sync_enabled_summary_on">此设备将在本地网络上广播自身并与其他检测到的设备交换数据</string>
+    <string name="lan_sync_enabled_summary_off">开启后即可与同一网络上的其他设备同步此设备</string>
+    <string name="lan_sync_device_name">设备名称</string>
+    <string name="lan_sync_device_name_dialog_title">设备名称</string>
+    <string name="lan_sync_port">同步端口</string>
+    <string name="lan_sync_port_dialog_title">同步端口</string>
+    <string name="lan_sync_port_invalid">请输入介于 1024 和 65535 之间的有效端口</string>
+    <string name="lan_sync_peers_category_title">检测到的设备</string>
+    <string name="lan_sync_peers">此网络上的设备</string>
+    <string name="lan_sync_peers_empty_summary">尚未检测到设备</string>
+    <string name="lan_sync_peers_count">此网络上有 %1$d 台设备</string>
+    <string name="lan_sync_now_toast">同步已开始</string>
+    <string name="lan_sync_now">立即同步</string>
+    <string name="lan_sync_now_summary">立即与所有检测到的设备交换数据</string>
 </resources>

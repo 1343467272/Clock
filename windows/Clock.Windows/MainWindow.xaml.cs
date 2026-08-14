@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using Clock.Windows.Controls;
 using Clock.Windows.Data;
+using Clock.Windows.Localization;
 using Clock.Windows.Models;
 using Clock.Windows.Services;
 using Clock.Windows.Sync;
@@ -21,6 +22,12 @@ public partial class MainWindow : Window
     {
         public string LapLabel { get; set; } = "";
         public string LapTime { get; set; } = "";
+    }
+
+    private sealed class WeekStartItem
+    {
+        public string Value { get; init; } = "";
+        public string Display { get; init; } = "";
     }
 
     public MainWindow()
@@ -239,7 +246,7 @@ public partial class MainWindow : Window
     {
         var elapsed = TimeSpan.FromMilliseconds(_state.Stopwatch.GetElapsed());
         StopwatchText.Text = $"{(int)elapsed.TotalHours:00}:{elapsed.Minutes:00}:{elapsed.Seconds:00}.{elapsed.Milliseconds / 10:00}";
-        StopwatchStartPauseBtn.Content = _state.Stopwatch.State == StopwatchState.RUNNING ? "Pause" : "Start";
+        StopwatchStartPauseBtn.Content = _state.Stopwatch.State == StopwatchState.RUNNING ? Text.Pause : Text.Start;
         RefreshLapList();
     }
 
@@ -250,7 +257,7 @@ public partial class MainWindow : Window
             .Select(l =>
             {
                 var ts = TimeSpan.FromMilliseconds(l.AccumulatedTime);
-                return new LapView { LapLabel = $"Lap {l.Number}", LapTime = $"{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds / 10:00}" };
+                return new LapView { LapLabel = string.Format(Text.LapFormat, l.Number), LapTime = $"{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds / 10:00}" };
             })
             .ToList();
         LapList.ItemsSource = laps;
@@ -286,7 +293,7 @@ public partial class MainWindow : Window
         var search = CitySearchBox.Text.Trim().ToLowerInvariant();
         var shown = string.IsNullOrEmpty(search)
             ? CityCatalog.All
-            : CityCatalog.All.Where(c => c.Name.ToLowerInvariant().Contains(search) || c.Tz.Contains(search)).ToList();
+            : CityCatalog.All.Where(c => c.Name.ToLowerInvariant().Contains(search) || c.DisplayName.ToLowerInvariant().Contains(search) || c.Tz.Contains(search)).ToList();
         CityCatalogList.ItemsSource = shown;
         CityCatalogList.SelectedItems.Clear();
     }
@@ -304,7 +311,7 @@ public partial class MainWindow : Window
         var search = CitySearchBox.Text.Trim().ToLowerInvariant();
         var shown = string.IsNullOrEmpty(search)
             ? CityCatalog.All
-            : CityCatalog.All.Where(c => c.Name.ToLowerInvariant().Contains(search) || c.Tz.Contains(search)).ToList();
+            : CityCatalog.All.Where(c => c.Name.ToLowerInvariant().Contains(search) || c.DisplayName.ToLowerInvariant().Contains(search) || c.Tz.Contains(search)).ToList();
         CityCatalogList.ItemsSource = shown;
     }
 
@@ -337,8 +344,14 @@ public partial class MainWindow : Window
     {
         _loading = true;
         Is24HourBox.IsChecked = _state.Settings.Is24Hour;
-        WeekStartBox.ItemsSource = new[] { "sunday", "monday", "saturday" };
-        WeekStartBox.SelectedItem = _state.Settings.WeekStart;
+        var weekStarts = new[]
+        {
+            new WeekStartItem { Value = "sunday", Display = Text.WeekStartSunday },
+            new WeekStartItem { Value = "monday", Display = Text.WeekStartMonday },
+            new WeekStartItem { Value = "saturday", Display = Text.WeekStartSaturday },
+        };
+        WeekStartBox.ItemsSource = weekStarts;
+        WeekStartBox.SelectedItem = weekStarts.FirstOrDefault(w => w.Value == _state.Settings.WeekStart);
         ThemeBox.SelectedIndex = _state.Settings.Theme switch
         {
             "light" => 1,
@@ -365,10 +378,10 @@ public partial class MainWindow : Window
             SyncMerge.RecordSetting(_state, "is24Hour", System.Text.Json.JsonSerializer.SerializeToElement(_state.Settings.Is24Hour));
         }
 
-        if (sender == WeekStartBox && WeekStartBox.SelectedItem is string ws)
+        if (sender == WeekStartBox && WeekStartBox.SelectedItem is WeekStartItem ws)
         {
-            _state.Settings.WeekStart = ws;
-            SyncMerge.RecordSetting(_state, "weekStart", System.Text.Json.JsonSerializer.SerializeToElement(ws));
+            _state.Settings.WeekStart = ws.Value;
+            SyncMerge.RecordSetting(_state, "weekStart", System.Text.Json.JsonSerializer.SerializeToElement(ws.Value));
         }
 
         if (sender == ThemeBox)
@@ -465,11 +478,11 @@ public partial class MainWindow : Window
         var peer = _state.Peers.OrderByDescending(p => p.LastSeen).FirstOrDefault();
         if (peer == null)
         {
-            SyncStatusText.Text = "No devices discovered. Make sure the phone and this PC are on the same network.";
+            SyncStatusText.Text = Text.NoDevicesDiscovered;
             return;
         }
 
-        SyncStatusText.Text = $"Syncing with {peer.DeviceName}...";
+        SyncStatusText.Text = string.Format(Text.SyncingWith, peer.DeviceName);
         _syncEngine?.PeerDiscovered(peer);
     }
 
@@ -480,7 +493,7 @@ public partial class MainWindow : Window
             .Select(p => new
             {
                 p.DeviceName,
-                Detail = $"{p.Address}:{p.Port} · last seen {p.LastSeen.ToLocalTime():HH:mm:ss}",
+                Detail = $"{p.Address}:{p.Port}{string.Format(Text.LastSeen, p.LastSeen.ToLocalTime().ToString("HH:mm:ss"))}",
             })
             .ToList();
         PeerList.ItemsSource = items;

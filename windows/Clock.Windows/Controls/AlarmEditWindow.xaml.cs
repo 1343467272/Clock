@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows;
+using Clock.Windows.Localization;
 using Clock.Windows.Models;
 
 namespace Clock.Windows.Controls;
@@ -26,13 +27,13 @@ public partial class AlarmEditWindow : Window
         HourBox.SelectedIndex = existing?.Hour ?? 7;
         MinuteBox.SelectedIndex = existing?.Minute ?? 0;
 
-        _days.Add(new DayToggle { Label = "Monday", Day = DayOfWeek.Monday });
-        _days.Add(new DayToggle { Label = "Tuesday", Day = DayOfWeek.Tuesday });
-        _days.Add(new DayToggle { Label = "Wednesday", Day = DayOfWeek.Wednesday });
-        _days.Add(new DayToggle { Label = "Thursday", Day = DayOfWeek.Thursday });
-        _days.Add(new DayToggle { Label = "Friday", Day = DayOfWeek.Friday });
-        _days.Add(new DayToggle { Label = "Saturday", Day = DayOfWeek.Saturday });
-        _days.Add(new DayToggle { Label = "Sunday", Day = DayOfWeek.Sunday });
+        _days.Add(new DayToggle { Label = Text.FullDayName(DayOfWeek.Monday), Day = DayOfWeek.Monday });
+        _days.Add(new DayToggle { Label = Text.FullDayName(DayOfWeek.Tuesday), Day = DayOfWeek.Tuesday });
+        _days.Add(new DayToggle { Label = Text.FullDayName(DayOfWeek.Wednesday), Day = DayOfWeek.Wednesday });
+        _days.Add(new DayToggle { Label = Text.FullDayName(DayOfWeek.Thursday), Day = DayOfWeek.Thursday });
+        _days.Add(new DayToggle { Label = Text.FullDayName(DayOfWeek.Friday), Day = DayOfWeek.Friday });
+        _days.Add(new DayToggle { Label = Text.FullDayName(DayOfWeek.Saturday), Day = DayOfWeek.Saturday });
+        _days.Add(new DayToggle { Label = Text.FullDayName(DayOfWeek.Sunday), Day = DayOfWeek.Sunday });
         if (existing != null)
         {
             foreach (var d in _days) d.IsOn = existing.GetRepeatDays().Contains(d.Day);

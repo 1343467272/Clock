@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Text.Json.Serialization;
+using Clock.Windows.Localization;
 
 namespace Clock.Windows.Models;
 
@@ -136,32 +138,27 @@ public class AlarmModel
         get
         {
             if (!IsRepeating) return "";
-            if (DaysOfWeek == 0x7F) return "Every day";
+            if (DaysOfWeek == 0x7F) return Text.EveryDay;
             var order = new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday };
-            var names = new Dictionary<DayOfWeek, string>
-            {
-                [DayOfWeek.Monday] = "Mon", [DayOfWeek.Tuesday] = "Tue", [DayOfWeek.Wednesday] = "Wed",
-                [DayOfWeek.Thursday] = "Thu", [DayOfWeek.Friday] = "Fri", [DayOfWeek.Saturday] = "Sat",
-                [DayOfWeek.Sunday] = "Sun",
-            };
-            return string.Join(" ", order.Where(GetRepeatDays().Contains).Select(d => names[d]));
+            return string.Join(" ", order.Where(GetRepeatDays().Contains).Select(Text.ShortDayName));
         }
     }
 
     [JsonIgnore]
-    public string LabelText => string.IsNullOrWhiteSpace(Label) ? "Alarm" : Label;
+    public string LabelText => string.IsNullOrWhiteSpace(Label) ? Text.DefaultAlarmLabel : Label;
 
     [JsonIgnore]
-    public string EnabledText => Enabled ? "On" : "Off";
+    public string EnabledText => Enabled ? Text.EnabledOn : Text.EnabledOff;
 
     [JsonIgnore]
     public string NextFireText
     {
         get
         {
-            if (!Enabled) return "Off";
+            if (!Enabled) return Text.EnabledOff;
             var next = GetNextFireTime(DateTime.Now);
-            return "Next: " + next.ToString("ddd, MMM d, yyyy 'at' h:mm tt");
+            var formatted = next.ToString("M月d日 dddd HH:mm", CultureInfo.GetCultureInfo("zh-CN"));
+            return Text.NextPrefix + formatted;
         }
     }
 }

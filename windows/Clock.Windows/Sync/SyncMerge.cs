@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Clock.Windows.Data;
+using Clock.Windows.Localization;
 using Clock.Windows.Models;
 
 namespace Clock.Windows.Sync;
@@ -134,7 +135,7 @@ public static class SyncMerge
         if (changed)
         {
             state.LastSync = DateTime.UtcNow;
-            state.LastSyncSummary = $"Synced with {remote.DeviceName} at {DateTime.Now:HH:mm:ss}";
+            state.LastSyncSummary = string.Format(Text.SyncedWith, remote.DeviceName, DateTime.Now.ToString("HH:mm:ss"));
             state.NotifyChanged();
         }
 

@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <None Include="Data\cities.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Data\cities.zh-CN.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

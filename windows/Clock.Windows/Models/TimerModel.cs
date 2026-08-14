@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Clock.Windows.Localization;
 
 namespace Clock.Windows.Models;
 
@@ -122,8 +123,8 @@ public class TimerModel
     }
 
     [JsonIgnore]
-    public string LabelText => string.IsNullOrWhiteSpace(Label) ? "Timer" : Label;
+    public string LabelText => string.IsNullOrWhiteSpace(Label) ? Text.DefaultTimerLabel : Label;
 
     [JsonIgnore]
-    public string MetaText => $"{State} · {GetTotalDisplay()}";
+    public string MetaText => $"{Text.TimerStateName(State)} · {GetTotalDisplay()}";
 }

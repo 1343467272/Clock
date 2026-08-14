@@ -211,4 +211,25 @@
     <string name="pick_alarm_to_dismiss" msgid="5408769235866082896">"選擇要關閉的鬧鐘"</string>
     <string name="no_firing_alarms" msgid="4986161963178722289">"現時沒有響鬧"</string>
     <string name="alarm_is_snoozed" msgid="7044644119744928846">"<xliff:g id="ALARM_TIME">%s</xliff:g> 的鬧鐘已延後 10 分鐘"</string>
+
+    <!-- LAN sync -->
+    <string name="lan_sync_settings">局域網同步</string>
+    <string name="lan_sync_settings_summary">與同一網絡上的其他裝置同步鬧鐘、定時器、秒錶、世界時鐘城市和設定</string>
+    <string name="lan_sync_title">局域網同步</string>
+    <string name="lan_sync_general_category_title">一般</string>
+    <string name="lan_sync_enabled">與其他裝置同步</string>
+    <string name="lan_sync_enabled_summary_on">此裝置會在本地網絡上廣播自身並與偵測到的裝置交換資料</string>
+    <string name="lan_sync_enabled_summary_off">開啟後即可與同一網絡上的其他裝置同步此裝置</string>
+    <string name="lan_sync_device_name">裝置名稱</string>
+    <string name="lan_sync_device_name_dialog_title">裝置名稱</string>
+    <string name="lan_sync_port">同步連接埠</string>
+    <string name="lan_sync_port_dialog_title">同步連接埠</string>
+    <string name="lan_sync_port_invalid">請輸入介於 1024 和 65535 之間的有效連接埠</string>
+    <string name="lan_sync_peers_category_title">偵測到的裝置</string>
+    <string name="lan_sync_peers">此網絡上的裝置</string>
+    <string name="lan_sync_peers_empty_summary">尚未偵測到任何裝置</string>
+    <string name="lan_sync_peers_count">此網絡上有 %1$d 部裝置</string>
+    <string name="lan_sync_now_toast">同步已開始</string>
+    <string name="lan_sync_now">立即同步</string>
+    <string name="lan_sync_now_summary">立即與所有偵測到的裝置交換資料</string>
 </resources>
