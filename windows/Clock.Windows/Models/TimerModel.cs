@@ -57,6 +57,9 @@ public class TimerModel
         return Format(rem);
     }
 
+    [JsonIgnore]
+    public string RemainingDisplay => GetRemainingDisplay();
+
     public string GetTotalDisplay() => Format(TotalLength);
 
     public static string Format(long ms)
