@@ -458,6 +458,7 @@ public partial class MainWindow : Window
             var theme = ThemeBox.SelectedIndex switch { 1 => "light", 2 => "dark", _ => "system" };
             _state.Settings.Theme = theme;
             SyncMerge.RecordSetting(_state, "theme", System.Text.Json.JsonSerializer.SerializeToElement(theme));
+            ThemeManager.Apply(theme);
         }
 
         if (sender == AlarmSnoozeBox && int.TryParse(AlarmSnoozeBox.Text, out var snooze) && snooze > 0)

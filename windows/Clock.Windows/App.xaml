@@ -3,17 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              ShutdownMode="OnMainWindowClose">
     <Application.Resources>
-        <Style TargetType="Button">
-            <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="Margin" Value="4"/>
-            <Setter Property="MinWidth" Value="80"/>
-        </Style>
-        <Style TargetType="ToggleButton">
-            <Setter Property="Padding" Value="10,5"/>
-            <Setter Property="Margin" Value="4"/>
-        </Style>
-        <Style TargetType="TabControl">
-            <Setter Property="Padding" Value="10"/>
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Theme/Common.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

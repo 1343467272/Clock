@@ -11,6 +11,8 @@ public partial class App : Application
     {
         base.OnStartup(e);
         State = AppState.Load();
+        ThemeManager.Initialize();
+        ThemeManager.Apply(State.Settings.Theme);
         State.Start();
         new MainWindow().Show();
     }

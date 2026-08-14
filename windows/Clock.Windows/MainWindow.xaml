@@ -3,18 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:l="clr-namespace:Clock.Windows.Localization"
         Title="{x:Static l:Text.AppTitle}" Height="720" Width="900"
-        WindowStartupLocation="CenterScreen" Icon="Assets/icon.ico">
+        WindowStartupLocation="CenterScreen" Icon="Assets/icon.ico"
+        Background="{DynamicResource BkBackground}" Foreground="{DynamicResource BkOnSurface}">
 
     <Window.Resources>
-        <!-- Material 3 light palette (matches Android md_theme_*) -->
-        <SolidColorBrush x:Key="BkBackground" Color="#FEFBFF"/>
-        <SolidColorBrush x:Key="BkSurface" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="BkPrimary" Color="#475D92"/>
-        <SolidColorBrush x:Key="BkOnSurface" Color="#1A1B20"/>
-        <SolidColorBrush x:Key="BkOnSurfaceVariant" Color="#44464F"/>
-        <SolidColorBrush x:Key="BkOutline" Color="#C5C6D0"/>
-        <SolidColorBrush x:Key="BkSurfaceDim" Color="#66000000"/>
-        <SolidColorBrush x:Key="BkHover" Color="#14475D92"/>
+        <!-- Material palette brushes come from the active theme dictionary (ThemeManager). -->
 
         <!-- Tab icons (from Android ic_tab_*_static / ic_settings path data) -->
         <Geometry x:Key="IconAlarm">M520 504V360q0-17-11.5-28.5T480 320t-28.5 11.5T440 360V519q0 8 3 15.5t9 13.5L564 660q11 11 28 11t28-11 11-28-11-28L520 504ZM480 880q-75 0-140.5-28.5t-114-77-77-114T120 520t28.5-140.5 77-114 114-77T480 160t140.5 28.5 114 77 77 114T840 520t-28.5 140.5-77 114-114 77T480 880ZM82 292q-11-11-11-28t11-28L196 122q11-11 28-11t28 11 11 28-11 28L138 292q-11 11-28 11T82 292Zm796 0q-11 11-28 11t-28-11L708 178q-11-11-11-28t11-28 28-11 28 11L878 236q11 11 11 28t-11 28ZM480 800q117 0 198.5-81.5T760 520 678.5 321.5 480 240 281.5 321.5 200 520t81.5 198.5T480 800Z</Geometry>
@@ -25,8 +18,8 @@
         <Geometry x:Key="IconAdd">M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z</Geometry>
 
         <Style x:Key="CardStyle" TargetType="Border">
-            <Setter Property="Background" Value="{StaticResource BkSurface}"/>
-            <Setter Property="BorderBrush" Value="#14000000"/>
+            <Setter Property="Background" Value="{DynamicResource BkCard}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BkBorder}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="Padding" Value="14"/>
@@ -49,7 +42,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#14000000"/>
+                                <Setter Property="Background" Value="{DynamicResource BkHover}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -58,7 +51,7 @@
         </Style>
 
         <Style x:Key="FilledButton" TargetType="Button">
-            <Setter Property="Background" Value="{StaticResource BkPrimary}"/>
+            <Setter Property="Background" Value="{DynamicResource BkPrimary}"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="16,8"/>
@@ -72,7 +65,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#3A5580"/>
+                                <Setter Property="Background" Value="{DynamicResource BkPrimaryHover}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.4"/>
@@ -85,8 +78,8 @@
 
         <Style x:Key="OutlinedButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource BkPrimary}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BkPrimary}"/>
+            <Setter Property="Foreground" Value="{DynamicResource BkPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BkPrimary}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="16,8"/>
             <Setter Property="MinWidth" Value="0"/>
@@ -99,7 +92,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{StaticResource BkHover}"/>
+                                <Setter Property="Background" Value="{DynamicResource BkHover}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -109,7 +102,7 @@
 
         <Style x:Key="CardButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource BkPrimary}"/>
+            <Setter Property="Foreground" Value="{DynamicResource BkPrimary}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="8,6"/>
             <Setter Property="Margin" Value="2"/>
@@ -123,7 +116,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{StaticResource BkHover}"/>
+                                <Setter Property="Background" Value="{DynamicResource BkHover}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -132,18 +125,18 @@
         </Style>
 
         <Style x:Key="SwitchToggle" TargetType="ToggleButton">
-            <Setter Property="Foreground" Value="{StaticResource BkPrimary}"/>
+            <Setter Property="Foreground" Value="{DynamicResource BkPrimary}"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ToggleButton">
-                        <Border x:Name="Bg" Background="Transparent" BorderBrush="{StaticResource BkOutline}" BorderThickness="1" CornerRadius="14" Padding="12,5">
+                        <Border x:Name="Bg" Background="Transparent" BorderBrush="{DynamicResource BkOutline}" BorderThickness="1" CornerRadius="14" Padding="12,5">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="{StaticResource BkPrimary}"/>
-                                <Setter TargetName="Bg" Property="BorderBrush" Value="{StaticResource BkPrimary}"/>
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource BkPrimary}"/>
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="{DynamicResource BkPrimary}"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -155,7 +148,7 @@
         <Style x:Key="FabStyle" TargetType="Button">
             <Setter Property="Width" Value="56"/>
             <Setter Property="Height" Value="56"/>
-            <Setter Property="Background" Value="{StaticResource BkPrimary}"/>
+            <Setter Property="Background" Value="{DynamicResource BkPrimary}"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="0"/>
@@ -174,7 +167,7 @@
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Circle" Property="Background" Value="#3A5580"/>
+                                <Setter TargetName="Circle" Property="Background" Value="{DynamicResource BkPrimaryHover}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -184,7 +177,7 @@
 
         <Style x:Key="BottomNavItem" TargetType="RadioButton">
             <Setter Property="GroupName" Value="MainNav"/>
-            <Setter Property="Foreground" Value="{StaticResource BkOnSurfaceVariant}"/>
+            <Setter Property="Foreground" Value="{DynamicResource BkOnSurfaceVariant}"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -194,11 +187,11 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="#14000000"/>
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource BkHover}"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="#14475D92"/>
-                                <Setter Property="Foreground" Value="{StaticResource BkPrimary}"/>
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource BkHover}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource BkPrimary}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -207,7 +200,7 @@
         </Style>
 
         <Style x:Key="DimLayer" TargetType="Button">
-            <Setter Property="Background" Value="{StaticResource BkSurfaceDim}"/>
+            <Setter Property="Background" Value="{DynamicResource BkSurfaceDim}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="MinWidth" Value="0"/>
@@ -229,10 +222,10 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="{Binding TimeText}" FontSize="30" FontWeight="Bold" Foreground="{StaticResource BkPrimary}"/>
-                        <TextBlock Text="{Binding DaysText}" Margin="0,4,0,0" Foreground="{StaticResource BkOnSurfaceVariant}"/>
-                        <TextBlock Text="{Binding LabelText}" Margin="0,2,0,0" Foreground="{StaticResource BkOnSurface}"/>
-                        <TextBlock Text="{Binding NextFireText}" Margin="0,2,0,0" Foreground="{StaticResource BkOnSurfaceVariant}" FontSize="11"/>
+                        <TextBlock Text="{Binding TimeText}" FontSize="30" FontWeight="Bold" Foreground="{DynamicResource BkPrimary}"/>
+                        <TextBlock Text="{Binding DaysText}" Margin="0,4,0,0" Foreground="{DynamicResource BkOnSurfaceVariant}"/>
+                        <TextBlock Text="{Binding LabelText}" Margin="0,2,0,0" Foreground="{DynamicResource BkOnSurface}"/>
+                        <TextBlock Text="{Binding NextFireText}" Margin="0,2,0,0" Foreground="{DynamicResource BkOnSurfaceVariant}" FontSize="11"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button Content="{x:Static l:Text.Edit}" Style="{StaticResource CardButton}" Tag="{Binding Uuid}" Click="OnEditAlarm"/>
@@ -251,9 +244,9 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="{Binding RemainingDisplay}" FontSize="30" FontWeight="Bold" Foreground="{StaticResource BkPrimary}"/>
-                        <TextBlock Text="{Binding LabelText}" Margin="0,4,0,0" Foreground="{StaticResource BkOnSurface}"/>
-                        <TextBlock Text="{Binding MetaText}" Margin="0,2,0,0" Foreground="{StaticResource BkOnSurfaceVariant}" FontSize="11"/>
+                        <TextBlock Text="{Binding RemainingDisplay}" FontSize="30" FontWeight="Bold" Foreground="{DynamicResource BkPrimary}"/>
+                        <TextBlock Text="{Binding LabelText}" Margin="0,4,0,0" Foreground="{DynamicResource BkOnSurface}"/>
+                        <TextBlock Text="{Binding MetaText}" Margin="0,2,0,0" Foreground="{DynamicResource BkOnSurfaceVariant}" FontSize="11"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button Content="{x:Static l:Text.StartPause}" Style="{StaticResource CardButton}" Tag="{Binding Uuid}" Click="OnTimerStartPause"/>
@@ -273,15 +266,15 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="{Binding DisplayName}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{StaticResource BkOnSurface}"/>
-                    <TextBlock Grid.Column="1" Text="{Binding LocalTime}" FontSize="18" FontWeight="SemiBold" Margin="12,0" VerticalAlignment="Center" Foreground="{StaticResource BkPrimary}"/>
+                    <TextBlock Grid.Column="0" Text="{Binding DisplayName}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{DynamicResource BkOnSurface}"/>
+                    <TextBlock Grid.Column="1" Text="{Binding LocalTime}" FontSize="18" FontWeight="SemiBold" Margin="12,0" VerticalAlignment="Center" Foreground="{DynamicResource BkPrimary}"/>
                     <Button Grid.Column="2" Content="{x:Static l:Text.Remove}" Style="{StaticResource CardButton}" Tag="{Binding Id}" Click="OnRemoveCity"/>
                 </Grid>
             </Border>
         </DataTemplate>
     </Window.Resources>
 
-    <Grid Background="{StaticResource BkBackground}">
+    <Grid Background="{DynamicResource BkBackground}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -289,10 +282,10 @@
         </Grid.RowDefinitions>
 
         <!-- Toolbar: current tab title + settings gear (matches Android MaterialToolbar) -->
-        <Border Grid.Row="0" Background="{StaticResource BkSurface}" BorderBrush="{StaticResource BkOutline}" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0" Background="{DynamicResource BkSurface}" BorderBrush="{DynamicResource BkOutline}" BorderThickness="0,0,0,1">
             <DockPanel Margin="16,8,8,8">
-                <TextBlock x:Name="ToolbarTitle" Text="{x:Static l:Text.TabAlarms}" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource BkOnSurface}" VerticalAlignment="Center"/>
-                <Button Style="{StaticResource IconButton}" DockPanel.Dock="Right" Foreground="{StaticResource BkOnSurfaceVariant}" ToolTip="{x:Static l:Text.TabSettings}" Click="OnSettingsToggle">
+                <TextBlock x:Name="ToolbarTitle" Text="{x:Static l:Text.TabAlarms}" FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource BkOnSurface}" VerticalAlignment="Center"/>
+                <Button Style="{StaticResource IconButton}" DockPanel.Dock="Right" Foreground="{DynamicResource BkOnSurfaceVariant}" ToolTip="{x:Static l:Text.TabSettings}" Click="OnSettingsToggle">
                     <Path Data="{StaticResource IconSettings}" Width="22" Height="22" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
                 </Button>
             </DockPanel>
@@ -314,8 +307,8 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <StackPanel Grid.Row="0" Margin="0,16,0,0" HorizontalAlignment="Center">
-                    <TextBlock x:Name="ClockText" FontSize="52" FontWeight="Bold" Foreground="{StaticResource BkPrimary}" HorizontalAlignment="Center"/>
-                    <TextBlock x:Name="ClockDateText" FontSize="14" Foreground="{StaticResource BkOnSurfaceVariant}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                    <TextBlock x:Name="ClockText" FontSize="52" FontWeight="Bold" Foreground="{DynamicResource BkPrimary}" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="ClockDateText" FontSize="14" Foreground="{DynamicResource BkOnSurfaceVariant}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                 </StackPanel>
                 <Grid Grid.Row="1" Margin="16,8,16,88">
                     <Grid.ColumnDefinitions>
@@ -361,7 +354,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" x:Name="StopwatchText" Text="00:00:00.00" FontSize="56" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,24" Foreground="{StaticResource BkOnSurface}"/>
+                <TextBlock Grid.Row="0" x:Name="StopwatchText" Text="00:00:00.00" FontSize="56" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,24" Foreground="{DynamicResource BkOnSurface}"/>
                 <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center">
                     <Button x:Name="StopwatchStartPauseBtn" Content="{x:Static l:Text.Start}" Style="{StaticResource FilledButton}" Click="OnStopwatchStartPause" FontSize="15" Padding="24,10"/>
                     <Button Content="{x:Static l:Text.Lap}" Style="{StaticResource OutlinedButton}" Click="OnStopwatchLap" FontSize="15" Padding="24,10" Margin="12,0"/>
@@ -371,14 +364,14 @@
                     <ItemsControl x:Name="LapList">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="{StaticResource BkSurface}" BorderBrush="#14000000" BorderThickness="1" CornerRadius="10" Padding="12,8" Margin="0,0,0,6">
+                                <Border Background="{DynamicResource BkCard}" BorderBrush="{DynamicResource BkBorder}" BorderThickness="1" CornerRadius="10" Padding="12,8" Margin="0,0,0,6">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="{Binding LapLabel}" FontSize="15" Foreground="{StaticResource BkOnSurface}"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding LapTime}" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource BkPrimary}"/>
+                                        <TextBlock Grid.Column="0" Text="{Binding LapLabel}" FontSize="15" Foreground="{DynamicResource BkOnSurface}"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding LapTime}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource BkPrimary}"/>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
@@ -388,13 +381,13 @@
             </Grid>
 
             <!-- Floating action button (contextual; hidden on the stopwatch tab) -->
-            <Button x:Name="FabButton" Style="{StaticResource FabStyle}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,20" Click="OnFabClick" ToolTip="{x:Static l:Text.AddAlarm}">
-                <Path Data="{StaticResource IconAdd}" Width="24" Height="24" Stretch="Uniform" Fill="White"/>
+                <Button x:Name="FabButton" Style="{StaticResource FabStyle}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,20" Click="OnFabClick" ToolTip="{x:Static l:Text.AddAlarm}">
+                <Path Data="{StaticResource IconAdd}" Width="24" Height="24" Stretch="Uniform" Fill="{DynamicResource BkOnPrimary}"/>
             </Button>
         </Grid>
 
         <!-- Bottom navigation (matches Android BottomNavigationView) -->
-        <Border Grid.Row="2" Background="{StaticResource BkSurface}" BorderBrush="{StaticResource BkOutline}" BorderThickness="0,1,0,0">
+        <Border Grid.Row="2" Background="{DynamicResource BkSurface}" BorderBrush="{DynamicResource BkOutline}" BorderThickness="0,1,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -436,12 +429,12 @@
                 <ColumnDefinition Width="560"/>
             </Grid.ColumnDefinitions>
             <Button Grid.Column="0" Style="{StaticResource DimLayer}" Click="OnSettingsClose"/>
-            <Border Grid.Column="1" Background="{StaticResource BkSurface}" BorderBrush="{StaticResource BkOutline}" BorderThickness="1,0,0,0">
+            <Border Grid.Column="1" Background="{DynamicResource BkSurface}" BorderBrush="{DynamicResource BkOutline}" BorderThickness="1,0,0,0">
                 <DockPanel>
-                    <Border DockPanel.Dock="Top" Background="{StaticResource BkPrimary}" Padding="16,10">
+                    <Border DockPanel.Dock="Top" Background="{DynamicResource BkPrimary}" Padding="16,10">
                         <DockPanel>
-                            <TextBlock Text="{x:Static l:Text.SettingsTitle}" Foreground="White" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Foreground="White" ToolTip="{x:Static l:Text.Dismiss}" Click="OnSettingsClose">
+                            <TextBlock Text="{x:Static l:Text.SettingsTitle}" Foreground="{DynamicResource BkOnPrimary}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Foreground="{DynamicResource BkOnPrimary}" ToolTip="{x:Static l:Text.Dismiss}" Click="OnSettingsClose">
                                 <TextBlock Text="✕" FontSize="16"/>
                             </Button>
                         </DockPanel>
@@ -486,15 +479,15 @@
                             <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                                 <Button Content="{x:Static l:Text.SyncNow}" Style="{StaticResource FilledButton}" Click="OnSyncNow"/>
                             </StackPanel>
-                            <TextBlock x:Name="SyncStatusText" Foreground="{StaticResource BkOnSurfaceVariant}" Margin="0,8,0,8" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="SyncStatusText" Foreground="{DynamicResource BkOnSurfaceVariant}" Margin="0,8,0,8" TextWrapping="Wrap"/>
                             <TextBlock Text="{x:Static l:Text.DiscoveredDevices}" FontWeight="SemiBold" Margin="0,8,0,4"/>
                             <ItemsControl x:Name="PeerList">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Background="{StaticResource BkSurface}" BorderBrush="#14000000" BorderThickness="1" CornerRadius="10" Padding="10" Margin="0,0,0,6">
+                                        <Border Background="{DynamicResource BkCard}" BorderBrush="{DynamicResource BkBorder}" BorderThickness="1" CornerRadius="10" Padding="10" Margin="0,0,0,6">
                                             <StackPanel>
-                                                <TextBlock Text="{Binding DeviceName}" FontWeight="SemiBold" Foreground="{StaticResource BkOnSurface}"/>
-                                                <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{StaticResource BkOnSurfaceVariant}"/>
+                                                <TextBlock Text="{Binding DeviceName}" FontWeight="SemiBold" Foreground="{DynamicResource BkOnSurface}"/>
+                                                <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource BkOnSurfaceVariant}"/>
                                             </StackPanel>
                                         </Border>
                                     </DataTemplate>
