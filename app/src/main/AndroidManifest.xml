@@ -144,6 +144,7 @@
 
         <activity
             android:name="com.best.deskclock.controller.HandleApiCalls"
+            android:permission="com.android.alarm.permission.SET_ALARM"
             android:directBootAware="true"
             android:excludeFromRecents="true"
             android:launchMode="singleInstance"
@@ -159,6 +160,7 @@
                 <action android:name="android.intent.action.SNOOZE_ALARM" />
 
                 <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.VOICE" />
             </intent-filter>
         </activity>
 
@@ -172,6 +174,7 @@
                 <action android:name="android.intent.action.SET_TIMER" />
 
                 <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.VOICE" />
             </intent-filter>
         </activity-alias>
 
@@ -208,6 +211,22 @@
             android:authorities="${applicationId}"
             android:directBootAware="true"
             android:exported="false" />
+
+        <provider
+            android:name="com.best.deskclock.breeno.BreenoProxyProvider"
+            android:authorities="com.best.deskclock.breeno"
+            android:directBootAware="true"
+            android:exported="true"
+            tools:ignore="ExportedContentProvider" />
+
+        <receiver
+            android:name="com.best.deskclock.breeno.BreenoProxyReceiver"
+            android:directBootAware="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.best.deskclock.action.BREENO_PROXY" />
+            </intent-filter>
+        </receiver>
 
         <receiver
             android:name="com.best.deskclock.alarms.AlarmInitReceiver"
