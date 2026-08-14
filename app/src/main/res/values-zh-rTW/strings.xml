@@ -648,4 +648,64 @@
     <string name="lan_sync_now_toast">同步已開始</string>
     <string name="lan_sync_now">立即同步</string>
     <string name="lan_sync_now_summary">立即與所有偵測到的裝置交換資料</string>
+    <string name="lan_sync_peers_summary">此網絡上有 %1$d 部裝置，其中 %2$d 部已配對</string>
+    <string name="lan_sync_paired">已配對</string>
+    <string name="lan_sync_unpaired">未配對</string>
+    <string name="lan_sync_connected">已連接</string>
+    <string name="lan_sync_connected_to">已連接到 %1$s</string>
+    <string name="lan_sync_pair">配對</string>
+    <string name="lan_sync_unpair">取消配對</string>
+    <string name="lan_sync_pairing_hint">配對裝置後，應用程式執行期間會自動連接該裝置。未配對裝置僅在此畫面顯示。</string>
+
+    <string name="add_time_button_title">"新增時間"按鈕</string>
+    <string name="advanced_audio_playback_category_title">進階音訊播放</string>
+    <string name="alarm_minutes_warning_box_text">請輸入 0 到 59 分鐘之間的值</string>
+    <string name="background_image_category_title">背景圖片</string>
+    <string name="background_image_dialog_message">變更或刪除背景圖片。</string>
+    <string name="blur_intensity_dialog_message_1">\n\n自訂模糊強度值也將重設。</string>
+    <string name="blur_intensity_dialog_message_2">自訂模糊強度值將重設。%s</string>
+    <string name="custom_font_dialog_message">變更或刪除自訂字型。</string>
+    <string name="delete_timer_after_use_title">計時器結束後刪除</string>
+    <string name="display_alarm_action_message_title">在暫停或關閉鬧鐘後顯示訊息</string>
+    <string name="display_alarm_title_on_single_line_title">在單行顯示鬧鐘標題</string>
+    <string name="display_timer_end_time_title">顯示計時器結束時間</string>
+    <string name="display_top_date_title">在時間上方顯示日期</string>
+    <string name="enable_per_alarm_background_image_dialog_message">自訂背景圖片將被刪除。%1$s%2$s</string>
+    <string name="enable_per_alarm_background_image_title">為每個鬧鐘使用自訂背景圖片</string>
+    <string name="enable_per_timer_auto_silence_title">為每個計時器自訂停止時間</string>
+    <string name="enable_per_timer_crescendo_duration_title">為每個計時器自訂提高音量間隔</string>
+    <string name="enable_per_timer_vibration_pattern_title">為每個計時器自訂震動模式</string>
+    <string name="headphones_button_title">耳機播放/暫停按鈕</string>
+    <string name="invert_timer_button_positions_title">反轉計時器按鈕的位置</string>
+    <string name="pause_alarm_range">已暫停：%1$s</string>
+    <string name="pause_alarm_title">暫停鬧鐘</string>
+    <string name="restart_app_dialog_message">需要重新啟動應用程式，變更才會生效。</string>
+    <string name="seconds_only"><xliff:g example="44" id="seconds">%1$02d</xliff:g></string>
+    <string name="settings_language_hebrew">希伯來語</string>
+    <string name="settings_tab_animation_title">切換頁籤時的動畫</string>
+    <string name="settings_vibration_disabled_summary">裝置設定中已停用震動</string>
+    <string name="shortcut_disabled">頁籤已隱藏</string>
+    <string name="single_timer_mode_summary">僅保留一個計時器，重設後會自動刪除</string>
+    <string name="single_timer_mode_title">單一計時器模式</string>
+    <string name="single_timer_mode_warning_message">計時器將被移除。%s</string>
+    <string name="tab_animation_cube">Cube</string>
+    <string name="tab_animation_depth">Depth</string>
+    <string name="tab_animation_flip">Flip</string>
+    <string name="tab_animation_gate">Gate</string>
+    <string name="tab_animation_zoom_out">Zoom-out</string>
+    <string name="tabs_category_title">頁籤</string>
+    <string name="timer_end_time_label">結束時間：<xliff:g example="8:30 a.m." id="END_TIME">^1</xliff:g></string>
+    <string name="timer_headphones_button_action_title">使用耳機播放/暫停按鈕重設已結束的計時器</string>
+    <string name="timer_label_default"><xliff:g example="30s" id="TIMER_LABEL_DEFAULT">%s</xliff:g> 計時器</string>
+    <string name="timer_missed_channel">錯過的計時器</string>
+    <string name="timer_settings_general_summary">此設定可在計時器編輯面板中為每個計時器變更</string>
+    <string name="timer_vibrate_dialog_message">所有計時器的震動將被停用。%s</string>
+    <string name="toast_message_backup_error">備份失敗</string>
+    <string name="toast_message_restore_error">還原失敗</string>
+    <string name="turn_off_media_title">計時結束後停止媒體播放</string>
+    <string name="turn_on_back_flash_for_expired_timer_title">計時器結束後啟用後置閃光燈</string>
+    <string name="visible_tabs_title">可見頁籤</string>
+    <plurals name="expired_timers_deleted">
+        <item quantity="other"><xliff:g example="1" id="number">%d</xliff:g> 個計時器已刪除</item>
+    </plurals>
 </resources>

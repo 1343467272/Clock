@@ -677,4 +677,37 @@
     <string name="lan_sync_now_toast">同步已开始</string>
     <string name="lan_sync_now">立即同步</string>
     <string name="lan_sync_now_summary">立即与所有检测到的设备交换数据</string>
+    <string name="lan_sync_peers_summary">此网络上有 %1$d 台设备，其中 %2$d 台已配对</string>
+    <string name="lan_sync_paired">已配对</string>
+    <string name="lan_sync_unpaired">未配对</string>
+    <string name="lan_sync_connected">已连接</string>
+    <string name="lan_sync_connected_to">已连接到 %1$s</string>
+    <string name="lan_sync_pair">配对</string>
+    <string name="lan_sync_unpair">取消配对</string>
+    <string name="lan_sync_pairing_hint">配对设备后，应用运行期间会自动连接该设备。未配对设备仅在此界面显示。</string>
+
+    <string name="add_time_button_title">"添加时间"按钮</string>
+    <string name="advanced_audio_playback_category_title">高级音频播放</string>
+    <string name="background_image_category_title">背景图片</string>
+    <string name="background_image_dialog_message">更改或删除背景图片。</string>
+    <string name="blur_intensity_dialog_message_1">\n\n自定义模糊强度值也将被重置。</string>
+    <string name="blur_intensity_dialog_message_2">自定义模糊强度值将被重置。%s</string>
+    <string name="custom_font_dialog_message">更改或删除自定义字体。</string>
+    <string name="delete_timer_after_use_title">计时器结束后删除</string>
+    <string name="display_alarm_title_on_single_line_title">单行显示闹钟标题</string>
+    <string name="enable_per_alarm_background_image_dialog_message">自定义背景图片将被删除。%1$s%2$s</string>
+    <string name="enable_per_alarm_background_image_title">为每个闹钟使用自定义背景图片</string>
+    <string name="enable_per_timer_auto_silence_title">为每个计时器使用自定义停止时长</string>
+    <string name="enable_per_timer_crescendo_duration_title">为每个计时器使用自定义音量渐增时长</string>
+    <string name="enable_per_timer_vibration_pattern_title">为每个计时器使用自定义振动模式</string>
+    <string name="headphones_button_title">耳机播放/暂停按钮</string>
+    <string name="seconds_only"><xliff:g example="44" id="seconds">%1$02d</xliff:g></string>
+    <string name="timer_headphones_button_action_title">使用耳机播放/暂停按钮重置已结束的计时器</string>
+    <string name="timer_settings_general_summary">此设置可在计时器编辑面板中为每个计时器更改</string>
+    <string name="timer_vibrate_dialog_message">所有计时器的振动将被禁用。%s</string>
+    <string name="turn_off_media_title">计时结束后停止媒体播放</string>
+    <string name="turn_on_back_flash_for_expired_timer_title">计时器结束后开启背面闪光</string>
+    <plurals name="expired_timers_deleted">
+        <item quantity="other"><xliff:g example="1" id="number">%d</xliff:g> 个计时器已删除</item>
+    </plurals>
 </resources>
