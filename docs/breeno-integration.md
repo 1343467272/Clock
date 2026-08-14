@@ -37,8 +37,40 @@ result, alarm_id_list, alarm_hour_list, alarm_min_list, alarm_label_list,
 alarm_state_list, alarm_repeat_list, alarm_repeat_set_list, alarm_time_list, ...
 ```
 
+**注意**：小布的闹钟列表解析器（`com.heytap.speechassist` 中的 `iv.n.m`）有两个分支，
+按 `FeatureOption.r()` 区分读取的"启用状态"字段：
+
+| `FeatureOption.r()` | 读取的字段 |
+|---|---|
+| `true` | `alarm_status` |
+| `false` | `alarm_state_list` |
+
+因此 Provider 必须**同时输出 `alarm_status` 与 `alarm_state_list`**，否则启用过滤会把闹钟
+全部滤掉。
+
 定时器键：`result`、`timer_id`、`duration`、`left_time`、`time_stamp`、
 `timer_status`、`description`。
+
+## 小布取消闹钟流程（逆向结论）
+
+小布取消闹钟的客户端逻辑（`com.heytap.speechassist`，混淆后）大致为：
+
+```
+语音「取消X点闹钟」
+  → CloseAlarmOperation.process()        (skill.clock.operation)
+      → iv.n.m(get_alarm_list, TRUE)    解析闹钟列表，按 enabled 过滤
+      → iv.n.o(QueryAlarm, ...)         匹配用户请求，返回 condition
+          - condition=2 → xu.i.D(...)   (按时间精确匹配)
+              - arrayList3.size()==1    恰好一个启用闹钟命中
+                  → xu.i.G(id, ...)     → 调 provider close_alarm  ← 只有这里才会真正关闭
+              - arrayList3.size()==0    无启用闹钟命中 → 走其他分支（可能打开 UI）
+```
+
+关键点：
+- 只有匹配到**恰好一个"已启用"闹钟**时，小布才调用 `close_alarm`（`xu.i.G`）。
+- 我们尝试补齐 `alarm_status` / 完整格式 / 数据库镜像后，小布仍打开 UI，说明匹配在更早环节
+  （`iv.n.o` 的 `QueryAlarm` 解析或 `iv.n.m` 过滤）未命中我们的闹钟，具体原因未最终定位。
+- 仅当闹钟由 OPPO 时钟**原生创建于同一会话**时，小布才会直接调用 `close_alarm`。
 
 ## 已知限制
 
@@ -51,6 +83,8 @@ alarm_state_list, alarm_repeat_list, alarm_repeat_set_list, alarm_time_list, ...
     2. 让 `get_alarm_list` 返回**完整 OPPO 格式**（所有 30 个数组填充基本闹钟值）——
        仍打开 UI。
     3. 补充 `alarm_uuid_list` —— 仍打开 UI。
+    4. 补充 `alarm_status` 字段（小布解析器的一个分支读它）—— 仍打开 UI。
+  - 逆向分析（见上文"小布取消闹钟流程"）确认关闭链路，但未定位到决定性的匹配失败原因。
   - 结论：小布对"非原生 OPPO 闹钟"的语音取消固定回退为打开自带时钟 UI，无法通过
     provider 数据操控改变（仅当闹钟由 OPPO 时钟原生创建于同一会话时才会直接调用
     `close_alarm`）。
