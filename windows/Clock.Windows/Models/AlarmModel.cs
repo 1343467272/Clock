@@ -112,10 +112,11 @@ public class AlarmModel
         }
 
         // One-time alarm: use the specific date if given, else today (roll to tomorrow if passed).
+        // The month is 0-based on the wire and as stored (matching Android's Calendar.MONTH).
         DateTime d;
         if (Year > 0)
         {
-            d = new DateTime(Year, Math.Max(1, Month), Math.Max(1, Day), Hour, Minute, 0);
+            d = new DateTime(Year, Math.Clamp(Month + 1, 1, 12), Math.Max(1, Day), Hour, Minute, 0);
             if (d <= now) d = d.AddDays(1);
         }
         else
