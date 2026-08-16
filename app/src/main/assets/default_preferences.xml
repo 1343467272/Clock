@@ -1,0 +1,154 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <int name="key_alarm_volume_crescendo_duration" value="60" />
+    <boolean name="timer_flash_on_0" value="false" />
+    <boolean name="timer_flash_on_1" value="false" />
+    <boolean name="timer_flash_on_2" value="false" />
+    <boolean name="key_automatic_home_clock" value="true" />
+    <string name="key_repeat_missed_alarm">10</string>
+    <int name="key_timer_volume_crescendo_duration" value="30" />
+    <boolean name="key_advanced_audio_playback" value="false" />
+    <boolean name="key_turn_on_back_flash_for_triggered_alarm" value="false" />
+    <boolean name="key_screensaver_clock_dynamic_colors" value="false" />
+    <string name="key_power_button">1</string>
+    <boolean name="sync_enabled" value="false" />
+    <int name="key_screensaver_next_alarm_color_picker" value="-1" />
+    <string name="key_night_accent_color">0</string>
+    <boolean name="timer_delete_after_use_2" value="false" />
+    <string name="key_theme">0</string>
+    <boolean name="timer_delete_after_use_1" value="false" />
+    <boolean name="timer_delete_after_use_0" value="false" />
+    <int name="key_screensaver_battery_color_picker" value="-1" />
+    <boolean name="key_enable_per_timer_volume_crescendo_duration" value="true" />
+    <string name="key_week_start">2</string>
+    <boolean name="key_display_screensaver_battery" value="false" />
+    <boolean name="key_enable_per_alarm_vibration_pattern" value="false" />
+    <string name="key_dark_mode">0</string>
+    <long name="timer_wall_clock_time_2" value="-9223372036854775808" />
+    <string name="timerOrder">2,1,0</string>
+    <long name="timer_wall_clock_time_0" value="-9223372036854775808" />
+    <long name="timer_wall_clock_time_1" value="-9223372036854775808" />
+    <int name="timer_volume_crescendo_1" value="30" />
+    <boolean name="key_enable_city_note" value="false" />
+    <int name="timer_volume_crescendo_0" value="30" />
+    <int name="timer_volume_crescendo_2" value="30" />
+    <string name="key_flip_action">0</string>
+    <boolean name="key_screensaver_next_alarm_in_bold" value="false" />
+    <string name="key_screensaver_clock_second_hand">default</string>
+    <boolean name="key_screensaver_battery_in_bold" value="false" />
+    <boolean name="key_enable_per_alarm_volume_crescendo_duration" value="true" />
+    <boolean name="key_display_keep_android_open" value="false" />
+    <string name="key_clock_style">digital</string>
+    <string name="key_tab_to_display">-1</string>
+    <boolean name="key_timer_power_button_action" value="false" />
+    <boolean name="key_screensaver_keep_screen_on" value="false" />
+    <boolean name="key_enable_per_alarm_volume" value="false" />
+    <boolean name="key_timer_shake_action" value="false" />
+    <string name="key_volume_button_setting">1</string>
+    <boolean name="key_enable_snoozed_or_dismissed_alarm_vibrations" value="false" />
+    <string name="key_headphones_button">0</string>
+    <int name="next_timer_id" value="3" />
+    <string name="key_language_code">system_language_code</string>
+    <boolean name="key_toolbar_title" value="true" />
+    <boolean name="key_enable_alarm_vibrations_by_default" value="true" />
+    <string name="key_sort_timer">0</string>
+    <boolean name="key_system_media_volume" value="true" />
+    <boolean name="key_display_low_alarm_volume_warning" value="true" />
+    <string name="key_screensaver_clock_dial_material">dial_sun</string>
+    <string name="timer_label_0">5分 定时器</string>
+    <string name="key_sort_alarm">0</string>
+    <string name="key_accent_color">0</string>
+    <string name="timer_label_1">10分 定时器</string>
+    <string name="timer_label_2">7分 定时器</string>
+    <boolean name="key_turn_on_back_flash_for_expired_timer" value="false" />
+    <string name="key_material_date_picker_style">calendar</string>
+    <string name="key_timer_creation_view_style">keypad</string>
+    <boolean name="key_auto_routing_to_external_audio_device" value="false" />
+    <int name="key_screensaver_clock_color_picker" value="-1" />
+    <int name="key_screensaver_date_color_picker" value="-1" />
+    <long name="timer_start_time_1" value="-9223372036854775808" />
+    <int name="timer_state_2" value="4" />
+    <boolean name="key_timer_vibrate" value="true" />
+    <boolean name="key_timer_headphones_button_action" value="false" />
+    <long name="timer_start_time_2" value="-9223372036854775808" />
+    <long name="timer_time_left_2" value="420000" />
+    <int name="timer_state_0" value="4" />
+    <long name="timer_time_left_1" value="600000" />
+    <long name="timer_start_time_0" value="-9223372036854775808" />
+    <long name="timer_time_left_0" value="300000" />
+    <int name="timer_state_1" value="4" />
+    <set name="timers_list">
+        <string>0</string>
+        <string>1</string>
+        <string>2</string>
+    </set>
+    <boolean name="key_enable_per_alarm_snooze_duration" value="true" />
+    <boolean name="key_enable_alarm_fab_long_press" value="false" />
+    <string name="key_clock_dial_material">dial_sun</string>
+    <string name="key_material_time_picker_style">analog</string>
+    <string name="timer_button_time_0">60</string>
+    <string name="timer_button_time_1">60</string>
+    <string name="timer_button_time_2">60</string>
+    <boolean name="key_display_enabled_alarms_first" value="false" />
+    <boolean name="key_enable_per_timer_auto_silence" value="true" />
+    <boolean name="key_single_timer_mode" value="false" />
+    <string name="timer_ringtone_0">android.resource://com.best.deskclock/2131886080</string>
+    <string name="timer_ringtone_1">android.resource://com.best.deskclock/2131886080</string>
+    <string name="timer_ringtone_2">android.resource://com.best.deskclock/2131886080</string>
+    <boolean name="timer_vibrate_2" value="true" />
+    <boolean name="timer_turn_off_media_1" value="false" />
+    <boolean name="timer_turn_off_media_2" value="false" />
+    <boolean name="key_card_background" value="true" />
+    <boolean name="key_card_border" value="false" />
+    <boolean name="timer_turn_off_media_0" value="false" />
+    <boolean name="timer_vibrate_1" value="true" />
+    <boolean name="timer_vibrate_0" value="true" />
+    <boolean name="key_tab_indicator" value="true" />
+    <boolean name="key_keep_screen_on" value="false" />
+    <boolean name="key_enable_foreground_service" value="false" />
+    <boolean name="key_screensaver_date_in_italic" value="false" />
+    <long name="timer_original_timet_1" value="600000" />
+    <long name="timer_original_timet_0" value="300000" />
+    <boolean name="key_screensaver_battery_in_italic" value="false" />
+    <long name="timer_original_timet_2" value="420000" />
+    <string name="key_sort_cities">0</string>
+    <string name="key_screensaver_clock_dial">dial_with_numbers</string>
+    <boolean name="key_timer_flip_action" value="false" />
+    <boolean name="key_screensaver_digital_clock_in_bold" value="false" />
+    <boolean name="key_enable_delete_occasional_alarm_by_default" value="false" />
+    <string name="key_screensaver_clock_style">digital</string>
+    <long name="timer_setup_timet_0" value="300000" />
+    <long name="timer_setup_timet_1" value="600000" />
+    <long name="timer_setup_timet_2" value="420000" />
+    <boolean name="key_screensaver_next_alarm_in_italic" value="false" />
+    <boolean name="key_display_screensaver_clock_seconds" value="false" />
+    <string name="key_home_time_zone">Asia/Shanghai</string>
+    <string name="key_clock_dial">dial_with_numbers</string>
+    <string name="key_tab_animation">tab_animation_default</string>
+    <set name="key_visible_tabs">
+        <string>timer</string>
+        <string>alarm</string>
+        <string>clock</string>
+        <string>stopwatch</string>
+    </set>
+    <boolean name="key_fade_transitions" value="false" />
+    <boolean name="key_auto_night_accent_color" value="true" />
+    <string name="key_clock_second_hand">default</string>
+    <boolean name="key_enable_per_alarm_auto_silence" value="true" />
+    <string name="key_tab_title_visibility">0</string>
+    <boolean name="key_enable_per_timer_vibration_pattern" value="true" />
+    <boolean name="key_screensaver_date_in_bold" value="false" />
+    <string name="key_timer_ringtone">android.resource://com.best.deskclock/2131886080</string>
+    <int name="timer_auto_silence_2" value="30" />
+    <int name="timer_auto_silence_1" value="30" />
+    <int name="timer_auto_silence_0" value="30" />
+    <boolean name="key_timer_volume_buttons_action" value="false" />
+    <boolean name="key_display_dismiss_button" value="false" />
+    <boolean name="key_enable_per_alarm_missed_repeat_limit" value="true" />
+    <boolean name="key_screensaver_digital_clock_in_italic" value="false" />
+    <boolean name="key_vibrations" value="false" />
+    <string name="key_shake_action">0</string>
+    <string name="timer_vibration_pattern_2">default</string>
+    <string name="timer_vibration_pattern_0">default</string>
+    <string name="timer_vibration_pattern_1">default</string>
+</map>

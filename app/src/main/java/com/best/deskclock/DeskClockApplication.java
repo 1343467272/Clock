@@ -21,6 +21,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Xml;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -40,7 +41,14 @@ import com.best.deskclock.utils.NotificationUtils;
 import com.best.deskclock.utils.SdkUtils;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
+
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
 
 public class DeskClockApplication extends Application implements Application.ActivityLifecycleCallbacks {
 
@@ -55,6 +63,8 @@ public class DeskClockApplication extends Application implements Application.Act
         super.onCreate();
 
         sInstance = this;
+
+        importDeviceDefaults();
 
         initDebugAndNightlyDefaults();
 
@@ -110,6 +120,70 @@ public class DeskClockApplication extends Application implements Application.Act
     @Override public void onActivityPaused(@NonNull Activity activity) {}
     @Override public void onActivitySaveInstanceState(@NonNull Activity activity, @NonNull Bundle outState) {}
     @Override public void onActivityDestroyed(@NonNull Activity activity) {}
+
+    /**
+     * On a fresh install, seeds the bundled default preferences (settings, timers, tabs) that were
+     * exported from a reference device. The file only takes effect when no preferences exist yet,
+     * so upgrades never overwrite user data.
+     */
+    private void importDeviceDefaults() {
+        final SharedPreferences prefs = getDefaultSharedPreferences(this);
+        if (prefs.getAll().isEmpty()) {
+            importPreferencesFromAssets();
+        }
+    }
+
+    /**
+     * Parses the bundled {@code default_preferences.xml} asset and writes every entry into the
+     * default {@link SharedPreferences}. The asset uses the exact format produced by
+     * {@code SharedPreferences}: {@code <map>} with {@code <string>}, {@code <boolean>},
+     * {@code <int>}, {@code <long>} and {@code <set>} children.
+     */
+    private void importPreferencesFromAssets() {
+        try (InputStream inputStream = getAssets().open("default_preferences.xml")) {
+            final SharedPreferences.Editor editor = getDefaultSharedPreferences(this).edit();
+
+            final XmlPullParser parser = Xml.newPullParser();
+            parser.setInput(inputStream, null);
+
+            Set<String> currentSet = null;
+            String currentSetKey = null;
+
+            int eventType = parser.getEventType();
+            while (eventType != XmlPullParser.END_DOCUMENT) {
+                if (eventType == XmlPullParser.START_TAG) {
+                    final String tag = parser.getName();
+                    if ("map".equals(tag)) {
+                        currentSet = null;
+                        currentSetKey = null;
+                    } else if (currentSet != null) {
+                        // String elements inside a <set>
+                        currentSet.add(parser.nextText());
+                    } else if ("set".equals(tag)) {
+                        currentSetKey = parser.getAttributeValue(null, "name");
+                        currentSet = new HashSet<>();
+                    } else {
+                        final String name = parser.getAttributeValue(null, "name");
+                        switch (tag) {
+                            case "string" -> editor.putString(name, parser.nextText());
+                            case "boolean" -> editor.putBoolean(name, Boolean.parseBoolean(parser.getAttributeValue(null, "value")));
+                            case "int" -> editor.putInt(name, Integer.parseInt(parser.getAttributeValue(null, "value")));
+                            case "long" -> editor.putLong(name, Long.parseLong(parser.getAttributeValue(null, "value")));
+                        }
+                    }
+                } else if (eventType == XmlPullParser.END_TAG && "set".equals(parser.getName()) && currentSet != null) {
+                    editor.putStringSet(currentSetKey, currentSet);
+                    currentSet = null;
+                    currentSetKey = null;
+                }
+                eventType = parser.next();
+            }
+
+            editor.apply();
+        } catch (IOException | XmlPullParserException e) {
+            LogUtils.e("Failed to import bundled default preferences: " + e);
+        }
+    }
 
     private void initDebugAndNightlyDefaults() {
         SharedPreferences prefs = getDefaultSharedPreferences(this);
