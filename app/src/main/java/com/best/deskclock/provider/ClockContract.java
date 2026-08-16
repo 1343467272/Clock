@@ -218,6 +218,37 @@ public final class ClockContract {
          * <p>Type: INTEGER</p>
          */
         String DELETE_AFTER_USE = "delete_after_use";
+
+        /**
+         * The type of repetition applied to the alarm.
+         * <p>Type: INTEGER</p>
+         * <ul>
+         *     <li>0 ({@code REPEAT_TYPE_NONE}): no repetition (one-time alarm)</li>
+         *     <li>1 ({@code REPEAT_TYPE_WEEKLY}): repeat on selected weekdays</li>
+         *     <li>2 ({@code REPEAT_TYPE_WORKDAY}): repeat on Chinese statutory workdays</li>
+         *     <li>3 ({@code REPEAT_TYPE_SHIFT}): repeat on a work/rest shift cycle</li>
+         * </ul>
+         */
+        String REPEAT_TYPE = "repeatType";
+
+        /**
+         * Number of consecutive work days in the shift cycle ("上 X 天").
+         * <p>Type: INTEGER</p>
+         */
+        String SHIFT_WORK_DAYS = "shiftWorkDays";
+
+        /**
+         * Number of consecutive rest days in the shift cycle ("休 Y 天").
+         * <p>Type: INTEGER</p>
+         */
+        String SHIFT_REST_DAYS = "shiftRestDays";
+
+        /**
+         * Start date of the shift cycle expressed as UTC midnight in epoch milliseconds.
+         * Day one of the first work block begins on this date.
+         * <p>Type: LONG</p>
+         */
+        String SHIFT_START_DATE = "shiftStartDate";
     }
 
     /**

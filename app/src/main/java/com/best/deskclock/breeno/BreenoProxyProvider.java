@@ -22,6 +22,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
 
+import com.best.deskclock.BuildConfig;
 import com.best.deskclock.R;
 import com.best.deskclock.alarms.AlarmStateManager;
 import com.best.deskclock.data.DataModel;
@@ -46,7 +47,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class BreenoProxyProvider extends ContentProvider {
 
-    public static final String AUTHORITY = "com.best.deskclock.breeno";
+    public static final String AUTHORITY = BuildConfig.APPLICATION_ID + ".breeno";
     public static final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY);
 
     /**

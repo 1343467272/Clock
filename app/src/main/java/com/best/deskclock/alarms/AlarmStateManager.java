@@ -245,7 +245,7 @@ public final class AlarmStateManager extends BroadcastReceiver {
             return;
         }
 
-        if (!alarm.daysOfWeek.isRepeating()) {
+        if (!alarm.isRepeating()) {
             if (alarm.deleteAfterUse) {
                 LogUtils.i("Deleting parent alarm: " + alarm.id);
                 Alarm.deleteAlarm(cr, alarm.id);

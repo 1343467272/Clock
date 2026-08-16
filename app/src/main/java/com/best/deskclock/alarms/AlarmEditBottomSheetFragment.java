@@ -67,6 +67,7 @@ import com.best.deskclock.dialogfragment.LabelDialogFragment;
 import com.best.deskclock.dialogfragment.MaterialTimePickerDialogFragment;
 import com.best.deskclock.dialogfragment.SpinnerDatePickerDialogFragment;
 import com.best.deskclock.dialogfragment.SpinnerTimePickerDialogFragment;
+import com.best.deskclock.dialogfragment.ShiftCycleDialogFragment;
 import com.best.deskclock.dialogfragment.VibrationPatternDialogFragment;
 import com.best.deskclock.dialogfragment.VolumeCrescendoDurationDialogFragment;
 import com.best.deskclock.events.Events;
@@ -92,6 +93,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.timepicker.MaterialTimePicker;
@@ -245,7 +247,7 @@ public class AlarmEditBottomSheetFragment extends BottomSheetDialogFragment {
             mBinding.chooseRingtone, mBinding.vibrationPatternLayout, mBinding.autoSilenceDurationLayout, mBinding.snoozeDurationLayout,
             mBinding.missedAlarmRepeatLimitLayout, mBinding.crescendoDurationLayout, mBinding.alarmVolumeLayout,
             mBinding.alarmBackgroundImageLayout, mBinding.alarmBackgroundImageButton, mBinding.alarmBlurIntensityLayout,
-            mBinding.deleteButton, mBinding.duplicateButton, mBinding.previewButton, mBinding.saveButton);
+            mBinding.deleteButton, mBinding.duplicateButton, mBinding.previewButton, mBinding.saveButton, mBinding.repeatModeGroup);
 
         mAlarmUpdateHandler = null;
 
@@ -309,6 +311,7 @@ public class AlarmEditBottomSheetFragment extends BottomSheetDialogFragment {
 
         bindCustomDragHandleTooltip();
         bindClock();
+        bindRepeatMode();
         bindDaysOfWeekButtons();
         bindSelectedDate();
         bindPauseAlarm();
@@ -420,6 +423,104 @@ public class AlarmEditBottomSheetFragment extends BottomSheetDialogFragment {
         });
     }
 
+    private final MaterialButtonToggleGroup.OnButtonCheckedListener mRepeatModeListener = (group, checkedId, isChecked) -> {
+        if (!isChecked) {
+            return;
+        }
+
+        final int repeatType;
+        if (checkedId == mBinding.repeatModeWeekly.getId()) {
+            repeatType = Alarm.REPEAT_TYPE_WEEKLY;
+        } else if (checkedId == mBinding.repeatModeWorkday.getId()) {
+            repeatType = Alarm.REPEAT_TYPE_WORKDAY;
+        } else if (checkedId == mBinding.repeatModeShift.getId()) {
+            repeatType = Alarm.REPEAT_TYPE_SHIFT;
+        } else {
+            repeatType = Alarm.REPEAT_TYPE_NONE;
+        }
+
+        setRepeatType(repeatType);
+    };
+
+    private void bindRepeatMode() {
+        mBinding.repeatModeTitle.setTypeface(mGeneralTypeface);
+
+        mBinding.repeatModeGroup.removeOnButtonCheckedListener(mRepeatModeListener);
+        mBinding.repeatModeGroup.addOnButtonCheckedListener(mRepeatModeListener);
+
+        updateRepeatModeSelection();
+    }
+
+    /**
+     * Applies the given repetition type to the alarm and refreshes the affected UI sections.
+     */
+    private void setRepeatType(int repeatType) {
+        if (mAlarm.repeatType == repeatType) {
+            return;
+        }
+
+        mAlarm.repeatType = repeatType;
+        mAlarm.daysOfWeek = Weekdays.NONE;
+
+        if (repeatType == Alarm.REPEAT_TYPE_WEEKLY) {
+            // Enable the alarm for every day by default when switching to weekly repetition.
+            mAlarm.daysOfWeek = Weekdays.fromBits(Weekdays.ALL_DAYS);
+        } else if (repeatType == Alarm.REPEAT_TYPE_SHIFT) {
+            if (mAlarm.shiftWorkDays <= 0) {
+                mAlarm.shiftWorkDays = 1;
+            }
+            if (mAlarm.shiftRestDays <= 0) {
+                mAlarm.shiftRestDays = 1;
+            }
+            if (mAlarm.shiftStartDate <= 0) {
+                mAlarm.shiftStartDate = utcMidnightToday();
+            }
+        } else if (repeatType == Alarm.REPEAT_TYPE_NONE) {
+            // Pausing is only available for repeating alarms.
+            mAlarm.pauseStartDate = 0;
+            mAlarm.pauseEndDate = 0;
+        }
+
+        bindDaysOfWeekButtons();
+        bindSelectedDate();
+        bindPauseAlarm();
+        bindDeleteOccasionalAlarmAfterUse();
+        updateRepeatModeSelection();
+    }
+
+    /**
+     * Highlights the repeat type button matching the current alarm state.
+     */
+    private void updateRepeatModeSelection() {
+        mBinding.repeatModeGroup.removeOnButtonCheckedListener(mRepeatModeListener);
+
+        final int id;
+        switch (mAlarm.repeatType) {
+            case Alarm.REPEAT_TYPE_WEEKLY -> id = mBinding.repeatModeWeekly.getId();
+            case Alarm.REPEAT_TYPE_WORKDAY -> id = mBinding.repeatModeWorkday.getId();
+            case Alarm.REPEAT_TYPE_SHIFT -> id = mBinding.repeatModeShift.getId();
+            default -> id = mBinding.repeatModeOnce.getId();
+        }
+        mBinding.repeatModeGroup.check(id);
+
+        mBinding.repeatModeGroup.addOnButtonCheckedListener(mRepeatModeListener);
+
+        updateRepeatDaysVisibility();
+    }
+
+    private void updateRepeatDaysVisibility() {
+        final boolean weekly = mAlarm.repeatType == Alarm.REPEAT_TYPE_WEEKLY;
+        mBinding.repeatDaysGroup.setVisibility(weekly ? View.VISIBLE : View.GONE);
+    }
+
+    private static long utcMidnightToday() {
+        final Calendar utc = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        utc.clear();
+        final Calendar now = Calendar.getInstance();
+        utc.set(now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH));
+        return utc.getTimeInMillis();
+    }
+
     private void bindDaysOfWeekButtons() {
         LayoutInflater inflater = LayoutInflater.from(requireContext());
         List<Integer> weekdays = SettingsDAO.getWeekdayOrder(mPrefs).getCalendarDays();
@@ -458,7 +559,11 @@ public class AlarmEditBottomSheetFragment extends BottomSheetDialogFragment {
                     mAlarm.daysOfWeek = mAlarm.daysOfWeek.setBit(weekday, isChecked);
                     updateDaysOfWeekButtonVisuals(dayButtons[i], isChecked);
 
-                    if (!mAlarm.daysOfWeek.isRepeating()) {
+                    // Selecting a weekday makes the alarm a weekly repeating alarm.
+                    mAlarm.repeatType = mAlarm.daysOfWeek.isRepeating() ? Alarm.REPEAT_TYPE_WEEKLY : Alarm.REPEAT_TYPE_NONE;
+                    updateRepeatModeSelection();
+
+                    if (!mAlarm.isRepeating()) {
                         mAlarm.pauseStartDate = 0;
                         mAlarm.pauseEndDate = 0;
                     }
@@ -491,6 +596,25 @@ public class AlarmEditBottomSheetFragment extends BottomSheetDialogFragment {
 
         mBinding.scheduleAlarm.setTypeface(mGeneralTypeface);
 
+        if (mAlarm.isWorkdayRepeating()) {
+            // Workday alarms always ring on statutory workdays: there is no specific date to schedule.
+            mBinding.scheduleAlarmLayout.setOnClickListener(null);
+            clearSelectedDate(R.string.workday_repeat_summary);
+            return;
+        }
+
+        if (mAlarm.isShiftRepeating()) {
+            // The schedule row opens the shift cycle configuration dialog.
+            mBinding.scheduleAlarmLayout.setOnClickListener(v -> {
+                ShiftCycleDialogFragment.show(getChildFragmentManager(),
+                    ShiftCycleDialogFragment.newInstance(mAlarm.shiftWorkDays, mAlarm.shiftRestDays, mAlarm.shiftStartDate));
+            });
+
+            mBinding.scheduleAlarm.setText(getString(R.string.shift_repeat_summary, mAlarm.shiftWorkDays, mAlarm.shiftRestDays));
+            mBinding.cancelScheduledAlarm.setVisibility(GONE);
+            return;
+        }
+
         mBinding.scheduleAlarmLayout.setOnClickListener(v -> DatePickerDialogFragment.show(
             getChildFragmentManager(),
             mPrefs,
@@ -498,7 +622,7 @@ public class AlarmEditBottomSheetFragment extends BottomSheetDialogFragment {
             this::applyDate)
         );
 
-        if (mAlarm.daysOfWeek.isRepeating()) {
+        if (mAlarm.isRepeating()) {
             clearSelectedDate(openCalendarText);
         } else if (mAlarm.isSpecifiedDate()) {
             if (mAlarm.isDateInThePast()) {
@@ -523,7 +647,7 @@ public class AlarmEditBottomSheetFragment extends BottomSheetDialogFragment {
     }
 
     private void bindPauseAlarm() {
-        boolean isRepeating = mAlarm.daysOfWeek.isRepeating();
+        boolean isRepeating = mAlarm.isRepeating();
 
         mBinding.pauseAlarmLayout.setEnabled(isRepeating);
         mBinding.pauseAlarm.setEnabled(isRepeating);
@@ -681,7 +805,7 @@ public class AlarmEditBottomSheetFragment extends BottomSheetDialogFragment {
     }
 
     private void bindDeleteOccasionalAlarmAfterUse() {
-        final boolean isRepeating = mAlarm.daysOfWeek.isRepeating();
+        final boolean isRepeating = mAlarm.isRepeating();
 
         mBinding.deleteOccasionalAlarmAfterUse.setTypeface(mGeneralTypeface);
         mBinding.deleteOccasionalAlarmAfterUse.setEnabled(!isRepeating);
@@ -1164,6 +1288,14 @@ public class AlarmEditBottomSheetFragment extends BottomSheetDialogFragment {
                 mAlarm.blurIntensity = bundle.getInt(BlurIntensityDialogFragment.RESULT_BLUR_INTENSITY_VALUE);
                 bindBlurIntensity();
             });
+
+        childFragmentManager.setFragmentResultListener(ShiftCycleDialogFragment.REQUEST_KEY, this,
+            (requestKey, bundle) -> {
+                mAlarm.shiftWorkDays = bundle.getInt(ShiftCycleDialogFragment.WORK_DAYS_VALUE);
+                mAlarm.shiftRestDays = bundle.getInt(ShiftCycleDialogFragment.REST_DAYS_VALUE);
+                mAlarm.shiftStartDate = bundle.getLong(ShiftCycleDialogFragment.START_DATE_VALUE);
+                bindSelectedDate();
+            });
     }
 
     /**
@@ -1255,6 +1387,7 @@ public class AlarmEditBottomSheetFragment extends BottomSheetDialogFragment {
 
         if (isFromDelay) {
             mAlarm.daysOfWeek = Weekdays.fromBits(0);
+            mAlarm.repeatType = Alarm.REPEAT_TYPE_NONE;
         }
 
         Calendar currentCalendar = Calendar.getInstance();
@@ -1276,6 +1409,7 @@ public class AlarmEditBottomSheetFragment extends BottomSheetDialogFragment {
         }
 
         if (isFromDelay) {
+            bindRepeatMode();
             bindDaysOfWeekButtons();
             bindDeleteOccasionalAlarmAfterUse();
         }
@@ -1284,8 +1418,9 @@ public class AlarmEditBottomSheetFragment extends BottomSheetDialogFragment {
     }
 
     private void applyDate(int year, int month, int day) {
-        if (mAlarm.daysOfWeek.isRepeating()) {
+        if (mAlarm.isRepeating()) {
             mAlarm.daysOfWeek = Weekdays.NONE;
+            mAlarm.repeatType = Alarm.REPEAT_TYPE_NONE;
         }
 
         if (mAlarm.isPauseSet()) {
@@ -1298,6 +1433,7 @@ public class AlarmEditBottomSheetFragment extends BottomSheetDialogFragment {
         mAlarm.day = day;
 
         bindSelectedDate();
+        bindRepeatMode();
         bindDaysOfWeekButtons();
         bindPauseAlarm();
         bindDeleteOccasionalAlarmAfterUse();

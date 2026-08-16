@@ -29,13 +29,121 @@
         android:focusable="true"
         tools:text="08:30" />
 
+    <!-- Repeat mode selector -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginHorizontal="14dp"
+        android:layout_marginTop="4dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/repeat_mode_title"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:drawableStart="@drawable/ic_repeat"
+            android:drawablePadding="8dp"
+            android:gravity="center_vertical"
+            android:paddingEnd="12dp"
+            android:text="@string/repeat_title"
+            android:textSize="14sp" />
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/repeat_mode_group"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            app:singleSelection="true"
+            app:selectionRequired="false">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/repeat_mode_once"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:minWidth="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:paddingHorizontal="4dp"
+                android:autoSizeTextType="uniform"
+                android:minHeight="0dp"
+                android:maxLines="1"
+                android:text="@string/repeat_type_once"
+                android:textSize="12sp"
+                android:textColor="@color/repeat_mode_button_text_color"
+                app:backgroundTint="@color/repeat_mode_button_background_color"
+                app:strokeColor="@color/repeat_mode_button_stroke_color" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/repeat_mode_weekly"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:minWidth="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:paddingHorizontal="4dp"
+                android:autoSizeTextType="uniform"
+                android:minHeight="0dp"
+                android:maxLines="1"
+                android:text="@string/repeat_type_weekly"
+                android:textSize="12sp"
+                android:textColor="@color/repeat_mode_button_text_color"
+                app:backgroundTint="@color/repeat_mode_button_background_color"
+                app:strokeColor="@color/repeat_mode_button_stroke_color" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/repeat_mode_workday"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:minWidth="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:paddingHorizontal="4dp"
+                android:autoSizeTextType="uniform"
+                android:minHeight="0dp"
+                android:maxLines="1"
+                android:text="@string/repeat_type_workday"
+                android:textSize="12sp"
+                android:textColor="@color/repeat_mode_button_text_color"
+                app:backgroundTint="@color/repeat_mode_button_background_color"
+                app:strokeColor="@color/repeat_mode_button_stroke_color" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/repeat_mode_shift"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:minWidth="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:paddingHorizontal="4dp"
+                android:autoSizeTextType="uniform"
+                android:minHeight="0dp"
+                android:maxLines="1"
+                android:text="@string/repeat_type_shift"
+                android:textSize="12sp"
+                android:textColor="@color/repeat_mode_button_text_color"
+                app:backgroundTint="@color/repeat_mode_button_background_color"
+                app:strokeColor="@color/repeat_mode_button_stroke_color" />
+
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+    </LinearLayout>
+
     <!-- Day buttons are added programmatically -->
     <com.google.android.material.button.MaterialButtonToggleGroup
         android:id="@+id/repeat_days_group"
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:layout_marginHorizontal="14dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="6dp"
         android:layout_marginBottom="6dp"
         android:gravity="center"
         app:singleSelection="false" />

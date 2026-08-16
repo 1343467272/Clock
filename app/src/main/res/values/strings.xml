@@ -204,6 +204,30 @@
     <string name="every_day">Every day</string>
     <!-- Repeat options that appear on the alarm editing panel to identify repetition schedule: concatenate days with this character, i.e. "Mon, Tue, Wed" -->
     <string name="day_concat">", "</string>
+    <!-- Label shown on the alarm editing panel above the repetition type selector -->
+    <string name="repeat_title">Repeat</string>
+    <!-- Repetition type: one-time alarm -->
+    <string name="repeat_type_once">Once</string>
+    <!-- Repetition type: selected weekdays -->
+    <string name="repeat_type_weekly">Weekly</string>
+    <!-- Repetition type: Chinese statutory workdays -->
+    <string name="repeat_type_workday">Workdays</string>
+    <!-- Repetition type: work/rest shift cycle -->
+    <string name="repeat_type_shift">Shift</string>
+    <!-- Summary shown in the alarm editing panel and alarm list for a workday alarm -->
+    <string name="workday_repeat_summary">Statutory workdays</string>
+    <!-- Summary shown in the alarm editing panel and alarm list for a shift alarm -->
+    <string name="shift_repeat_summary">Work %1$d days, rest %2$d days</string>
+    <!-- Title of the dialog configuring the work/rest shift cycle -->
+    <string name="shift_cycle_title">Shift cycle</string>
+    <!-- Label of the input field for the number of consecutive work days -->
+    <string name="shift_work_days">Work days</string>
+    <!-- Label of the input field for the number of consecutive rest days -->
+    <string name="shift_rest_days">Rest days</string>
+    <!-- Label of the button opening the start date picker of the shift cycle -->
+    <string name="shift_start_date">Start date</string>
+    <!-- Start date value shown in the shift cycle dialog -->
+    <string name="shift_start_date_value">%1$s</string>
     <!-- Text to display when alarm volume is muted. [CHAR LIMIT=50] -->
     <string name="alarm_volume_low">The alarm volume is low</string>
     <!-- Text for action that presents a volume control to adjust alarm volume. [CHAR LIMIT=20] -->

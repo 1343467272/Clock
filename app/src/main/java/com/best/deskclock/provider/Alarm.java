@@ -28,7 +28,9 @@ import androidx.loader.content.CursorLoader;
 import com.best.deskclock.R;
 import com.best.deskclock.data.DataModel;
 import com.best.deskclock.data.SettingsDAO;
+import com.best.deskclock.data.ShiftCycle;
 import com.best.deskclock.data.Weekdays;
+import com.best.deskclock.holiday.HolidayDataStore;
 import com.best.deskclock.utils.AlarmUtils;
 import com.best.deskclock.utils.RingtoneUtils;
 
@@ -43,6 +45,26 @@ public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
      * Alarms start with an invalid id when it hasn't been saved to the database.
      */
     public static final long INVALID_ID = -1;
+
+    /**
+     * No repetition: the alarm rings once (possibly on a specific date).
+     */
+    public static final int REPEAT_TYPE_NONE = 0;
+
+    /**
+     * Weekly repetition: the alarm rings on the selected days of the week.
+     */
+    public static final int REPEAT_TYPE_WEEKLY = 1;
+
+    /**
+     * Workday repetition: the alarm rings on Chinese statutory workdays.
+     */
+    public static final int REPEAT_TYPE_WORKDAY = 2;
+
+    /**
+     * Shift repetition: the alarm rings on the work days of a "work X days, rest Y days" cycle.
+     */
+    public static final int REPEAT_TYPE_SHIFT = 3;
 
     /**
      * SharedPreferences key used to indicate whether the styled repeat day display is enabled
@@ -149,7 +171,11 @@ public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
         PAUSE_START_DATE,
         PAUSE_END_DATE,
         BACKGROUND_IMAGE,
-        BLUR_INTENSITY
+        BLUR_INTENSITY,
+        REPEAT_TYPE,
+        SHIFT_WORK_DAYS,
+        SHIFT_REST_DAYS,
+        SHIFT_START_DATE
     };
     private static final String[] QUERY_ALARMS_WITH_INSTANCES_COLUMNS = {
         ClockDatabaseHelper.ALARMS_TABLE_NAME + "." + _ID,
@@ -194,7 +220,11 @@ public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
         ClockDatabaseHelper.INSTANCES_TABLE_NAME + "." + ClockContract.InstancesColumns.MISSED_ALARM_REPEAT_COUNT,
         ClockDatabaseHelper.INSTANCES_TABLE_NAME + "." + ClockContract.InstancesColumns.MISSED_ALARM_REPEAT_LIMIT,
         ClockDatabaseHelper.INSTANCES_TABLE_NAME + "." + ClockContract.InstancesColumns.CRESCENDO_DURATION,
-        ClockDatabaseHelper.INSTANCES_TABLE_NAME + "." + ClockContract.InstancesColumns.ALARM_VOLUME
+        ClockDatabaseHelper.INSTANCES_TABLE_NAME + "." + ClockContract.InstancesColumns.ALARM_VOLUME,
+        ClockDatabaseHelper.ALARMS_TABLE_NAME + "." + REPEAT_TYPE,
+        ClockDatabaseHelper.ALARMS_TABLE_NAME + "." + SHIFT_WORK_DAYS,
+        ClockDatabaseHelper.ALARMS_TABLE_NAME + "." + SHIFT_REST_DAYS,
+        ClockDatabaseHelper.ALARMS_TABLE_NAME + "." + SHIFT_START_DATE
     };
     /**
      * These save calls to cursor.getColumnIndexOrThrow()
@@ -225,6 +255,10 @@ public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
     private static final int PAUSE_END_DATE_INDEX = 22;
     private static final int BACKGROUND_IMAGE_INDEX = 23;
     private static final int BLUR_INTENSITY_INDEX = 24;
+    private static final int REPEAT_TYPE_INDEX = 25;
+    private static final int SHIFT_WORK_DAYS_INDEX = 26;
+    private static final int SHIFT_REST_DAYS_INDEX = 27;
+    private static final int SHIFT_START_DATE_INDEX = 28;
 
     private static final int INSTANCE_STATE_INDEX = 25;
     public static final int INSTANCE_ID_INDEX = 26;
@@ -244,9 +278,15 @@ public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
     public static final int INSTANCE_MISSED_ALARM_REPEAT_LIMIT_INDEX = 40;
     public static final int INSTANCE_CRESCENDO_DURATION_INDEX = 41;
     public static final int INSTANCE_ALARM_VOLUME_INDEX = 42;
+    private static final int INSTANCE_COLUMN_COUNT = INSTANCE_ALARM_VOLUME_INDEX + 1;
+
+    // The repeat-related alarm columns are appended at the end of the joined query so the
+    // instance column indices above remain stable. Their actual positions differ between the
+    // plain alarm query and the joined query, so they are read by column name instead of index.
+    private static final int REPEAT_JOIN_OFFSET = 4;
 
     private static final int COLUMN_COUNT = BLUR_INTENSITY_INDEX + 1;
-    private static final int ALARM_JOIN_INSTANCE_COLUMN_COUNT = INSTANCE_ALARM_VOLUME_INDEX + 1;
+    private static final int ALARM_JOIN_INSTANCE_COLUMN_COUNT = INSTANCE_ALARM_VOLUME_INDEX + 1 + REPEAT_JOIN_OFFSET;
     // Public fields
     public long id;
     public boolean enabled;
@@ -275,6 +315,10 @@ public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
     public int instanceState;
     public String backgroundImage;
     public int blurIntensity;
+    public int repeatType;
+    public int shiftWorkDays;
+    public int shiftRestDays;
+    public long shiftStartDate;
 
     // Creates a default alarm at the current time.
     public Alarm() {
@@ -310,13 +354,18 @@ public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
         this.pauseEndDate = 0;
         this.backgroundImage = DEFAULT_SPECIFIC_ALARM_BACKGROUND_IMAGE;
         this.blurIntensity = DEFAULT_BLUR_INTENSITY;
+        this.repeatType = REPEAT_TYPE_NONE;
+        this.shiftWorkDays = 0;
+        this.shiftRestDays = 0;
+        this.shiftStartDate = 0;
     }
 
     // Used to back up/restore the alarm
     public Alarm(long id, boolean enabled, int year, int month, int day, int hour, int minutes, boolean vibrate, String vibrationPattern,
                  boolean flash, Weekdays daysOfWeek, String label, boolean syncByLabel, String alert, boolean deleteAfterUse,
                  int autoSilenceDuration, int snoozeDuration, int missedAlarmRepeatLimit, int crescendoDuration, int alarmVolume,
-                 int manualSortOrder, long pauseStartDate, long pauseEndDate, String backgroundImage, int blurIntensity) {
+                 int manualSortOrder, long pauseStartDate, long pauseEndDate, String backgroundImage, int blurIntensity,
+                 int repeatType, int shiftWorkDays, int shiftRestDays, long shiftStartDate) {
 
         this.id = id;
         this.enabled = enabled;
@@ -343,6 +392,10 @@ public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
         this.pauseEndDate = pauseEndDate;
         this.backgroundImage = backgroundImage;
         this.blurIntensity = blurIntensity;
+        this.repeatType = repeatType;
+        this.shiftWorkDays = shiftWorkDays;
+        this.shiftRestDays = shiftRestDays;
+        this.shiftStartDate = shiftStartDate;
     }
 
     // Used to create a clone of the given alarm
@@ -373,6 +426,10 @@ public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
         this.pauseEndDate = original.pauseEndDate;
         this.backgroundImage = original.backgroundImage;
         this.blurIntensity = original.blurIntensity;
+        this.repeatType = original.repeatType;
+        this.shiftWorkDays = original.shiftWorkDays;
+        this.shiftRestDays = original.shiftRestDays;
+        this.shiftStartDate = original.shiftStartDate;
     }
 
     public Alarm(Cursor c) {
@@ -400,6 +457,13 @@ public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
         pauseEndDate = c.getLong(PAUSE_END_DATE_INDEX);
         backgroundImage = c.getString(BACKGROUND_IMAGE_INDEX);
         blurIntensity = c.getInt(BLUR_INTENSITY_INDEX);
+
+        // These columns are appended to the end of both the plain alarm query and the joined
+        // alarm/instance query, but at different offsets; read them by name to stay robust.
+        repeatType = getIntByName(c, REPEAT_TYPE, REPEAT_TYPE_NONE);
+        shiftWorkDays = getIntByName(c, SHIFT_WORK_DAYS, 0);
+        shiftRestDays = getIntByName(c, SHIFT_REST_DAYS, 0);
+        shiftStartDate = getLongByName(c, SHIFT_START_DATE, 0);
 
         if (c.getColumnCount() == ALARM_JOIN_INSTANCE_COLUMN_COUNT) {
             instanceState = c.getInt(INSTANCE_STATE_INDEX);
@@ -440,6 +504,10 @@ public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
         pauseEndDate = p.readLong();
         backgroundImage = p.readString();
         blurIntensity = p.readInt();
+        repeatType = p.readInt();
+        shiftWorkDays = p.readInt();
+        shiftRestDays = p.readInt();
+        shiftStartDate = p.readLong();
     }
 
     public ContentValues createContentValues() {
@@ -471,6 +539,10 @@ public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
         values.put(PAUSE_END_DATE, pauseEndDate);
         values.put(BACKGROUND_IMAGE, backgroundImage);
         values.put(BLUR_INTENSITY, blurIntensity);
+        values.put(REPEAT_TYPE, repeatType);
+        values.put(SHIFT_WORK_DAYS, shiftWorkDays);
+        values.put(SHIFT_REST_DAYS, shiftRestDays);
+        values.put(SHIFT_START_DATE, shiftStartDate);
 
         if (alert == null) {
             // We want to put null, so default alarm changes
@@ -508,6 +580,10 @@ public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
         p.writeLong(pauseEndDate);
         p.writeString(backgroundImage);
         p.writeInt(blurIntensity);
+        p.writeInt(repeatType);
+        p.writeInt(shiftWorkDays);
+        p.writeInt(shiftRestDays);
+        p.writeLong(shiftStartDate);
     }
 
     public int describeContents() {
@@ -658,8 +734,47 @@ public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
         return deletedRows == 1;
     }
 
+    private static int getIntByName(Cursor c, String column, int defaultValue) {
+        int index = c.getColumnIndex(column);
+        return index != -1 && !c.isNull(index) ? c.getInt(index) : defaultValue;
+    }
+
+    private static long getLongByName(Cursor c, String column, long defaultValue) {
+        int index = c.getColumnIndex(column);
+        return index != -1 && !c.isNull(index) ? c.getLong(index) : defaultValue;
+    }
+
+    /**
+     * @return {@code true} if the alarm rings more than once (weekly repetition, Chinese workday
+     * repetition or shift-cycle repetition); {@code false} for one-time alarms.
+     */
+    public boolean isRepeating() {
+        return repeatType != REPEAT_TYPE_NONE || daysOfWeek.isRepeating();
+    }
+
+    /**
+     * @return {@code true} if the alarm uses weekly repetition on the selected weekdays.
+     */
+    public boolean isWeeklyRepeating() {
+        return repeatType == REPEAT_TYPE_NONE && daysOfWeek.isRepeating();
+    }
+
+    /**
+     * @return {@code true} if the alarm rings on Chinese statutory workdays.
+     */
+    public boolean isWorkdayRepeating() {
+        return repeatType == REPEAT_TYPE_WORKDAY;
+    }
+
+    /**
+     * @return {@code true} if the alarm rings on the work days of a "work X days, rest Y days" cycle.
+     */
+    public boolean isShiftRepeating() {
+        return repeatType == REPEAT_TYPE_SHIFT;
+    }
+
     public boolean isDeleteAfterUse() {
-        return !daysOfWeek.isRepeating() && deleteAfterUse;
+        return !isRepeating() && deleteAfterUse;
     }
 
     public String getLabelOrDefault(Context context) {
@@ -733,6 +848,10 @@ public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
             || hour != other.hour
             || minutes != other.minutes
             || daysOfWeek.getBits() != other.daysOfWeek.getBits()
+            || repeatType != other.repeatType
+            || shiftWorkDays != other.shiftWorkDays
+            || shiftRestDays != other.shiftRestDays
+            || shiftStartDate != other.shiftStartDate
             || pauseStartDate != other.pauseStartDate
             || pauseEndDate != other.pauseEndDate;
     }
@@ -882,6 +1001,12 @@ public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
      * @return previous firing time, or null if this is a one-time alarm.
      */
     public Calendar getPreviousAlarmTime(Calendar currentTime) {
+        // Workday and shift alarms repeat on a non-weekday calendar, so the previous occurrence
+        // cannot be derived from the weekday distance.
+        if (isWorkdayRepeating() || isShiftRepeating()) {
+            return null;
+        }
+
         final Calendar previousInstanceTime = Calendar.getInstance(currentTime.getTimeZone());
         previousInstanceTime.set(Calendar.YEAR, year);
         previousInstanceTime.set(Calendar.MONTH, month);
@@ -914,6 +1039,10 @@ public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
      * specified time has already passed relative to {@code currentTime}.</p>
      */
     public Calendar getNextAlarmTime(Calendar currentTime) {
+        if (isWorkdayRepeating() || isShiftRepeating()) {
+            return getNextWorkOrShiftAlarmTime(currentTime);
+        }
+
         final Calendar nextInstanceTime = Calendar.getInstance(currentTime.getTimeZone());
         nextInstanceTime.set(Calendar.SECOND, 0);
         nextInstanceTime.set(Calendar.MILLISECOND, 0);
@@ -974,6 +1103,46 @@ public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
     }
 
     /**
+     * Finds the next occurrence of a workday or shift alarm by scanning the calendar day by day
+     * until a matching (and non-paused) day is found.
+     */
+    private Calendar getNextWorkOrShiftAlarmTime(Calendar currentTime) {
+        final Calendar nextInstanceTime = Calendar.getInstance(currentTime.getTimeZone());
+        nextInstanceTime.set(Calendar.SECOND, 0);
+        nextInstanceTime.set(Calendar.MILLISECOND, 0);
+        nextInstanceTime.setTimeInMillis(currentTime.getTimeInMillis());
+        nextInstanceTime.set(Calendar.HOUR_OF_DAY, hour);
+        nextInstanceTime.set(Calendar.MINUTE, minutes);
+
+        // Scan at most two years ahead to guarantee progress on the day-by-day search.
+        for (int attempts = 0; attempts < 366 * 2; attempts++) {
+            if (nextInstanceTime.getTimeInMillis() <= currentTime.getTimeInMillis()) {
+                nextInstanceTime.add(Calendar.DAY_OF_YEAR, 1);
+            }
+
+            if (isWorkOrShiftDay(nextInstanceTime) && !isDatePaused(nextInstanceTime)) {
+                break;
+            }
+
+            nextInstanceTime.add(Calendar.DAY_OF_YEAR, 1);
+        }
+
+        // DST can alter the hour/minute when advancing the day; restore the desired time.
+        nextInstanceTime.set(Calendar.HOUR_OF_DAY, hour);
+        nextInstanceTime.set(Calendar.MINUTE, minutes);
+
+        return nextInstanceTime;
+    }
+
+    private boolean isWorkOrShiftDay(Calendar date) {
+        if (isWorkdayRepeating()) {
+            return HolidayDataStore.getInstance().isWorkday(date);
+        }
+
+        return ShiftCycle.isWorkday(this, date);
+    }
+
+    /**
      * Returns the day of the week (as Calendar.DAY_OF_WEEK) when the alarm will next trigger.
      *
      * <p>If a valid {@link AlarmInstance} is provided and its scheduled time is in the future,
@@ -1017,7 +1186,7 @@ public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
         result.set(Calendar.SECOND, 0);
         result.set(Calendar.MILLISECOND, 0);
 
-        if (daysOfWeek.isRepeating()) {
+        if (isRepeating()) {
             // If a future instance exists (e.g. after Dismiss), use it.
             // Otherwise, compute the next valid occurrence from "now".
             if (instance != null && instance.getAlarmTime().getTimeInMillis() > now.getTimeInMillis()) {
@@ -1107,6 +1276,10 @@ public final class Alarm implements Parcelable, ClockContract.AlarmsColumns {
             ", pauseEndDate=" + pauseEndDate +
             ", backgroundImage=" + backgroundImage +
             ", blurIntensity=" + blurIntensity +
+            ", repeatType=" + repeatType +
+            ", shiftWorkDays=" + shiftWorkDays +
+            ", shiftRestDays=" + shiftRestDays +
+            ", shiftStartDate=" + shiftStartDate +
             '}';
     }
 

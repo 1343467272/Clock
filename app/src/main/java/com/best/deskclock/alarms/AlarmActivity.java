@@ -1315,7 +1315,7 @@ public class AlarmActivity extends BaseActivity implements View.OnClickListener,
      * {@code false} otherwise.
      */
     private boolean isOccasionalAlarmDeletedAfterUse() {
-        if (mAlarm.daysOfWeek.isRepeating()) {
+        if (mAlarm.isRepeating()) {
             return false;
         }
 

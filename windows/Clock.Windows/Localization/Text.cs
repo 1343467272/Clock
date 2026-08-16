@@ -26,6 +26,8 @@ public static class Text
     public const string EnabledOn = "开";
     public const string EnabledOff = "关";
     public const string EveryDay = "每天";
+    public const string StatutoryWorkdays = "法定工作日";
+    public const string ShiftRepeatSummary = "上{0}天休{1}天";
     public const string DefaultAlarmLabel = "闹钟";
     public const string NextPrefix = "下次：";
 
@@ -101,6 +103,13 @@ public static class Text
     // Alarm edit window
     public const string Time = "时间";
     public const string Repeat = "重复";
+    public const string RepeatTypeOnce = "单次";
+    public const string RepeatTypeWeekly = "每周";
+    public const string RepeatTypeWorkday = "工作日";
+    public const string RepeatTypeShift = "轮班";
+    public const string ShiftWorkDaysLabel = "上";
+    public const string ShiftRestDaysLabel = "休";
+    public const string ShiftStartDate = "起始日期";
     public const string Options = "选项";
     public const string Vibrate = "振动";
     public const string Flash = "闪光";

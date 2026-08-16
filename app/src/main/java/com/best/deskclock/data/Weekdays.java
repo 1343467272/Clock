@@ -56,7 +56,7 @@ public record Weekdays(int mBits) {
     /**
      * All valid bits set.
      */
-    private static final int ALL_DAYS = 0x7F;
+    public static final int ALL_DAYS = 0x7F;
 
     /**
      * Maps calendar weekdays to the bit masks that represent them in this class.

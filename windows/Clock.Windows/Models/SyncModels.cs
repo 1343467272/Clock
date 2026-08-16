@@ -47,6 +47,10 @@ public class AlarmRecord
     public long PauseEndDate { get; set; }
     public string BackgroundImage { get; set; } = "";
     public int BlurIntensity { get; set; }
+    public int RepeatType { get; set; }
+    public int ShiftWorkDays { get; set; }
+    public int ShiftRestDays { get; set; }
+    public long ShiftStartDate { get; set; }
 }
 
 /// <summary>Wire record for one countdown timer.</summary>

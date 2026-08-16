@@ -117,6 +117,10 @@ public final class SyncSnapshotBuilder {
         r.pauseEndDate = alarm.pauseEndDate;
         r.backgroundImage = alarm.backgroundImage == null ? "" : alarm.backgroundImage;
         r.blurIntensity = alarm.blurIntensity;
+        r.repeatType = alarm.repeatType;
+        r.shiftWorkDays = alarm.shiftWorkDays;
+        r.shiftRestDays = alarm.shiftRestDays;
+        r.shiftStartDate = alarm.shiftStartDate;
 
         final String fingerprint = SyncFingerprints.alarmFingerprint(r);
         long updatedAt = state.getAlarmUpdatedAt(uuid);

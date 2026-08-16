@@ -27,7 +27,7 @@ class ClockDatabaseHelper extends SQLiteOpenHelper {
     static final String ALARMS_TABLE_NAME = "alarm_templates";
     static final String INSTANCES_TABLE_NAME = "alarm_instances";
 
-    private static final int DATABASE_VERSION = 27;
+    private static final int DATABASE_VERSION = 28;
     private static final int MINIMUM_SUPPORTED_VERSION = 15;
 
     public ClockDatabaseHelper(Context context) {
@@ -60,7 +60,11 @@ class ClockDatabaseHelper extends SQLiteOpenHelper {
             ClockContract.AlarmsColumns.PAUSE_START_DATE + " INTEGER NOT NULL DEFAULT 0, " +
             ClockContract.AlarmsColumns.PAUSE_END_DATE + " INTEGER NOT NULL DEFAULT 0, " +
             ClockContract.AlarmsColumns.BACKGROUND_IMAGE + " TEXT NOT NULL, " +
-            ClockContract.AlarmsColumns.BLUR_INTENSITY + " INTEGER NOT NULL DEFAULT 0);");
+            ClockContract.AlarmsColumns.BLUR_INTENSITY + " INTEGER NOT NULL DEFAULT 0, " +
+            ClockContract.AlarmsColumns.REPEAT_TYPE + " INTEGER NOT NULL DEFAULT 0, " +
+            ClockContract.AlarmsColumns.SHIFT_WORK_DAYS + " INTEGER NOT NULL DEFAULT 0, " +
+            ClockContract.AlarmsColumns.SHIFT_REST_DAYS + " INTEGER NOT NULL DEFAULT 0, " +
+            ClockContract.AlarmsColumns.SHIFT_START_DATE + " INTEGER NOT NULL DEFAULT 0);");
 
         LogUtils.i("Alarms Table created");
     }
@@ -287,6 +291,23 @@ class ClockDatabaseHelper extends SQLiteOpenHelper {
                 + " INTEGER NOT NULL DEFAULT 0;");
 
             LogUtils.i("backgroundImage and blurIntensity columns added for version 26 upgrade.");
+        }
+
+        if (oldVersion < 28) {
+            // Add columns related to the "Workday" and "Shift" alarm repetition types
+            db.execSQL("ALTER TABLE " + ALARMS_TABLE_NAME + " ADD COLUMN " + ClockContract.AlarmsColumns.REPEAT_TYPE
+                + " INTEGER NOT NULL DEFAULT 0;");
+
+            db.execSQL("ALTER TABLE " + ALARMS_TABLE_NAME + " ADD COLUMN " + ClockContract.AlarmsColumns.SHIFT_WORK_DAYS
+                + " INTEGER NOT NULL DEFAULT 0;");
+
+            db.execSQL("ALTER TABLE " + ALARMS_TABLE_NAME + " ADD COLUMN " + ClockContract.AlarmsColumns.SHIFT_REST_DAYS
+                + " INTEGER NOT NULL DEFAULT 0;");
+
+            db.execSQL("ALTER TABLE " + ALARMS_TABLE_NAME + " ADD COLUMN " + ClockContract.AlarmsColumns.SHIFT_START_DATE
+                + " INTEGER NOT NULL DEFAULT 0;");
+
+            LogUtils.i("repeatType, shiftWorkDays, shiftRestDays and shiftStartDate columns added for version 28 upgrade.");
         }
     }
 

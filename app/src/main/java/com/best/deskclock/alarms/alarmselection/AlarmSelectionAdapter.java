@@ -98,7 +98,14 @@ public class AlarmSelectionAdapter extends RecyclerView.Adapter<AlarmSelectionAd
             binding.alarmLabel.setTypeface(regularTypeface);
 
             // Find days when alarm is firing
-            if (alarm.daysOfWeek.isRepeating()) {
+            if (alarm.isWorkdayRepeating()) {
+                binding.daysOfWeek.setText(context.getString(R.string.workday_repeat_summary));
+                binding.daysOfWeek.setContentDescription(context.getString(R.string.workday_repeat_summary));
+            } else if (alarm.isShiftRepeating()) {
+                final String summary = context.getString(R.string.shift_repeat_summary, alarm.shiftWorkDays, alarm.shiftRestDays);
+                binding.daysOfWeek.setText(summary);
+                binding.daysOfWeek.setContentDescription(summary);
+            } else if (alarm.isWeeklyRepeating()) {
                 final String daysOfWeekText = alarm.daysOfWeek.toString(context, weekdayOrder);
                 binding.daysOfWeek.setText(daysOfWeekText);
 

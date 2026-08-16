@@ -145,6 +145,10 @@ public partial class MainWindow : Window
             alarm.Label = merged.Label;
             alarm.SnoozeDuration = merged.SnoozeDuration;
             alarm.AutoSilenceDuration = merged.AutoSilenceDuration;
+            alarm.RepeatType = merged.RepeatType;
+            alarm.ShiftWorkDays = merged.ShiftWorkDays;
+            alarm.ShiftRestDays = merged.ShiftRestDays;
+            alarm.ShiftStartDate = merged.ShiftStartDate;
             alarm.SnoozedUntil = null;
             _state.TouchAlarm(alarm);
         }

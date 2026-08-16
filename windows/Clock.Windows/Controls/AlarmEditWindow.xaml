@@ -13,6 +13,22 @@
         </StackPanel>
 
         <TextBlock Text="{x:Static l:Text.Repeat}" FontWeight="SemiBold" Margin="0,16,0,6"/>
+        <StackPanel Orientation="Horizontal">
+            <ComboBox x:Name="RepeatTypeBox" Width="180" SelectionChanged="OnRepeatTypeChanged"/>
+            <TextBlock x:Name="RepeatTypeHint" VerticalAlignment="Center" Margin="12,0,0,0" FontSize="12" Foreground="{DynamicResource BkOnSurfaceVariant}"/>
+        </StackPanel>
+        <StackPanel x:Name="ShiftPanel" Orientation="Horizontal" Margin="0,8,0,0" Visibility="Collapsed">
+            <TextBlock Text="{x:Static l:Text.ShiftWorkDaysLabel}" VerticalAlignment="Center"/>
+            <ComboBox x:Name="ShiftWorkBox" Width="56" Margin="4,0" SelectionChanged="OnShiftCycleChanged"/>
+            <TextBlock Text="天，" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBlock Text="{x:Static l:Text.ShiftRestDaysLabel}" VerticalAlignment="Center"/>
+            <ComboBox x:Name="ShiftRestBox" Width="56" Margin="4,0" SelectionChanged="OnShiftCycleChanged"/>
+            <TextBlock Text="天" VerticalAlignment="Center"/>
+        </StackPanel>
+        <StackPanel x:Name="ShiftDatePanel" Orientation="Horizontal" Margin="0,8,0,0">
+            <TextBlock Text="{x:Static l:Text.ShiftStartDate}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <DatePicker x:Name="ShiftStartDatePicker" Width="140"/>
+        </StackPanel>
         <ItemsControl x:Name="DayToggleList">
             <ItemsControl.ItemTemplate>
                 <DataTemplate>

@@ -33,7 +33,8 @@ public final class SyncFingerprints {
             r.autoSilenceDuration, r.snoozeDuration, r.missedAlarmRepeatLimit,
             r.crescendoDuration, r.alarmVolume, r.manualSortOrder,
             r.pauseStartDate, r.pauseEndDate,
-            r.backgroundImage, r.blurIntensity
+            r.backgroundImage, r.blurIntensity,
+            r.repeatType, r.shiftWorkDays, r.shiftRestDays, r.shiftStartDate
         );
     }
 

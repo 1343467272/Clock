@@ -48,6 +48,10 @@ public final class SyncModels {
         public long pauseEndDate;
         public String backgroundImage = "";
         public int blurIntensity;
+        public int repeatType;
+        public int shiftWorkDays;
+        public int shiftRestDays;
+        public long shiftStartDate;
 
         public JSONObject toJson() throws JSONException {
             JSONObject o = new JSONObject();
@@ -76,6 +80,10 @@ public final class SyncModels {
             o.put("pauseEndDate", pauseEndDate);
             o.put("backgroundImage", backgroundImage);
             o.put("blurIntensity", blurIntensity);
+            o.put("repeatType", repeatType);
+            o.put("shiftWorkDays", shiftWorkDays);
+            o.put("shiftRestDays", shiftRestDays);
+            o.put("shiftStartDate", shiftStartDate);
             return o;
         }
 
@@ -106,6 +114,10 @@ public final class SyncModels {
             r.pauseEndDate = o.optLong("pauseEndDate", 0);
             r.backgroundImage = o.optString("backgroundImage", "");
             r.blurIntensity = o.optInt("blurIntensity", 0);
+            r.repeatType = o.optInt("repeatType", 0);
+            r.shiftWorkDays = o.optInt("shiftWorkDays", 0);
+            r.shiftRestDays = o.optInt("shiftRestDays", 0);
+            r.shiftStartDate = o.optLong("shiftStartDate", 0);
             return r;
         }
     }

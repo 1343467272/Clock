@@ -156,6 +156,10 @@ public final class SyncMerger {
         alarm.pauseEndDate = r.pauseEndDate;
         alarm.backgroundImage = r.backgroundImage == null ? "" : r.backgroundImage;
         alarm.blurIntensity = r.blurIntensity;
+        alarm.repeatType = r.repeatType;
+        alarm.shiftWorkDays = r.shiftWorkDays;
+        alarm.shiftRestDays = r.shiftRestDays;
+        alarm.shiftStartDate = r.shiftStartDate;
         return alarm;
     }
 

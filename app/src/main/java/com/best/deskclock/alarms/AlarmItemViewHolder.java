@@ -214,8 +214,12 @@ public class AlarmItemViewHolder extends RecyclerView.ViewHolder {
             mBinding.daysOfWeek.setTypeface(mGeneralBoldTypeface);
             mBinding.daysOfWeek.setText(context.getString(R.string.alarm_alert_snooze_until,
                 AlarmUtils.getAlarmText(context, alarmInstance, false)));
-        } else if (alarmInstance != null && alarm.daysOfWeek.isRepeating()) {
+        } else if (alarmInstance != null && alarm.isWeeklyRepeating()) {
             setRepeatingDaysDescription(context, alarm, alarmInstance);
+        } else if (alarm.isWorkdayRepeating()) {
+            setDaysOfWeekText(context.getString(R.string.workday_repeat_summary));
+        } else if (alarm.isShiftRepeating()) {
+            setDaysOfWeekText(context.getString(R.string.shift_repeat_summary, alarm.shiftWorkDays, alarm.shiftRestDays));
         } else if (alarm.isSpecifiedDate()) {
             setSpecifiedDateDescription(context, alarm);
         } else {
@@ -224,7 +228,7 @@ public class AlarmItemViewHolder extends RecyclerView.ViewHolder {
     }
 
     private void bindUpcomingDate(Alarm alarm, AlarmInstance alarmInstance) {
-        if (alarmInstance == null || !alarm.enabled || !alarm.daysOfWeek.isRepeating()) {
+        if (alarmInstance == null || !alarm.enabled || !alarm.isRepeating()) {
             mBinding.upcomingDate.setVisibility(GONE);
             mBinding.digitalClock.setTextSize(TypedValue.COMPLEX_UNIT_SP, 48);
             return;

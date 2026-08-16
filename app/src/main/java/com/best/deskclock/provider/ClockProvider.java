@@ -109,6 +109,14 @@ public class ClockProvider extends ContentProvider {
             ALARMS_TABLE_NAME + "." + AlarmsColumns.BACKGROUND_IMAGE);
         sAlarmsWithInstancesProjection.put(ALARMS_TABLE_NAME + "." + AlarmsColumns.BLUR_INTENSITY,
             ALARMS_TABLE_NAME + "." + AlarmsColumns.BLUR_INTENSITY);
+        sAlarmsWithInstancesProjection.put(ALARMS_TABLE_NAME + "." + AlarmsColumns.REPEAT_TYPE,
+            ALARMS_TABLE_NAME + "." + AlarmsColumns.REPEAT_TYPE);
+        sAlarmsWithInstancesProjection.put(ALARMS_TABLE_NAME + "." + AlarmsColumns.SHIFT_WORK_DAYS,
+            ALARMS_TABLE_NAME + "." + AlarmsColumns.SHIFT_WORK_DAYS);
+        sAlarmsWithInstancesProjection.put(ALARMS_TABLE_NAME + "." + AlarmsColumns.SHIFT_REST_DAYS,
+            ALARMS_TABLE_NAME + "." + AlarmsColumns.SHIFT_REST_DAYS);
+        sAlarmsWithInstancesProjection.put(ALARMS_TABLE_NAME + "." + AlarmsColumns.SHIFT_START_DATE,
+            ALARMS_TABLE_NAME + "." + AlarmsColumns.SHIFT_START_DATE);
 
         sAlarmsWithInstancesProjection.put(INSTANCES_TABLE_NAME + "." + InstancesColumns.ALARM_STATE,
             INSTANCES_TABLE_NAME + "." + InstancesColumns.ALARM_STATE);

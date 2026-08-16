@@ -57,6 +57,10 @@ public static class SyncMerge
                 PauseEndDate = a.PauseEndDate,
                 BackgroundImage = a.BackgroundImage,
                 BlurIntensity = a.BlurIntensity,
+                RepeatType = a.RepeatType,
+                ShiftWorkDays = a.ShiftWorkDays,
+                ShiftRestDays = a.ShiftRestDays,
+                ShiftStartDate = a.ShiftStartDate,
             });
         }
 
@@ -214,6 +218,10 @@ public static class SyncMerge
         a.PauseEndDate = r.PauseEndDate;
         a.BackgroundImage = r.BackgroundImage;
         a.BlurIntensity = r.BlurIntensity;
+        a.RepeatType = r.RepeatType;
+        a.ShiftWorkDays = r.ShiftWorkDays;
+        a.ShiftRestDays = r.ShiftRestDays;
+        a.ShiftStartDate = r.ShiftStartDate;
     }
 
     private static bool ApplyTimers(AppState state, SyncSnapshot remote)

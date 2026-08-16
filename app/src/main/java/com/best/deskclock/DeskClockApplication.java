@@ -31,6 +31,7 @@ import com.best.deskclock.controller.Controller;
 import com.best.deskclock.data.DataModel;
 import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.events.LogEventTracker;
+import com.best.deskclock.holiday.HolidayDataStore;
 import com.best.deskclock.sync.SyncEngine;
 import com.best.deskclock.sync.SyncSettings;
 import com.best.deskclock.uidata.UiDataModel;
@@ -65,6 +66,9 @@ public class DeskClockApplication extends Application implements Application.Act
         Controller.getController().init();
         Controller.getController().addEventTracker(new LogEventTracker());
         Controller.getController().updateShortcuts();
+
+        // Warm the holiday cache so "workday" alarms can schedule even before the first lookup.
+        HolidayDataStore.getInstance().refresh();
 
         if (SdkUtils.isAtLeastAndroid8()) {
             NotificationUtils.updateNotificationChannels(this);

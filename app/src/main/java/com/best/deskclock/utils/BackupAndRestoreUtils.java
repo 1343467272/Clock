@@ -193,8 +193,12 @@ public class BackupAndRestoreUtils {
             alarmObject.put("pauseEndDate", alarm.pauseEndDate);
             alarmObject.put("backgroundImage", alarm.backgroundImage);
             alarmObject.put("blurIntensity", alarm.blurIntensity);
+            alarmObject.put("repeatType", alarm.repeatType);
+            alarmObject.put("shiftWorkDays", alarm.shiftWorkDays);
+            alarmObject.put("shiftRestDays", alarm.shiftRestDays);
+            alarmObject.put("shiftStartDate", alarm.shiftStartDate);
 
-            if (alarm.daysOfWeek.isRepeating() || !alarm.isSpecifiedDate()) {
+            if (alarm.isRepeating() || !alarm.isSpecifiedDate()) {
                 alarmsArray.put(alarmObject);
             } else {
                 alarmObject.put("year", alarm.year);
@@ -407,6 +411,10 @@ public class BackupAndRestoreUtils {
         String oldBackgroundImage = alarmObject.optString("backgroundImage", DEFAULT_SPECIFIC_ALARM_BACKGROUND_IMAGE);
         String newBackgroundImage = DEFAULT_SPECIFIC_ALARM_BACKGROUND_IMAGE;
         int blurIntensity = alarmObject.optInt("blurIntensity", DEFAULT_BLUR_INTENSITY);
+        int repeatType = alarmObject.optInt("repeatType", Alarm.REPEAT_TYPE_NONE);
+        int shiftWorkDays = alarmObject.optInt("shiftWorkDays", 0);
+        int shiftRestDays = alarmObject.optInt("shiftRestDays", 0);
+        long shiftStartDate = alarmObject.optLong("shiftStartDate", 0);
 
         if (!TextUtils.isEmpty(oldBackgroundImage)) {
             String fileName = new File(oldBackgroundImage).getName();
@@ -451,7 +459,7 @@ public class BackupAndRestoreUtils {
         restoredAlarm = new Alarm(id, enabled, year, month, day, hour, minutes, vibrate, vibrationPattern, flash,
             Weekdays.fromBits(daysOfWeek), label, syncAlarmByLabel, alarmRingtone, deleteAfterUse, autoSilenceDuration, snoozeDuration,
             missedAlarmRepeatLimit, crescendoDuration, alarmVolume, manualSortOrder, pauseStartDate, pauseEndDate, newBackgroundImage,
-            blurIntensity);
+            blurIntensity, repeatType, shiftWorkDays, shiftRestDays, shiftStartDate);
 
         restoredAlarm.addAlarm(contentResolver);
 

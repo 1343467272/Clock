@@ -55,6 +55,18 @@ public class AlarmModel
     public string BackgroundImage { get; set; } = "";
     public int BlurIntensity { get; set; }
 
+    /// <summary>Repeat mode matching the Android Alarm constants: 0=none, 1=weekly, 2=workday, 3=shift.</summary>
+    public int RepeatType { get; set; }
+
+    /// <summary>Shift cycle: number of consecutive work days.</summary>
+    public int ShiftWorkDays { get; set; }
+
+    /// <summary>Shift cycle: number of consecutive rest days.</summary>
+    public int ShiftRestDays { get; set; }
+
+    /// <summary>Shift cycle start date as UTC midnight epoch ms.</summary>
+    public long ShiftStartDate { get; set; }
+
     /// <summary>Sync metadata (last-modified wall clock, epoch ms).</summary>
     public long UpdatedAt { get; set; }
 
@@ -63,9 +75,40 @@ public class AlarmModel
 
     public AlarmModel Clone() => (AlarmModel)MemberwiseClone();
 
+    public const int RepeatTypeNone = 0;
+    public const int RepeatTypeWeekly = 1;
+    public const int RepeatTypeWorkday = 2;
+    public const int RepeatTypeShift = 3;
+
+    /// <summary>True when this alarm repeats on a schedule (weekly, workday or shift cycle).</summary>
+    [JsonIgnore]
+    public bool IsRepeating => DaysOfWeek != 0 || RepeatType != RepeatTypeNone;
+
     /// <summary>True when this alarm repeats on a weekly schedule.</summary>
     [JsonIgnore]
-    public bool IsRepeating => DaysOfWeek != 0;
+    public bool IsWeeklyRepeating => DaysOfWeek != 0;
+
+    /// <summary>True when this alarm rings on legal workdays.</summary>
+    [JsonIgnore]
+    public bool IsWorkdayRepeating => RepeatType == RepeatTypeWorkday;
+
+    /// <summary>True when this alarm rings on shift-cycle work days.</summary>
+    [JsonIgnore]
+    public bool IsShiftRepeating => RepeatType == RepeatTypeShift;
+
+    /// <summary>Day count of the full shift cycle (work + rest).</summary>
+    [JsonIgnore]
+    public int ShiftCycleDays => Math.Max(1, ShiftWorkDays + ShiftRestDays);
+
+    /// <summary>True when the given day is a work day in the shift cycle (UTC midnight phase).</summary>
+    public bool ShiftPhaseIsWork(DateTime day)
+    {
+        if (ShiftCycleDays == 0) return false;
+        var start = DateTimeOffset.FromUnixTimeMilliseconds(ShiftStartDate).UtcDateTime.Date;
+        var days = (int)(day.Date.ToUniversalTime() - start.ToUniversalTime()).TotalDays;
+        var phase = ((days % ShiftCycleDays) + ShiftCycleDays) % ShiftCycleDays;
+        return phase < ShiftWorkDays;
+    }
 
     public IEnumerable<DayOfWeek> GetRepeatDays()
     {
@@ -99,7 +142,32 @@ public class AlarmModel
         var snoozed = SnoozedUntil;
         if (snoozed.HasValue && snoozed > now) return snoozed.Value;
 
-        if (IsRepeating)
+        if (IsWorkdayRepeating)
+        {
+            // Workday approximation (no holiday data on this peer): ring Mon-Fri.
+            var t = new DateTime(now.Year, now.Month, now.Day, Hour, Minute, 0);
+            if (t <= now) t = t.AddDays(1);
+            for (int i = 0; i < 14; i++)
+            {
+                if (t.DayOfWeek >= DayOfWeek.Monday && t.DayOfWeek <= DayOfWeek.Friday) return t;
+                t = t.AddDays(1);
+            }
+            return t;
+        }
+
+        if (IsShiftRepeating)
+        {
+            var t = new DateTime(now.Year, now.Month, now.Day, Hour, Minute, 0);
+            if (t <= now) t = t.AddDays(1);
+            for (int i = 0; i < ShiftCycleDays + 1; i++)
+            {
+                if (ShiftPhaseIsWork(t)) return t;
+                t = t.AddDays(1);
+            }
+            return t;
+        }
+
+        if (IsWeeklyRepeating)
         {
             var t = new DateTime(now.Year, now.Month, now.Day, Hour, Minute, 0);
             if (t <= now) t = t.AddDays(1);
@@ -128,7 +196,12 @@ public class AlarmModel
     }
 
     /// <summary>True if this alarm is scheduled to fire on the given day (for repeat display).</summary>
-    public bool ScheduledOn(DateTime day) => !IsRepeating || GetRepeatDays().Contains(day.DayOfWeek);
+    public bool ScheduledOn(DateTime day)
+    {
+        if (IsWorkdayRepeating) return day.DayOfWeek >= DayOfWeek.Monday && day.DayOfWeek <= DayOfWeek.Friday;
+        if (IsShiftRepeating) return ShiftPhaseIsWork(day);
+        return !IsWeeklyRepeating || GetRepeatDays().Contains(day.DayOfWeek);
+    }
 
     [JsonIgnore]
     public string TimeText => $"{Hour:00}:{Minute:00}";
@@ -138,7 +211,9 @@ public class AlarmModel
     {
         get
         {
-            if (!IsRepeating) return "";
+            if (IsWorkdayRepeating) return Text.StatutoryWorkdays;
+            if (IsShiftRepeating) return string.Format(Text.ShiftRepeatSummary, ShiftWorkDays, ShiftRestDays);
+            if (!IsWeeklyRepeating) return "";
             if (DaysOfWeek == 0x7F) return Text.EveryDay;
             var order = new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday };
             return string.Join(" ", order.Where(GetRepeatDays().Contains).Select(Text.ShortDayName));

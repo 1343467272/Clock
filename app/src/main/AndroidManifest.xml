@@ -214,7 +214,7 @@
 
         <provider
             android:name="com.best.deskclock.breeno.BreenoProxyProvider"
-            android:authorities="com.best.deskclock.breeno"
+            android:authorities="${applicationId}.breeno"
             android:directBootAware="true"
             android:exported="true"
             tools:ignore="ExportedContentProvider" />

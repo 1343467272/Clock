@@ -159,7 +159,7 @@ public final class AlarmTimeClickHandler {
      * @param alarm the alarm whose date should be validated and corrected
      */
     private void fixAlarmDateIfPast(Alarm alarm) {
-        if (alarm.daysOfWeek.isRepeating()) {
+        if (alarm.isRepeating()) {
             return;
         }
 
