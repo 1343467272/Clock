@@ -18,6 +18,7 @@ import com.best.deskclock.data.Stopwatch;
 import com.best.deskclock.data.Timer;
 import com.best.deskclock.data.Weekdays;
 import com.best.deskclock.provider.Alarm;
+import com.best.deskclock.provider.AlarmInstance;
 import com.best.deskclock.settings.PreferencesKeys;
 import com.best.deskclock.utils.Utils;
 
@@ -107,6 +108,12 @@ public final class SyncMerger {
             }
 
             final Alarm local = byUuid.get(record.uuid);
+            if (record.silencedAt > state.getAlarmSilencedAt(record.uuid)) {
+                state.putAlarmSilencedAt(record.uuid, record.silencedAt);
+                if (local != null) {
+                    silenceFiringAlarm(context, cr, local.id);
+                }
+            }
             if (local == null) {
                 final Alarm alarm = applyAlarmRecord(new Alarm(), record);
                 alarm.addAlarm(cr);
@@ -128,6 +135,14 @@ public final class SyncMerger {
 
         if (changed) {
             AlarmStateManager.updateNextAlarm(context);
+        }
+    }
+
+    /** Stops only the currently firing instance for this alarm; future repeating instances stay scheduled. */
+    private static void silenceFiringAlarm(Context context, ContentResolver cr, long alarmId) {
+        final AlarmInstance instance = AlarmInstance.getFiredOrSnoozedInstanceForAlarm(cr, alarmId);
+        if (instance != null && instance.mAlarmState == AlarmInstance.FIRED_STATE) {
+            AlarmStateManager.deleteInstanceAndUpdateParent(context, instance, true);
         }
     }
 

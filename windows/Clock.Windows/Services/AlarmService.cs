@@ -73,6 +73,7 @@ public class AlarmService
     public void AlertClosed(AlarmModel alarm, bool snoozed)
     {
         _activeAlerts.Remove(alarm.Uuid);
+        alarm.SilencedAt = AppState.NowMs;
         if (snoozed)
         {
             alarm.SnoozedUntil = DateTime.Now.AddMinutes(Math.Max(1, _state.Settings.AlarmSnoozeMinutes));
@@ -96,6 +97,7 @@ public class AlarmService
                 alarm.UpdatedAt = AppState.NowMs;
             }
         }
+        alarm.UpdatedAt = AppState.NowMs;
         _state.NotifyChanged();
     }
 }

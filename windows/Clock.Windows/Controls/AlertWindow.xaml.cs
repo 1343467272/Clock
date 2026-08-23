@@ -11,6 +11,15 @@ public partial class AlertWindow : Window
     private Action? _onDismiss;
     private Action? _onSnooze;
 
+    /// <summary>UUID of the alarm or timer that opened this alert.</summary>
+    public string ItemUuid { get; private set; } = "";
+
+    /// <summary>Whether this alert belongs to a timer (otherwise it belongs to an alarm).</summary>
+    public bool IsTimerAlert { get; private set; }
+
+    /// <summary>Alarm silence timestamp when this alert was opened.</summary>
+    public long OpenedSilencedAt { get; private set; }
+
     public AlertWindow()
     {
         InitializeComponent();
@@ -21,9 +30,11 @@ public partial class AlertWindow : Window
         };
     }
 
-    public static AlertWindow ShowAlarm(string label, string timeText, Action onDismiss, Action onSnooze)
+    public static AlertWindow ShowAlarm(string uuid, long silencedAt, string label, string timeText, Action onDismiss, Action onSnooze)
     {
         var w = new AlertWindow();
+        w.ItemUuid = uuid;
+        w.OpenedSilencedAt = silencedAt;
         w.TitleText.Text = Text.AlertAlarmTitle;
         w.MessageText.Text = string.IsNullOrWhiteSpace(label) ? timeText : $"{label}\n{timeText}";
         w.SnoozeButton.Visibility = Visibility.Visible;
@@ -37,9 +48,11 @@ public partial class AlertWindow : Window
         return w;
     }
 
-    public static AlertWindow ShowTimer(string label, Action onDismiss)
+    public static AlertWindow ShowTimer(string uuid, string label, Action onDismiss)
     {
         var w = new AlertWindow();
+        w.ItemUuid = uuid;
+        w.IsTimerAlert = true;
         w.TitleText.Text = Text.AlertTimerTitle;
         w.MessageText.Text = string.IsNullOrWhiteSpace(label) ? Text.TimesUp : $"{label}\n{Text.TimesUp}";
         w.SnoozeButton.Visibility = Visibility.Collapsed;

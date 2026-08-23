@@ -79,6 +79,7 @@ import com.best.deskclock.databinding.AlarmActivityBinding;
 import com.best.deskclock.events.Events;
 import com.best.deskclock.provider.Alarm;
 import com.best.deskclock.provider.AlarmInstance;
+import com.best.deskclock.sync.SyncState;
 import com.best.deskclock.uicomponents.PillView;
 import com.best.deskclock.utils.AnimatorUtils;
 import com.best.deskclock.utils.ClockUtils;
@@ -1227,6 +1228,7 @@ public class AlarmActivity extends BaseActivity implements View.OnClickListener,
      */
     private void snooze() {
         mAlarmHandled = true;
+        recordAlarmSilenced();
         LOGGER.v("Snoozed: %s", mAlarmInstance);
 
         // If snooze duration has been set to "None", simply dismiss the alarm.
@@ -1269,6 +1271,7 @@ public class AlarmActivity extends BaseActivity implements View.OnClickListener,
      */
     private void dismiss() {
         mAlarmHandled = true;
+        recordAlarmSilenced();
         LOGGER.v("Dismissed: %s", mAlarmInstance);
 
         int titleResId;
@@ -1290,6 +1293,12 @@ public class AlarmActivity extends BaseActivity implements View.OnClickListener,
 
         // Unbind here, otherwise alarm will keep ringing until activity finishes.
         unbindAlarmService();
+    }
+
+    private void recordAlarmSilenced() {
+        if (mAlarmInstance.mAlarmId != null) {
+            SyncState.recordAlarmSilenced(this, mAlarmInstance.mAlarmId);
+        }
     }
 
     /**

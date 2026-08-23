@@ -25,7 +25,7 @@ public final class SyncFingerprints {
      */
     public static String alarmFingerprint(SyncModels.AlarmRecord r) {
         return join(
-            r.enabled,
+            r.silencedAt, r.enabled,
             r.year, r.month, r.day, r.hour, r.minute, r.daysOfWeek,
             r.label,
             r.vibrate, r.vibrationPattern, r.flash, r.ringtone,

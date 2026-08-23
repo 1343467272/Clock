@@ -37,6 +37,7 @@ public static class SyncMerge
             {
                 Uuid = a.Uuid,
                 UpdatedAt = a.UpdatedAt,
+                SilencedAt = a.SilencedAt,
                 Enabled = a.Enabled,
                 Year = a.Year, Month = a.Month, Day = a.Day,
                 Hour = a.Hour, Minute = a.Minute,
@@ -169,11 +170,26 @@ public static class SyncMerge
                 state.Alarms.Add(alarm);
                 changed = true;
             }
-            else if (r.UpdatedAt > local.UpdatedAt)
+            else
             {
-                CopyAlarmRecord(local, r);
-                local.UpdatedAt = r.UpdatedAt;
-                changed = true;
+                // Silence events are independent from configuration LWW: accepting them even
+                // when wall clocks disagree ensures a currently firing peer stops immediately.
+                if (r.SilencedAt > local.SilencedAt)
+                {
+                    local.SilencedAt = r.SilencedAt;
+                    Services.SoundService.Stop();
+                    changed = true;
+                }
+                if (r.UpdatedAt > local.UpdatedAt)
+                {
+                    CopyAlarmRecord(local, r);
+                    local.UpdatedAt = r.UpdatedAt;
+                    if (!local.Enabled)
+                    {
+                        Services.SoundService.Stop();
+                    }
+                    changed = true;
+                }
             }
         }
 
@@ -198,6 +214,7 @@ public static class SyncMerge
 
     private static void CopyAlarmRecord(AlarmModel a, AlarmRecord r)
     {
+        a.SilencedAt = Math.Max(a.SilencedAt, r.SilencedAt);
         a.Enabled = r.Enabled;
         a.Year = r.Year; a.Month = r.Month; a.Day = r.Day;
         a.Hour = r.Hour; a.Minute = r.Minute;
@@ -247,6 +264,10 @@ public static class SyncMerge
             {
                 ApplyTimerRecord(state, local, r, remote.SentAt);
                 local.UpdatedAt = r.UpdatedAt;
+                if (local.State is TimerState.PAUSED or TimerState.RESET)
+                {
+                    Services.SoundService.Stop();
+                }
                 changed = true;
             }
         }

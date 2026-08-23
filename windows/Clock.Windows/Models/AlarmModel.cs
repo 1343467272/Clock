@@ -70,6 +70,10 @@ public class AlarmModel
     /// <summary>Sync metadata (last-modified wall clock, epoch ms).</summary>
     public long UpdatedAt { get; set; }
 
+    /// <summary>Timestamp of the most recent dismissal or snooze, synchronized to silence a
+    /// concurrently firing copy of this alarm on another device.</summary>
+    public long SilencedAt { get; set; }
+
     [JsonIgnore]
     public DateTime? SnoozedUntil { get; set; }
 

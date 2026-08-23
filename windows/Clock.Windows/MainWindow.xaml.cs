@@ -56,7 +56,7 @@ public partial class MainWindow : Window
         {
             Dispatcher.Invoke(() =>
             {
-                var w = AlertWindow.ShowAlarm(alarm.LabelText, alarm.TimeText,
+                var w = AlertWindow.ShowAlarm(alarm.Uuid, alarm.SilencedAt, alarm.LabelText, alarm.TimeText,
                     () => DismissAlarm(alarm),
                     () => SnoozeAlarm(alarm));
                 _openAlerts.Add(w);
@@ -67,7 +67,11 @@ public partial class MainWindow : Window
         {
             Dispatcher.Invoke(() =>
             {
-                var w = AlertWindow.ShowTimer(timer.LabelText, () => { });
+                var w = AlertWindow.ShowTimer(timer.Uuid, timer.LabelText, () =>
+                {
+                    timer.Reset();
+                    _state.TouchTimer(timer);
+                });
                 _openAlerts.Add(w);
                 w.Closed += (_, _) => _openAlerts.Remove(w);
             });
@@ -88,6 +92,7 @@ public partial class MainWindow : Window
             RefreshStopwatch();
             RefreshCityUi();
             RefreshPeers();
+            CloseResolvedAlerts();
         };
 
         _state.Ticked += () =>
@@ -179,6 +184,21 @@ public partial class MainWindow : Window
 
     private void DismissAlarm(AlarmModel alarm) => _alarmService?.AlertClosed(alarm, snoozed: false);
     private void SnoozeAlarm(AlarmModel alarm) => _alarmService?.AlertClosed(alarm, snoozed: true);
+
+    /// <summary>Closes only alerts that a local or remote sync operation has resolved.</summary>
+    private void CloseResolvedAlerts()
+    {
+        foreach (var alert in _openAlerts.ToList())
+        {
+            var shouldClose = alert.IsTimerAlert
+                ? _state.Timers.FirstOrDefault(t => t.Uuid == alert.ItemUuid)?.State != TimerState.EXPIRED
+                : _state.Alarms.FirstOrDefault(a => a.Uuid == alert.ItemUuid) is not { } alarm
+                    || !alarm.Enabled
+                    || alarm.SilencedAt > alert.OpenedSilencedAt;
+
+            if (shouldClose) alert.Close();
+        }
+    }
 
     // ---------- Navigation & layout ----------
 

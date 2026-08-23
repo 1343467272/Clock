@@ -38,6 +38,7 @@ import com.best.deskclock.base.AlarmAlertWakeLock;
 import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.events.Events;
 import com.best.deskclock.provider.AlarmInstance;
+import com.best.deskclock.sync.SyncState;
 import com.best.deskclock.utils.DeviceUtils;
 import com.best.deskclock.utils.LogUtils;
 import com.best.deskclock.utils.SdkUtils;
@@ -156,11 +157,13 @@ public class AlarmService extends Service {
                         // Set the alarm state to snooze.
                         // If this broadcast receiver is handling the snooze intent then AlarmActivity
                         // must not be showing, so always show snooze toast.
+                        recordAlarmSilenced(context);
                         AlarmStateManager.setSnoozeState(context, mCurrentAlarm, true);
                         Events.sendAlarmEvent(R.string.action_snooze, R.string.label_intent);
                     }
                     case ALARM_DISMISS_ACTION -> {
                         // Set the alarm state to dismissed.
+                        recordAlarmSilenced(context);
                         AlarmStateManager.deleteInstanceAndUpdateParent(context, mCurrentAlarm, true);
                         Events.sendAlarmEvent(R.string.action_dismiss, R.string.label_intent);
                     }
@@ -168,6 +171,12 @@ public class AlarmService extends Service {
             }
         }
     };
+
+    private void recordAlarmSilenced(Context context) {
+        if (mCurrentAlarm.mAlarmId != null) {
+            SyncState.recordAlarmSilenced(context, mCurrentAlarm.mAlarmId);
+        }
+    }
 
     private SensorManager mSensorManager;
     private int mFlipAction;

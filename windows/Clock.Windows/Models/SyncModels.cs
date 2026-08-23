@@ -24,6 +24,7 @@ public class AlarmRecord
 {
     public string Uuid { get; set; } = "";
     public long UpdatedAt { get; set; }
+    public long SilencedAt { get; set; }
     public bool Enabled { get; set; }
     public int Year { get; set; }
     public int Month { get; set; }

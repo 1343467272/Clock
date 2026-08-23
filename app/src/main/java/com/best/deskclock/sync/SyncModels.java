@@ -25,6 +25,7 @@ public final class SyncModels {
     public static final class AlarmRecord {
         public String uuid;
         public long updatedAt;
+        public long silencedAt;
         public boolean enabled;
         public int year;
         public int month;
@@ -57,6 +58,7 @@ public final class SyncModels {
             JSONObject o = new JSONObject();
             o.put("uuid", uuid);
             o.put("updatedAt", updatedAt);
+            o.put("silencedAt", silencedAt);
             o.put("enabled", enabled);
             o.put("year", year);
             o.put("month", month);
@@ -91,6 +93,7 @@ public final class SyncModels {
             AlarmRecord r = new AlarmRecord();
             r.uuid = o.optString("uuid", "");
             r.updatedAt = o.optLong("updatedAt", 0);
+            r.silencedAt = o.optLong("silencedAt", 0);
             r.enabled = o.optBoolean("enabled", false);
             r.year = o.optInt("year", 0);
             r.month = o.optInt("month", 0);

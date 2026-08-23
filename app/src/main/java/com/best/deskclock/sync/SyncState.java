@@ -129,6 +129,24 @@ public final class SyncState {
         putQuiet(object("alarmTombs"), uuid, ts);
     }
 
+    public long getAlarmSilencedAt(String uuid) {
+        return object("alarmSilencedAt").optLong(uuid, 0);
+    }
+
+    public void putAlarmSilencedAt(String uuid, long ts) {
+        putQuiet(object("alarmSilencedAt"), uuid, ts);
+    }
+
+    /** Records a local dismiss or snooze so a firing peer can be silenced on its next LAN sync. */
+    public static void recordAlarmSilenced(Context context, long alarmId) {
+        final SyncState state = new SyncState(context);
+        final String uuid = state.getAlarmUuid(alarmId);
+        if (uuid != null) {
+            state.putAlarmSilencedAt(uuid, System.currentTimeMillis());
+            state.persist();
+        }
+    }
+
     // ---------------------------------------------------------------- timers
 
     public String getTimerUuid(int timerId) {

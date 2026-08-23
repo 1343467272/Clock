@@ -94,6 +94,7 @@ public final class SyncSnapshotBuilder {
     private static SyncModels.AlarmRecord toAlarmRecord(Alarm alarm, String uuid, SyncState state, long now) {
         final SyncModels.AlarmRecord r = new SyncModels.AlarmRecord();
         r.uuid = uuid;
+        r.silencedAt = state.getAlarmSilencedAt(uuid);
         r.enabled = alarm.enabled;
         r.year = alarm.year;
         r.month = alarm.month;
