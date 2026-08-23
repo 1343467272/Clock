@@ -44,3 +44,4 @@ windows/**/obj/
 # Local publish / release output
 publish/
 release/
+windows/out/msix-staging/
