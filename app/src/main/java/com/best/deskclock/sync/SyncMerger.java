@@ -222,6 +222,10 @@ public final class SyncMerger {
                 state.putTimerUuid(stored.getId(), record.uuid);
                 state.putTimerUpdatedAt(record.uuid, record.updatedAt);
                 state.putTimerFingerprint(record.uuid, SyncFingerprints.timerFingerprint(record));
+                // A snapshot can contain the same record more than once after a retried
+                // exchange. Keep the lookup current so the next occurrence updates this
+                // timer instead of creating another one.
+                byUuid.put(record.uuid, stored);
             } else if (record.updatedAt > state.getTimerUpdatedAt(record.uuid)) {
                 if (SyncFingerprints.timerFingerprint(record).equals(state.getTimerFingerprint(record.uuid))) {
                     continue; // content already identical

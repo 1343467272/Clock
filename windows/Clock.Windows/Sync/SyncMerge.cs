@@ -228,7 +228,11 @@ public static class SyncMerge
     {
         var changed = false;
 
-        foreach (var r in remote.Timers)
+        // A retransmitted snapshot may contain the same UUID more than once. Apply only the
+        // newest copy; otherwise each copy would observe the pre-merge collection and be added.
+        foreach (var r in remote.Timers
+                     .GroupBy(r => r.Uuid, StringComparer.Ordinal)
+                     .Select(group => group.OrderByDescending(r => r.UpdatedAt).First()))
         {
             var local = state.Timers.FirstOrDefault(t => t.Uuid == r.Uuid);
             if (local == null)
