@@ -725,4 +725,30 @@
     <string name="settings_language_swedish">瑞典</string>
     <string name="settings_language_laotian">老挝人</string>
     <string name="settings_language_persian">波斯语</string>
+
+    <!-- 数学挑战（本次合并的上游功能） -->
+    <string name="math_challenge_category_title">数学挑战</string>
+    <string name="math_hardness_level_title">数学难度</string>
+    <string name="math_hardness_level_easy">简单</string>
+    <string name="math_hardness_level_normal">普通</string>
+    <string name="math_hardness_level_hard">困难</string>
+    <string name="enable_per_alarm_math_hardness_level_title">为每个闹钟单独设置数学难度</string>
+    <string name="enable_per_alarm_math_hardness_level_dialog_message">自定义的数学难度将被重置。%s</string>
+    <string name="math_challenge_title_snooze">答对才能贪睡</string>
+    <string name="math_challenge_title_dismiss">答对才能关闭</string>
+    <string name="math_challenge_prompt">%1$d + %2$d = ?</string>
+    <string name="math_challenge_answer_hint">输入答案</string>
+    <string name="math_challenge_new_problem">换一题</string>
+    <string name="math_challenge_wrong_answer">答案错误</string>
+
+    <!-- 其余随上游合并新增、此前未翻译的字符串 -->
+    <string name="info">信息</string>
+    <string name="pause_alarm_info_message">选择星期几后才能使用此功能。</string>
+    <string name="delete_occasional_alarm_after_use_info_message">取消选择星期几后才能使用此功能。</string>
+    <string name="auto_silence_info_message">“静音时长”已设置为“%s”。\n\n关闭数学难度后才能使用此功能。</string>
+    <string name="central_fab_size_title">中央操作按钮的大小</string>
+    <string name="side_fab_size_title">两侧操作按钮的大小</string>
+    <string name="button_action_mute">静音</string>
+    <string name="enable_city_flag_title">显示国旗</string>
+    <string name="sw_display_milliseconds_title">显示毫秒</string>
 </resources>
