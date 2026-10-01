@@ -25,13 +25,13 @@
     <string name="alarm_alert_dismiss_text" msgid="4942914605480888820">"关闭"</string>
     <string name="alarm_missed_title" msgid="3828345099754063392">"错过的闹钟"</string>
     <string name="alarm_missed_text" msgid="6585658367289194023"><xliff:g id="alarm_time">%1$s</xliff:g> - <xliff:g id="alarm_label">%2$s</xliff:g></string>
-    <string name="alarm_alert_snoozed_text" msgid="7064642998528766113">"已暂停"</string>
+    <string name="alarm_alert_snoozed_text" msgid="7064642998528766113">已贪睡</string>
     <string name="alarm_alert_off_text" msgid="4472073417593915002">"闹钟已关闭"</string>
-    <string name="alarm_alert_snooze_text" msgid="1774416052207651584">"暂停"</string>
+    <string name="alarm_alert_snooze_text" msgid="1774416052207651584">贪睡</string>
     <plurals name="alarm_alert_snooze_set" formatted="false" msgid="3212729193036041768">
         <item quantity="other"><xliff:g example="10" id="minutes">%d</xliff:g> 分钟后提醒。</item>
     </plurals>
-    <string name="alarm_alert_snooze_until" msgid="6958013659168344550">闹钟已暂停，将于 <xliff:g id="time">%s</xliff:g> 再响</string>
+    <string name="alarm_alert_snooze_until" msgid="6958013659168344550">闹钟已贪睡，将于 <xliff:g id="time">%s</xliff:g> 再响</string>
     <string name="alarm_alert_predismiss_title" msgid="5723945586913705445">"预定的闹钟"</string>
     <string name="missed_alarm_has_been_deleted" msgid="5295473204045979335">"错过的闹钟已删除"</string>
     <string name="timer_notifications_less_min" msgid="5481375048976427255">"还剩不到 1 分钟"</string>
@@ -77,7 +77,7 @@
     <string name="analog_widget" msgid="1670505720837152766">指针时钟</string>
     <string name="digital_widget" msgid="2326954556720571358">"数字时钟"</string>
     <string name="settings" msgid="5849739030579520686">"设置"</string>
-    <string name="snooze_duration_title" msgid="1097309861110780483">"暂停时长"</string>
+    <string name="snooze_duration_title" msgid="1097309861110780483">贪睡时长</string>
     <string name="crescendo_duration_title" msgid="8606408542726189528">逐步增大音量</string>
     <string name="auto_silence_title" msgid="2012754009554434544">之后静音</string>
     <string name="label_never" msgid="4821982647348750809">从不</string>
@@ -93,7 +93,7 @@
     <string name="change_setting_action" msgid="1224356633832430160">"更改"</string>
     <string name="alarms_blocked_by_dnd" msgid="6089433757505898969">设备设置为完全静音</string>
     <string name="volume_button_setting_title" msgid="6937131248843413357">"音量按钮"</string>
-    <string name="button_action_snooze">暂停</string>
+    <string name="button_action_snooze">贪睡</string>
     <string name="button_action_dismiss">关闭</string>
     <string name="button_action_control_volume">控制音量</string>
     <string name="button_action_nothing">无</string>
@@ -175,7 +175,7 @@
     <string name="timer_service_desc" msgid="2256002649882602433">处理来自定时器通知的操作。</string>
     <string name="stopwatch_service_desc" msgid="9220132827343760767">处理来自秒表通知的操作。</string>
     <string name="swn_paused" msgid="6364358842808263589">"已暂停"</string>
-    <string name="description_direction_both" msgid="1841309486023845685">向左滑动以暂停，向右滑动以关闭</string>
+    <string name="description_direction_both" msgid="1841309486023845685">向左滑动以贪睡，向右滑动以关闭</string>
     <string name="timer_settings" msgid="7955522143086154795">"定时器"</string>
     <string name="timer_vibrate_title" msgid="7788920024785587518">"定时器振动"</string>
     <string name="timer_paused" msgid="5941160896040771462">"定时器已暂停"</string>
@@ -215,7 +215,7 @@
     <string name="shake_action_title">设备摇晃操作</string>
     <string name="firing_alarms_timers_channel">触发闹钟和定时器</string>
     <string name="alarm_missed_channel">错过的闹钟</string>
-    <string name="alarm_snooze_channel">暂停的闹钟</string>
+    <string name="alarm_snooze_channel">贪睡的闹钟</string>
     <string name="alarm_upcoming_channel">预定的闹钟</string>
     <string name="stopwatch_channel">秒表</string>
     <string name="timer_channel">定时器</string>
@@ -246,7 +246,7 @@
     <string name="first_launch_main_feature_message">► 浅色、深色或系统主题；&lt;br&gt; &lt;br&gt; ► 可自定义的屏幕保护程序；&lt;br&gt; &lt;br&gt; ► 可自定义的微件；&lt;br&gt; &lt;br&gt; ► 支持快捷设置中的图块（适用于 Android 7+）；&lt;br&gt; &lt;br&gt; ► 备份和还原应用程序数据（自定义铃声除外）；&lt;br&gt; &lt;br&gt; ► Material 设计和动态配色；&lt;br&gt; &lt;br&gt; ► 将闹钟设置为特定日期；&lt;br&gt; &lt;br&gt; ► 滑动删除闹钟；&lt;br&gt; &lt;br&gt; ► 重复闹钟；&lt;br&gt; &lt;br&gt; ► 翻转和摇晃操作可关闭/推迟闹钟；&lt;br&gt; &lt;br&gt; ► 使用电源按钮或音量按钮关闭/推迟闹钟；&lt;br&gt; &lt;br&gt; ► %s</string>
     <string name="alarm_notification_reminder_title">通知提醒</string>
     <string name="about_github_link">在 GitHub 查看</string>
-    <string name="alarm_settings_summary">自定义样式、字体、默认铃声、音量、关闭或暂停闹钟的操作、一周的第一天以及提醒通知时间</string>
+    <string name="alarm_settings_summary">自定义样式、字体、默认铃声、音量、关闭或贪睡闹钟的操作、一周的第一天以及提醒通知时间</string>
     <string name="material_time_picker_style_title">时间选择器样式</string>
     <string name="timer_label_box_title">定时器标签</string>
     <string name="whats_new_title">更新日志</string>
@@ -258,7 +258,7 @@
     <string name="city_clock_color_title">城市时钟自定义颜色</string>
     <string name="city_name_color_title">城市名称自定义颜色</string>
     <string name="permission_management_summary">显示应用程序正常工作所需的权限</string>
-    <string name="swipe_action_title">滑动以关闭或暂停闹钟</string>
+    <string name="swipe_action_title">滑动以关闭或贪睡闹钟</string>
     <string name="power_button_title">电源按钮</string>
     <string name="add_label">添加标签</string>
     <string name="clock_settings_summary">自定义样式、字体、时区以及设备日期和时间</string>
@@ -322,7 +322,7 @@
     <string name="revoke_permission_dialog_message">确定要撤销此权限吗？</string>
     <string name="permission_status_title">状态： </string>
     <string name="permission_granted">已授予</string>
-    <string name="snooze_button_color">“暂停”按钮的颜色</string>
+    <string name="snooze_button_color">“贪睡”按钮的颜色</string>
     <string name="dismiss_button_color">“关闭”按钮的颜色</string>
     <string name="alarm_button_color">闹钟按钮颜色</string>
     <string name="transparent_background_for_expired_timer_title">定时器结束时的透明背景</string>
@@ -369,7 +369,7 @@
     <string name="sort_name">按名称</string>
     <string name="snooze_duration_none">无</string>
     <string name="alarm_alert_dismiss_and_delete_text">关闭并删除</string>
-    <string name="description_direction_both_for_occasional_alarm">向左滑动以暂停，向右滑动以关闭并删除闹钟</string>
+    <string name="description_direction_both_for_occasional_alarm">向左滑动以贪睡，向右滑动以关闭并删除闹钟</string>
     <string name="description_direction_both_for_occasional_non_repeatable_alarm">向左或向右滑动以关闭并删除闹钟</string>
     <string name="delete_occasional_alarm_after_use_title">关闭后删除闹钟</string>
     <string name="alarm_alert_off_and_deleted_text">闹钟已关闭并删除</string>
@@ -402,8 +402,8 @@
     <string name="yellow_accent_color">黄色</string>
     <string name="day_accent_color_title">日间模式的强调色</string>
     <string name="display_ringtone_title">显示铃声标题</string>
-    <string name="enable_snoozed_or_dismissed_alarm_vibrations_summary">闹钟暂停时双次振动，闹钟关闭时单次振动</string>
-    <string name="enable_snoozed_or_dismissed_alarm_vibrations_title">闹钟暂停或关闭时启用振动</string>
+    <string name="enable_snoozed_or_dismissed_alarm_vibrations_summary">闹钟贪睡时双次振动，闹钟关闭时单次振动</string>
+    <string name="enable_snoozed_or_dismissed_alarm_vibrations_title">闹钟贪睡或关闭时启用振动</string>
     <string name="turn_on_back_flash_for_triggered_alarm_title">闹钟触发时打开后置闪光灯</string>
     <string name="alarm_flash">闪光灯</string>
     <string name="translate_dialog_message">访问 Codeberg 页面：\n\n%s</string>
@@ -453,8 +453,8 @@
     <string name="description_dismiss_button_for_occasional_alarm">点击即可关闭并删除闹钟</string>
     <string name="ringtone_title_color">铃声标题颜色</string>
     <string name="slide_zone_color_title">滑动区域颜色</string>
-    <string name="snooze_title_color">“暂停”标题的颜色</string>
-    <string name="description_snooze_button">点击即可暂停闹钟</string>
+    <string name="snooze_title_color">“贪睡”标题的颜色</string>
+    <string name="description_snooze_button">点击即可贪睡闹钟</string>
     <string name="display_next_alarm_title">显示下次闹钟</string>
     <string name="settings_language_chinese_traditional_tw">中文（繁体）</string>
     <string name="alarm_is_dismissed_and_deleted">已关闭并删除 <xliff:g example="14:20" id="alarm_time">%s</xliff:g> 的闹钟</string>
@@ -528,8 +528,8 @@
     <string name="label_none">无</string>
     <string name="vibration_start_delay_warning_box_text">请输入 0 到 10 分钟之间的值</string>
     <string name="confirm_action_prompt">\n\n要继续吗？</string>
-    <string name="enable_per_alarm_snooze_duration_title">为每个闹钟使用自定义暂停时长</string>
-    <string name="enable_per_alarm_snooze_duration_dialog_message">自定义闹钟暂停时长将被重置。%s</string>
+    <string name="enable_per_alarm_snooze_duration_title">为每个闹钟使用自定义贪睡时长</string>
+    <string name="enable_per_alarm_snooze_duration_dialog_message">自定义闹钟贪睡时长将被重置。%s</string>
     <string name="enable_per_alarm_volume_dialog_message">自定义闹钟音量将被重置。%s</string>
     <string name="display_dismiss_button_title">闹钟启用后立即显示“关闭”按钮</string>
     <string name="display_dismiss_button_summary">如果禁用，该按钮将与通知提醒同时出现</string>
@@ -593,10 +593,10 @@
     <string name="permissions_category_title">权限</string>
     <string name="enable_alarm_vibrations_by_default_dialog_message">所有闹钟的振动功能将被禁用。%s</string>
     <string name="enable_delete_occasional_alarm_by_default_dialog_message">所有闹钟的“关闭后删除闹钟”功能将被禁用。%s</string>
-    <string name="snooze_zone_color_title">暂停区域颜色</string>
+    <string name="snooze_zone_color_title">贪睡区域颜色</string>
     <string name="snooze_minus_button_color_title">“-”按钮颜色</string>
     <string name="snooze_plus_button_color_title">“+”按钮颜色</string>
-    <string name="snooze_selector_text_color_title">暂停选择器文本颜色</string>
+    <string name="snooze_selector_text_color_title">贪睡选择器文本颜色</string>
     <string name="snooze_minus_symbol_color_title">“-”符号颜色</string>
     <string name="snooze_plus_symbol_color_title">“+”符号颜色</string>
     <string name="alarm_volume_low">闹钟音量过低</string>
@@ -613,7 +613,7 @@
     <string name="shift_start_date">开始日期</string>
     <string name="shift_start_date_value">%1$s</string>
     <string name="fix_alarm_volume">修复</string>
-    <string name="display_snooze_selector_title">显示暂停选择器</string>
+    <string name="display_snooze_selector_title">显示贪睡选择器</string>
     <string name="clock_dial_with_roman_numbers">带罗马数字</string>
     <string name="clock_second_hand_lollipop">棒棒糖</string>
     <string name="timezone_baker_howland">贝克岛和豪兰岛</string>
@@ -640,7 +640,7 @@
     <string name="city_note_default_color_title">为城市备注使用默认颜色</string>
     <string name="city_note_color_title">城市备注颜色</string>
     <string name="display_next_alarm_title_setting_title">显示下次闹钟标题</string>
-    <string name="display_alarm_action_message_title">在暂停或关闭闹钟后显示消息</string>
+    <string name="display_alarm_action_message_title">在贪睡或关闭闹钟后显示消息</string>
     <string name="display_top_date_title">在时间上方显示日期</string>
     <string name="toast_message_backup_error">备份失败</string>
     <string name="toast_message_restore_error">还原失败</string>
