@@ -2,11 +2,9 @@
 
 package com.best.deskclock.utils;
 
-import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreferences;
 import static com.best.deskclock.settings.PreferencesDefaultValues.DEFAULT_ANALOG_CLOCK_SIZE;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -15,13 +13,16 @@ import android.text.format.DateFormat;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
+import android.util.DisplayMetrics;
 import android.view.View;
 import android.widget.TextClock;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.best.deskclock.R;
 import com.best.deskclock.data.DataModel;
-import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.uicomponents.AnalogClock;
 import com.best.deskclock.uicomponents.CustomTypefaceSpan;
 
@@ -39,7 +40,7 @@ public class ClockUtils {
      * If the analog clock is not visible, it never displays seconds to avoid it scheduling unnecessary
      * ticking runnable.
      */
-    public static void setAnalogClockSecondsEnabled(DataModel.ClockStyle clockStyle, AnalogClock analogClock,
+    public static void setAnalogClockSecondsEnabled(@NonNull DataModel.ClockStyle clockStyle, @NonNull AnalogClock analogClock,
                                                     boolean displaySeconds) {
 
         switch (clockStyle) {
@@ -63,7 +64,7 @@ public class ClockUtils {
      * @param digitalClock if the view concerned is the digital clock
      * @param analogClock  if the view concerned is the analog clock
      */
-    public static void setClockStyle(DataModel.ClockStyle clockStyle, View digitalClock, View analogClock) {
+    public static void setClockStyle(@NonNull DataModel.ClockStyle clockStyle, @NonNull View digitalClock, @NonNull View analogClock) {
         switch (clockStyle) {
             case ANALOG, ANALOG_MATERIAL -> {
                 analogClock.setVisibility(View.VISIBLE);
@@ -81,19 +82,19 @@ public class ClockUtils {
     }
 
     /**
-     * Adjusts the size of the analog clock view based on the current screen orientation
-     * and user-defined preferences. When displayed in the Clock tab, the size is scaled
-     * using a percentage value stored in SharedPreferences. This percentage is mapped
-     * to a factor between 0.5× and 1.2× of the base size.
+     * Adjusts the size of the analog clock view based on the current screen orientation.
      *
-     * @param analogClock the analog clock view whose size should be adjusted
-     * @param sizePercent the analog clock size defined in the settings
+     * @param analogClock    the analog clock view whose size should be adjusted
+     * @param displayMetrics the display metrics containing screen size and density
+     * @param sizePercent    the analog clock size defined in the settings
      */
-    public static void adjustAnalogClockSize(View analogClock, int sizePercent) {
+    public static void adjustAnalogClockSize(@NonNull View analogClock, @NonNull DisplayMetrics displayMetrics, float sizePercent,
+                                             boolean isLandscape) {
+
         float factor = computeFactor(sizePercent);
 
-        int screenHeight = analogClock.getContext().getResources().getDisplayMetrics().heightPixels;
-        int baseSize = ThemeUtils.isLandscape()
+        int screenHeight = displayMetrics.heightPixels;
+        int baseSize = isLandscape
             ? (int) (screenHeight / 2.6)
             : (int) (screenHeight / 3.8);
 
@@ -105,12 +106,6 @@ public class ClockUtils {
         analogClock.requestLayout();
     }
 
-    public static void refreshAnalogClockStyle(AnalogClock analogClock) {
-        if (analogClock != null) {
-            analogClock.updateClockStyle();
-        }
-    }
-
     /**
      * Computes a scaling factor for the analog clock size based on a user-defined
      * percentage value. The percentage ranges from 1 to 100 and is mapped to a
@@ -120,7 +115,7 @@ public class ClockUtils {
      * @param sizePercent the user-selected size percentage (1–100)
      * @return the computed scaling factor to apply to the base clock size
      */
-    private static float computeFactor(int sizePercent) {
+    private static float computeFactor(float sizePercent) {
         if (sizePercent <= DEFAULT_ANALOG_CLOCK_SIZE) {
             // 1 → 70  => 0.5 → 1.0
             return 0.5f + ((sizePercent - 1) / 69f) * 0.5f;
@@ -131,51 +126,43 @@ public class ClockUtils {
     }
 
     /**
-     * Sets the typeface of a digital clock (TextClock) based on user preferences.
-     * <p>
-     * This method retrieves the font path stored in SharedPreferences and attempts
-     * to load the corresponding Typeface from the file system. If the font file
-     * does not exist, cannot be loaded, or no font is defined in preferences,
-     * the clock will fall back to the default {@link Typeface#SANS_SERIF}.
-     * </p>
-     *
-     * @param clock the TextClock instance whose font should be updated
-     */
-    public static void setDigitalClockFont(TextClock clock, String fontPath) {
-        Typeface typeface = ThemeUtils.loadFont(fontPath);
-        clock.setTypeface(typeface);
-    }
-
-    /**
      * Formats the time in the TextClock according to the Locale with a special
      * formatting treatment for the am/pm label.
      *
-     * @param clock          TextClock to format
-     * @param includeSeconds whether to include seconds in the clock's time
+     * @param clock                 TextClock to format
+     * @param includeSeconds        whether to include seconds in the clock's time
+     * @param amPmRatio             a value between 0 and 1 that is the ratio of the relative size of the am/pm string to the time string
+     * @param amPmTypeface          the {@link Typeface} applied to the am/pm text
+     * @param fallbackFontFamily    the fallback font family used if amPmTypeface is null
+     * @param textStyle             the font style (e.g., 'Typeface.BOLD') to apply to the am/pm text
+     * @param addScreensaverPadding {@code true} if an EM space should be added around the am/pm text
+     *                              to prevent it from being cut off on some screensavers
      */
-    public static void setDigitalClockTimeFormat(TextClock clock, float amPmRatio, boolean includeSeconds, boolean isAlarm,
-                                                 boolean isClockTab, boolean isTimer, boolean isScreensaver) {
-
+    public static void setDigitalClockTimeFormat(@Nullable TextClock clock, boolean includeSeconds, float amPmRatio,
+                                                 @Nullable Typeface amPmTypeface, @NonNull String fallbackFontFamily, int textStyle,
+                                                 boolean addScreensaverPadding) {
         if (clock != null) {
             // Get the best format for 12 hours mode according to the locale
-            clock.setFormat12Hour(get12ModeFormat(
-                clock.getContext(), amPmRatio, includeSeconds, isAlarm, isClockTab, isTimer, isScreensaver)
-            );
+            clock.setFormat12Hour(
+                get12ModeFormat(includeSeconds, amPmRatio, amPmTypeface, fallbackFontFamily, textStyle, addScreensaverPadding));
             // Get the best format for 24 hours mode according to the locale
-            clock.setFormat24Hour(get24ModeFormat(includeSeconds, isScreensaver));
+            clock.setFormat24Hour(get24ModeFormat(includeSeconds, addScreensaverPadding));
         }
     }
 
     /**
-     * @param amPmRatio      a value between 0 and 1 that is the ratio of the relative size of the
-     *                       am/pm string to the time string
-     * @param includeSeconds whether to include seconds in the time string
-     * @return format string for 12 hours mode time, not including seconds
+     * @param includeSeconds        whether to include seconds in the time string
+     * @param amPmRatio             a value between 0 and 1 that is the ratio of the relative size of the am/pm string to the time string
+     * @param amPmTypeface          the {@link Typeface} applied to the am/pm text
+     * @param fallbackFontFamily    the fallback font family used if amPmTypeface is null
+     * @param textStyle             the font style (e.g., 'Typeface.BOLD') to apply to the am/pm text
+     * @param addScreensaverPadding {@code true} if an EM space should be added around the am/pm text
+     *                              to prevent it from being cut off on some screensavers
+     * @return a formatted CharSequence for 12-hour mode time, with styled AM/PM text
      */
-    public static CharSequence get12ModeFormat(Context context, float amPmRatio, boolean includeSeconds, boolean isAlarm,
-                                               boolean isClockTab, boolean isTimer, boolean isScreensaver) {
-
-        SharedPreferences prefs = getDefaultSharedPreferences(context);
+    @NonNull
+    public static CharSequence get12ModeFormat(boolean includeSeconds, float amPmRatio, @Nullable Typeface amPmTypeface,
+                                               @NonNull String fallbackFontFamily, int textStyle, boolean addScreensaverPadding) {
 
         String pattern = DateFormat.getBestDateTimePattern(Locale.getDefault(), includeSeconds ? "hmsa" : "hma");
 
@@ -184,14 +171,10 @@ public class ClockUtils {
 
         if (amPmRatio <= 0) {
             pattern = pattern.replace("\u200Aa", "").trim();
-        } else {
-            if (isScreensaver) {
-                // For screensaver, add a "Thin Space" (\u2009) at the end of the AM/PM to prevent
-                // its display from being cut off on some devices.
-                // A "Thin Space" (\u2009) is also added at the beginning to correctly center the date,
-                // alarm icon and next alarm.
-                pattern = "\u2009" + pattern.replace("a", "a" + "\u2009");
-            }
+        } else if (addScreensaverPadding) {
+            // For screensaver, add an "EM Space" (\u2003) at the end of the AM/PM to prevent
+            // its display from being cut off on some devices.
+            pattern = "\u2003" + pattern.replace("a", "a" + "\u2003");
         }
 
         // Build a spannable so that the am/pm will be formatted
@@ -202,66 +185,29 @@ public class ClockUtils {
 
         final Spannable sp = new SpannableString(pattern);
         sp.setSpan(new RelativeSizeSpan(amPmRatio), amPmPos, amPmPos + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        sp.setSpan(new StyleSpan(Typeface.NORMAL), amPmPos, amPmPos + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 
-        TypefaceSpan defaultSpan = new TypefaceSpan(isTimer ? "sans-serif" : "sans-serif-bold");
-
-        if (isAlarm) {
-            applyTypefaceSpan(sp, amPmPos, ThemeUtils.loadFont(SettingsDAO.getAlarmFont(prefs)), defaultSpan, Typeface.BOLD);
-        } else if (isClockTab) {
-            applyTypefaceSpan(sp, amPmPos, ThemeUtils.loadFont(SettingsDAO.getDigitalClockFont(prefs)), defaultSpan, Typeface.BOLD);
-        } else if (isTimer) {
-            applyTypefaceSpan(sp, amPmPos, ThemeUtils.loadFont(SettingsDAO.getGeneralFont(prefs)), defaultSpan, Typeface.ITALIC);
-        } else if (isScreensaver) {
-            Typeface baseTypeface = ThemeUtils.loadFont(SettingsDAO.getScreensaverDigitalClockFont(prefs));
-            boolean isItalic = SettingsDAO.isScreensaverDigitalClockInItalic(prefs);
-            int style = isItalic ? Typeface.BOLD_ITALIC : Typeface.BOLD;
-
-            if (baseTypeface == null) {
-                baseTypeface = Typeface.create("sans-serif", style);
-            }
-
-            Typeface styledTypeface = Typeface.create(baseTypeface, style);
-
+        if (amPmTypeface != null) {
             if (SdkUtils.isAtLeastAndroid9()) {
-                sp.setSpan(new TypefaceSpan(styledTypeface), amPmPos, amPmPos + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                sp.setSpan(new TypefaceSpan(amPmTypeface), amPmPos, amPmPos + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             } else {
-                sp.setSpan(new CustomTypefaceSpan(styledTypeface), amPmPos, amPmPos + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                sp.setSpan(new CustomTypefaceSpan(amPmTypeface), amPmPos, amPmPos + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
         } else {
-            sp.setSpan(defaultSpan, amPmPos, amPmPos + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            sp.setSpan(new TypefaceSpan(fallbackFontFamily), amPmPos, amPmPos + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
+
+        sp.setSpan(new StyleSpan(textStyle), amPmPos, amPmPos + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 
         return sp;
     }
 
-    /**
-     * Applies the appropriate typeface span to the AM/PM marker.<br>
-     * If the provided typeface is null, a default span is used. Otherwise, a bold version
-     * of the typeface is applied, with compatibility handling for older Android versions.
-     */
-    private static void applyTypefaceSpan(Spannable sp, int amPmPos, Typeface userTypeface, TypefaceSpan defaultSpan, int textStyle) {
-        if (userTypeface == null) {
-            sp.setSpan(defaultSpan, amPmPos, amPmPos + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        } else {
-            Typeface styledTypeface = Typeface.create(userTypeface, textStyle);
-            if (SdkUtils.isAtLeastAndroid9()) {
-                sp.setSpan(new TypefaceSpan(styledTypeface), amPmPos, amPmPos + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            } else {
-                sp.setSpan(new CustomTypefaceSpan(styledTypeface), amPmPos, amPmPos + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            }
-        }
-    }
-
     public static CharSequence get24ModeFormat(boolean includeSeconds, boolean isScreensaver) {
         if (isScreensaver) {
-            // For screensaver, add a "Thin Space" (\u2009) at the end of the time to prevent
+            // For screensaver, add an "EM Space" (\u2003) at the end of the time to prevent
             // its display from being cut off on some devices.
-            // A "Thin Space" (\u2009) is also added at the beginning to correctly center the date,
-            // alarm icon and next alarm.
-            return "\u2009"
+            return "\u2003"
                 + DateFormat.getBestDateTimePattern(Locale.getDefault(), includeSeconds ? "Hms" : "Hm")
-                + "\u2009";
+                + "\u2003";
         } else {
             return DateFormat.getBestDateTimePattern(Locale.getDefault(), includeSeconds ? "Hms" : "Hm");
         }
@@ -270,14 +216,16 @@ public class ClockUtils {
     /**
      * Clock views can call this to refresh their date.
      **/
-    public static void updateDate(String dateSkeleton, String descriptionSkeleton, View clock, boolean isUppercase) {
+    public static void updateDate(@NonNull String dateSkeleton, @NonNull String descriptionSkeleton, @NonNull View clock,
+                                  boolean isUppercase) {
+
         final TextView dateDisplay = clock.findViewById(R.id.date);
 
         if (dateDisplay == null) {
             return;
         }
 
-        final Locale locale = Locale.getDefault();
+        final Locale locale = Utils.getLocaleFromContext(clock.getContext());
         String datePattern = DateFormat.getBestDateTimePattern(locale, dateSkeleton);
         final String descriptionPattern = DateFormat.getBestDateTimePattern(locale, descriptionSkeleton);
 
@@ -293,15 +241,14 @@ public class ClockUtils {
     /**
      * Applies a bold font to the date.
      */
-    public static void applyBoldDateTypeface(View clock) {
-        SharedPreferences prefs = getDefaultSharedPreferences(clock.getContext());
+    public static void applyBoldDateTypeface(@NonNull View clock, @NonNull Typeface boldTypeface) {
         final TextView date = clock.findViewById(R.id.date);
 
         if (date == null) {
             return;
         }
 
-        date.setTypeface(ThemeUtils.boldTypeface(SettingsDAO.getGeneralFont(prefs)));
+        date.setTypeface(boldTypeface);
     }
 
     /**
@@ -313,7 +260,8 @@ public class ClockUtils {
      * @param zones a collection of time zones
      * @return the nearest point in the future at which any of the time zones changes days
      */
-    public static Date getNextDay(Date time, Collection<TimeZone> zones) {
+    @Nullable
+    public static Date getNextDay(@NonNull Date time, @NonNull Collection<TimeZone> zones) {
         Calendar next = null;
         for (TimeZone tz : zones) {
             final Calendar c = Calendar.getInstance(tz);
@@ -339,7 +287,7 @@ public class ClockUtils {
     /**
      * Apply the clock icon font to the next alarm view.
      */
-    public static void setClockIconTypeface(View clock) {
+    public static void setClockIconTypeface(@NonNull View clock) {
         final TextView nextAlarmIconView = clock.findViewById(R.id.nextAlarmIcon);
         nextAlarmIconView.setTypeface(getAlarmIconTypeface(clock.getContext()));
     }
@@ -352,7 +300,7 @@ public class ClockUtils {
      *
      * @return a special font containing a glyph that draws an alarm clock or a label.
      */
-    public static Typeface getAlarmIconTypeface(Context context) {
+    public static Typeface getAlarmIconTypeface(@NonNull Context context) {
         return Typeface.createFromAsset(context.getAssets(), "fonts/clock.ttf");
     }
 }

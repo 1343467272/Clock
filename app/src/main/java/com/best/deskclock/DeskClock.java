@@ -8,10 +8,10 @@ package com.best.deskclock;
 
 import static android.text.format.DateUtils.SECOND_IN_MILLIS;
 import static android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
+import static androidx.core.util.TypedValueCompat.dpToPx;
 import static androidx.viewpager.widget.ViewPager.SCROLL_STATE_DRAGGING;
 import static androidx.viewpager.widget.ViewPager.SCROLL_STATE_IDLE;
 import static androidx.viewpager.widget.ViewPager.SCROLL_STATE_SETTLING;
-import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreferences;
 import static com.best.deskclock.settings.PreferencesDefaultValues.AMOLED_DARK_MODE;
 import static com.best.deskclock.settings.PreferencesDefaultValues.DEFAULT_TAB_TITLE_VISIBILITY;
 import static com.best.deskclock.settings.PreferencesDefaultValues.TAB_ANIMATION_CUBE;
@@ -30,6 +30,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
@@ -43,6 +44,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.content.res.AppCompatResources;
@@ -50,23 +53,23 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.viewpager.widget.ViewPager;
 import androidx.viewpager.widget.ViewPager.OnPageChangeListener;
 
 import com.best.deskclock.alarms.AlarmFragment;
+import com.best.deskclock.alarms.AlarmStateManager;
 import com.best.deskclock.base.AppExecutors;
 import com.best.deskclock.base.BaseActivity;
 import com.best.deskclock.base.DeskClockFragment;
 import com.best.deskclock.base.KeepAliveService;
 import com.best.deskclock.base.RunnableFragment;
-import com.best.deskclock.data.DataModel;
 import com.best.deskclock.data.DataModel.SilentSetting;
 import com.best.deskclock.data.OnSilentSettingsListener;
 import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.databinding.DeskClockBinding;
 import com.best.deskclock.events.Events;
+import com.best.deskclock.provider.Alarm;
 import com.best.deskclock.settings.PermissionsManagementActivity;
 import com.best.deskclock.settings.SettingsActivity;
 import com.best.deskclock.setup.FirstLaunch;
@@ -81,9 +84,11 @@ import com.best.deskclock.uicomponents.pagetransformers.DepthPageTransformer;
 import com.best.deskclock.uicomponents.pagetransformers.FlipPageTransformer;
 import com.best.deskclock.uicomponents.pagetransformers.GatePageTransformer;
 import com.best.deskclock.uicomponents.pagetransformers.ZoomOutPageTransformer;
+import com.best.deskclock.uicomponents.toast.CustomToast;
 import com.best.deskclock.uicomponents.toast.SnackbarManager;
 import com.best.deskclock.uidata.TabListener;
 import com.best.deskclock.uidata.UiDataModel;
+import com.best.deskclock.utils.AnimatorUtils;
 import com.best.deskclock.utils.InsetsUtils;
 import com.best.deskclock.utils.LogUtils;
 import com.best.deskclock.utils.NotificationUtils;
@@ -109,8 +114,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
 
     private DeskClockBinding mBinding;
 
-    private SharedPreferences mPrefs;
-    private Typeface mRegularTypeface;
+    private Typeface mGeneralTypeface;
     private String mFontPath;
     private boolean mIsToolBarDisplayed;
     private long mLastFabClickTime = 0;
@@ -182,8 +186,8 @@ public class DeskClock extends BaseActivity implements FabContainer {
      */
     private static final List<String> SUPPORTED_PREF_KEYS = List.of(
         // Interface
-        KEY_TOOLBAR_TITLE, KEY_TAB_TITLE_VISIBILITY, KEY_TAB_INDICATOR, KEY_TAB_TO_DISPLAY, KEY_TAB_ANIMATION, KEY_VIBRATIONS,
-        KEY_KEEP_SCREEN_ON,
+        KEY_TOOLBAR_TITLE, KEY_CENTRAL_FAB_SIZE, KEY_SIDE_FAB_SIZE, KEY_TAB_TITLE_VISIBILITY, KEY_TAB_INDICATOR, KEY_TAB_TO_DISPLAY,
+        KEY_TAB_ANIMATION, KEY_KEEP_SCREEN_ON,
         // Permission
         KEY_ESSENTIAL_PERMISSIONS_GRANTED
     );
@@ -195,7 +199,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
     private SharedPreferences.OnSharedPreferenceChangeListener mPrefListener;
 
     @Override
-    public void onNewIntent(Intent newIntent) {
+    public void onNewIntent(@NonNull Intent newIntent) {
         super.onNewIntent(newIntent);
 
         // Fragments may query the latest intent for information, so update the intent.
@@ -203,8 +207,10 @@ public class DeskClock extends BaseActivity implements FabContainer {
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        restoreStateAfterDebugDeployment();
 
         Intent intent = getIntent();
         if (intent != null) {
@@ -214,26 +220,25 @@ public class DeskClock extends BaseActivity implements FabContainer {
             }
 
             if (intent.getBooleanExtra(EXTRA_UPDATE_ALARM_NOTIFICATIONS, false)) {
-                NotificationUtils.updateAlarmNotifications(this);
+                NotificationUtils.updateAlarmNotifications(
+                    this, SettingsDAO.getLanguageCode(getPrefs()), SettingsDAO.getGlobalIntentId(getPrefs()));
                 intent.removeExtra(EXTRA_UPDATE_ALARM_NOTIFICATIONS);
             }
         }
 
         mBinding = DeskClockBinding.inflate(getLayoutInflater());
 
-        mPrefs = getDefaultSharedPreferences(this);
-
         if (isFirstLaunch()) {
             return;
         }
 
-        mFontPath = SettingsDAO.getGeneralFont(mPrefs);
-        mIsToolBarDisplayed = SettingsDAO.isToolbarTitleDisplayed(mPrefs);
+        mFontPath = SettingsDAO.getGeneralFont(getPrefs());
+        final String digitalClockFont = SettingsDAO.getDigitalClockFont(getPrefs());
+        final String timerDurationFont = SettingsDAO.getTimerDurationFont(getPrefs());
+        final String alarmFont = SettingsDAO.getAlarmFont(getPrefs());
+        final String stopwatchFont = SettingsDAO.getStopwatchFont(getPrefs());
 
-        // To manually manage insets
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
-
-        ThemeUtils.allowDisplayCutout(getWindow());
+        mIsToolBarDisplayed = SettingsDAO.isToolbarTitleDisplayed(getPrefs());
 
         setContentView(mBinding.getRoot());
 
@@ -247,13 +252,16 @@ public class DeskClock extends BaseActivity implements FabContainer {
 
         registerPrefListener();
 
+        // Asynchronously preload all fonts into ThemeUtils's memory cache.
+        // This prevents UI freezing (jank) on the main thread at startup, and allows BaseActivity
+        // and Fragments to instantly retrieve these fonts later without heavy disk I/O.
         AppExecutors.getDiskIO().execute(() -> {
-            mRegularTypeface = ThemeUtils.loadFont(mFontPath);
+            mGeneralTypeface = ThemeUtils.loadFont(mFontPath);
             ThemeUtils.boldTypeface(mFontPath);
-            ThemeUtils.loadFont(SettingsDAO.getDigitalClockFont(mPrefs));
-            ThemeUtils.loadFont(SettingsDAO.getTimerDurationFont(mPrefs));
-            ThemeUtils.boldTypeface(SettingsDAO.getAlarmFont(mPrefs));
-            ThemeUtils.loadFont(SettingsDAO.getStopwatchFont(mPrefs));
+            ThemeUtils.loadFont(digitalClockFont);
+            ThemeUtils.loadFont(timerDurationFont);
+            ThemeUtils.boldTypeface(alarmFont);
+            ThemeUtils.loadFont(stopwatchFont);
 
             AppExecutors.getMainThread().post(() -> {
                 if (isFinishing() || isDestroyed()) {
@@ -273,7 +281,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
     protected void onStart() {
         super.onStart();
 
-        DataModel.getDataModel().addSilentSettingsListener(mSilentSettingChangeWatcher);
+        getDataModel().addSilentSettingsListener(mSilentSettingChangeWatcher);
     }
 
     @Override
@@ -281,12 +289,12 @@ public class DeskClock extends BaseActivity implements FabContainer {
         super.onResume();
 
         // Remember the current tab
-        UiDataModel.Tab oldTab = UiDataModel.getUiDataModel().getSelectedTab();
+        UiDataModel.Tab oldTab = getUiDataModel().getSelectedTab();
 
         // Remove the listener to prevent the ViewPager from crashing when the tabs visibility has been changed
-        UiDataModel.getUiDataModel().removeTabListener(mTabChangeWatcher);
+        getUiDataModel().removeTabListener(mTabChangeWatcher);
 
-        final boolean tabsChanged = UiDataModel.getUiDataModel().updateActiveTabs();
+        final boolean tabsChanged = getUiDataModel().updateActiveTabs();
 
         // Clear the fragment cache and notify the ViewPager if the tabs visibility has been changed
         if (tabsChanged) {
@@ -309,7 +317,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
 
         updateKeepScreenOn();
 
-        if (SettingsDAO.isForegroundServiceEnabled(mPrefs)) {
+        if (SettingsDAO.isForegroundServiceEnabled(getPrefs())) {
             ContextCompat.startForegroundService(this, new Intent(this, KeepAliveService.class));
         }
     }
@@ -318,12 +326,12 @@ public class DeskClock extends BaseActivity implements FabContainer {
     protected void onPause() {
         super.onPause();
 
-        UiDataModel.getUiDataModel().removeTabListener(mTabChangeWatcher);
+        getUiDataModel().removeTabListener(mTabChangeWatcher);
     }
 
     @Override
     protected void onStop() {
-        DataModel.getDataModel().removeSilentSettingsListener(mSilentSettingChangeWatcher);
+        getDataModel().removeSilentSettingsListener(mSilentSettingChangeWatcher);
 
         super.onStop();
     }
@@ -342,7 +350,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
 
     @SuppressLint("AlwaysShowAction")
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
+    public boolean onCreateOptionsMenu(@NonNull Menu menu) {
         menu.add(0, Menu.NONE, 1, R.string.settings).setIcon(R.drawable.ic_settings).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
 
         if (PermissionUtils.areEssentialPermissionsNotGranted(this)) {
@@ -353,13 +361,13 @@ public class DeskClock extends BaseActivity implements FabContainer {
             menu.add(0, Menu.FIRST, 0, R.string.denied_permission_label).setIcon(warningIcon).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
         }
 
-        mBinding.toolbar.post(() -> ThemeUtils.applyToolbarTooltips(mBinding.toolbar));
+        mBinding.toolbar.post(() -> ThemeUtils.applyToolbarTooltips(mBinding.toolbar, mGeneralTypeface, getDisplayMetrics()));
 
         return true;
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == 0) {
             final Intent settingIntent = new Intent(this, SettingsActivity.class);
             startActivity(settingIntent);
@@ -378,12 +386,12 @@ public class DeskClock extends BaseActivity implements FabContainer {
      * respond to key presses even if they are not currently focused.
      */
     @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
+    public boolean onKeyDown(int keyCode, @NonNull KeyEvent event) {
         return getSelectedDeskClockFragment().onKeyDown(keyCode, event) || super.onKeyDown(keyCode, event);
     }
 
     @Override
-    public boolean onKeyUp(int keyCode, KeyEvent event) {
+    public boolean onKeyUp(int keyCode, @NonNull KeyEvent event) {
         return getSelectedDeskClockFragment().onKeyUp(keyCode, event) || super.onKeyUp(keyCode, event);
     }
 
@@ -417,11 +425,34 @@ public class DeskClock extends BaseActivity implements FabContainer {
         }
     }
 
+    private void restoreStateAfterDebugDeployment() {
+        if (!BuildConfig.IS_DEBUG_BUILD) {
+            return;
+        }
+
+        Context appContext = getApplicationContext();
+
+        AppExecutors.getDiskIO().execute(() -> {
+            List<Alarm> enabledAlarms = Alarm.getEnabledAlarms(appContext);
+            if (!enabledAlarms.isEmpty()) {
+                LogUtils.i("Debug deployment: Restoring enabled alarms.");
+                AlarmStateManager.fixAlarmInstances(appContext, getPrefs());
+            }
+        });
+
+        AppExecutors.getMainThread().post(() -> {
+            if (getDataModel().hasActiveTimer() || getDataModel().getStopwatch().isRunning()) {
+                LogUtils.i("Debug deployment: Restoring timers and stopwatch.");
+                getDataModel().updateAfterReboot();
+            }
+        });
+    }
+
     /**
      * Check if this is the first time the application has been launched.
      */
     private boolean isFirstLaunch() {
-        final boolean isFirstRun = mPrefs.getBoolean(KEY_IS_FIRST_LAUNCH, true);
+        final boolean isFirstRun = getPrefs().getBoolean(KEY_IS_FIRST_LAUNCH, true);
         if (isFirstRun) {
             startActivity(new Intent(this, FirstLaunch.class));
             finish();
@@ -436,11 +467,12 @@ public class DeskClock extends BaseActivity implements FabContainer {
      * <p>Note: Clicking the "OK" button will no longer display this dialog box.</p>
      */
     private void displayKeepAndroidOpenDialogIfUnread() {
-        if (!mPrefs.getBoolean(KEY_DISPLAY_KEEP_ANDROID_OPEN_DIALOG, true)) {
+        if (!SettingsDAO.isKeepAndroidOpenDialogDisplayed(getPrefs())) {
             return;
         }
 
-        mKeepAndroidOpenDialog = Utils.displayKeepAndroidOpenDialog(this, mPrefs, false);
+        mKeepAndroidOpenDialog = Utils.displayKeepAndroidOpenDialog(this, false, () ->
+            SettingsDAO.setKeepAndroidOpenDialogDisplayed(getPrefs()));
 
         mKeepAndroidOpenDialog.show();
     }
@@ -476,13 +508,13 @@ public class DeskClock extends BaseActivity implements FabContainer {
             cachedValues.put(key, newValue);
 
             switch (key) {
-                case KEY_TOOLBAR_TITLE, KEY_TAB_TITLE_VISIBILITY, KEY_TAB_INDICATOR, KEY_TAB_TO_DISPLAY, KEY_TAB_ANIMATION, KEY_VIBRATIONS,
-                     KEY_KEEP_SCREEN_ON, KEY_ESSENTIAL_PERMISSIONS_GRANTED -> mShouldRecreate = true;
+                case KEY_TOOLBAR_TITLE, KEY_CENTRAL_FAB_SIZE, KEY_SIDE_FAB_SIZE, KEY_TAB_TITLE_VISIBILITY, KEY_TAB_INDICATOR,
+                     KEY_TAB_TO_DISPLAY, KEY_TAB_ANIMATION, KEY_KEEP_SCREEN_ON, KEY_ESSENTIAL_PERMISSIONS_GRANTED -> mShouldRecreate = true;
 
             }
         };
 
-        mPrefs.registerOnSharedPreferenceChangeListener(mPrefListener);
+        getPrefs().registerOnSharedPreferenceChangeListener(mPrefListener);
     }
 
     /**
@@ -490,7 +522,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
      */
     private void unregisterPrefListener() {
         if (mPrefListener != null) {
-            mPrefs.unregisterOnSharedPreferenceChangeListener(mPrefListener);
+            getPrefs().unregisterOnSharedPreferenceChangeListener(mPrefListener);
         }
     }
 
@@ -500,18 +532,20 @@ public class DeskClock extends BaseActivity implements FabContainer {
      *
      * @param key The preference key to retrieve.
      */
-    private Object getPreferenceValue(String key) {
+    @Nullable
+    private Object getPreferenceValue(@NonNull String key) {
         return switch (key) {
             // Interface
-            case KEY_TOOLBAR_TITLE -> SettingsDAO.isToolbarTitleDisplayed(mPrefs);
-            case KEY_TAB_TITLE_VISIBILITY -> SettingsDAO.getTabTitleVisibility(mPrefs);
-            case KEY_TAB_INDICATOR -> SettingsDAO.isTabIndicatorDisplayed(mPrefs);
-            case KEY_TAB_TO_DISPLAY -> SettingsDAO.getTabToDisplay(mPrefs);
-            case KEY_TAB_ANIMATION -> SettingsDAO.getTabAnimation(mPrefs);
-            case KEY_VIBRATIONS -> SettingsDAO.isVibrationsEnabled(mPrefs);
-            case KEY_KEEP_SCREEN_ON -> SettingsDAO.shouldScreenRemainOn(mPrefs);
+            case KEY_TOOLBAR_TITLE -> SettingsDAO.isToolbarTitleDisplayed(getPrefs());
+            case KEY_CENTRAL_FAB_SIZE -> SettingsDAO.getCentralFabSize(getPrefs());
+            case KEY_SIDE_FAB_SIZE -> SettingsDAO.getSideFabSize(getPrefs());
+            case KEY_TAB_TITLE_VISIBILITY -> SettingsDAO.getTabTitleVisibility(getPrefs());
+            case KEY_TAB_INDICATOR -> SettingsDAO.isTabIndicatorDisplayed(getPrefs());
+            case KEY_TAB_TO_DISPLAY -> SettingsDAO.getTabToDisplay(getPrefs());
+            case KEY_TAB_ANIMATION -> SettingsDAO.getTabAnimation(getPrefs());
+            case KEY_KEEP_SCREEN_ON -> SettingsDAO.shouldScreenRemainOn(getPrefs());
             // Permission
-            case KEY_ESSENTIAL_PERMISSIONS_GRANTED -> mPrefs.getBoolean(key, false);
+            case KEY_ESSENTIAL_PERMISSIONS_GRANTED -> getPrefs().getBoolean(key, false);
 
             default -> null;
         };
@@ -531,7 +565,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
         }
 
         if (tab != null) {
-            UiDataModel.getUiDataModel().setSelectedTab(tab);
+            getUiDataModel().setSelectedTab(tab);
             return true;
         }
 
@@ -565,7 +599,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
         setSupportActionBar(mBinding.toolbar);
 
         if (mIsToolBarDisplayed) {
-            ThemeUtils.applyTypeface(mBinding.toolbar, mRegularTypeface);
+            ThemeUtils.applyTypeface(mBinding.toolbar, mGeneralTypeface);
         }
     }
 
@@ -573,6 +607,11 @@ public class DeskClock extends BaseActivity implements FabContainer {
      * Configures the buttons shared by the tabs.
      */
     private void configureFabAndButtons() {
+        // Configure the button sizes
+        mBinding.fab.setCustomSize((int) dpToPx(SettingsDAO.getCentralFabSize(getPrefs()), getDisplayMetrics()));
+        mBinding.leftButton.setCustomSize((int) dpToPx(SettingsDAO.getSideFabSize(getPrefs()), getDisplayMetrics()));
+        mBinding.rightButton.setCustomSize((int) dpToPx(SettingsDAO.getSideFabSize(getPrefs()), getDisplayMetrics()));
+
         // Configure the buttons shared by the tabs.
         mBinding.fab.setOnClickListener(view -> {
             final DeskClockFragment currentFragment = getSelectedDeskClockFragment();
@@ -588,16 +627,18 @@ public class DeskClock extends BaseActivity implements FabContainer {
         });
 
         mBinding.leftButton.setOnLongClickListener(v -> {
-            CustomTooltip.showAbove(v, mBinding.leftButton.getContentDescription().toString(), true);
+            CustomTooltip.showAbove(
+                v, mGeneralTypeface, getDisplayMetrics(), mBinding.leftButton.getContentDescription().toString(), true);
             return true;
         });
 
         mBinding.rightButton.setOnLongClickListener(v -> {
-            CustomTooltip.showAbove(v, mBinding.rightButton.getContentDescription().toString(), true);
+            CustomTooltip.showAbove(
+                v, mGeneralTypeface, getDisplayMetrics(), mBinding.rightButton.getContentDescription().toString(), true);
             return true;
         });
 
-        final long duration = getResources().getInteger(android.R.integer.config_shortAnimTime);
+        final long duration = AnimatorUtils.SHORT_ANIMATION_DURATION;
 
         final ValueAnimator hideFabAnimation = getScaleAnimator(mBinding.fab, 1f, 0f);
         final ValueAnimator showFabAnimation = getScaleAnimator(mBinding.fab, 0f, 1f);
@@ -609,31 +650,63 @@ public class DeskClock extends BaseActivity implements FabContainer {
 
         hideFabAnimation.addListener(new AnimatorListenerAdapter() {
             @Override
-            public void onAnimationStart(Animator animation) {
+            public void onAnimationStart(@NonNull Animator animation) {
                 mBinding.fab.setLayerType(View.LAYER_TYPE_HARDWARE, null);
             }
 
             @Override
-            public void onAnimationEnd(Animator animation) {
+            public void onAnimationEnd(@NonNull Animator animation) {
                 mBinding.fab.setLayerType(View.LAYER_TYPE_NONE, null);
 
-                getSelectedDeskClockFragment().onUpdateFab(mBinding.fab);
+                DeskClockFragment fragment = getSelectedDeskClockFragment();
+                if (fragment.isAdded() && fragment.getContext() != null) {
+                    fragment.onUpdateFab(mBinding.fab);
+                }
+            }
+        });
+
+        showFabAnimation.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationStart(@NonNull Animator animation) {
+                mBinding.fab.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+            }
+
+            @Override
+            public void onAnimationEnd(@NonNull Animator animation) {
+                mBinding.fab.setLayerType(View.LAYER_TYPE_NONE, null);
             }
         });
 
         leftHideAnimation.addListener(new AnimatorListenerAdapter() {
             @Override
-            public void onAnimationStart(Animator animation) {
+            public void onAnimationStart(@NonNull Animator animation) {
                 mBinding.leftButton.setLayerType(View.LAYER_TYPE_HARDWARE, null);
                 mBinding.rightButton.setLayerType(View.LAYER_TYPE_HARDWARE, null);
             }
 
             @Override
-            public void onAnimationEnd(Animator animation) {
+            public void onAnimationEnd(@NonNull Animator animation) {
                 mBinding.leftButton.setLayerType(View.LAYER_TYPE_NONE, null);
                 mBinding.rightButton.setLayerType(View.LAYER_TYPE_NONE, null);
 
-                getSelectedDeskClockFragment().onUpdateFabButtons(mBinding.leftButton, mBinding.rightButton);
+                DeskClockFragment fragment = getSelectedDeskClockFragment();
+                if (fragment.isAdded() && fragment.getContext() != null) {
+                    fragment.onUpdateFabButtons(mBinding.leftButton, mBinding.rightButton);
+                }
+            }
+        });
+
+        leftShowAnimation.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationStart(@NonNull Animator animation) {
+                mBinding.leftButton.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+                mBinding.rightButton.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+            }
+
+            @Override
+            public void onAnimationEnd(@NonNull Animator animation) {
+                mBinding.leftButton.setLayerType(View.LAYER_TYPE_NONE, null);
+                mBinding.rightButton.setLayerType(View.LAYER_TYPE_NONE, null);
             }
         });
 
@@ -671,11 +744,11 @@ public class DeskClock extends BaseActivity implements FabContainer {
      */
     private void configureViewPager() {
         // Customize the view pager.
-        mFragmentTabPagerAdapter = new FragmentTabPagerAdapter(this);
+        mFragmentTabPagerAdapter = new FragmentTabPagerAdapter(this, getUiDataModel());
         mBinding.deskClockPager.setAdapter(mFragmentTabPagerAdapter);
 
         // Set the number of pages to keep in the ViewPager base on the number of tabs displayed.
-        int visibleTabsCount = UiDataModel.getUiDataModel().getTabCount();
+        int visibleTabsCount = getUiDataModel().getTabCount();
         int offscreenLimit = Math.max(1, visibleTabsCount - 1);
         if (mBinding.deskClockPager.getOffscreenPageLimit() != offscreenLimit) {
             mBinding.deskClockPager.setOffscreenPageLimit(offscreenLimit);
@@ -701,7 +774,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
                 return;
             }
 
-            String tabAnimation = SettingsDAO.getTabAnimation(mPrefs);
+            String tabAnimation = SettingsDAO.getTabAnimation(getPrefs());
             ViewPager.PageTransformer transformer = switch (tabAnimation) {
                 case TAB_ANIMATION_CUBE -> new CubePageTransformer();
                 case TAB_ANIMATION_DEPTH -> new DepthPageTransformer();
@@ -724,7 +797,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
         final int surfaceColor = MaterialColors.getColor(this, com.google.android.material.R.attr.colorSurface, Color.BLACK);
         final int onBackgroundColor = MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnBackground, Color.BLACK);
 
-        String tabTitleVisibility = SettingsDAO.getTabTitleVisibility(mPrefs);
+        String tabTitleVisibility = SettingsDAO.getTabTitleVisibility(getPrefs());
         final boolean shouldUpdateTypeface = !tabTitleVisibility.equals(TAB_TITLE_VISIBILITY_NEVER) && mFontPath != null;
 
         if (shouldUpdateTypeface) {
@@ -739,7 +812,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
             return mNavigationListener.onNavigationItemSelected(item);
         });
 
-        mBinding.deskClockBottomMenu.setItemActiveIndicatorEnabled(SettingsDAO.isTabIndicatorDisplayed(mPrefs));
+        mBinding.deskClockBottomMenu.setItemActiveIndicatorEnabled(SettingsDAO.isTabIndicatorDisplayed(getPrefs()));
 
         if (tabTitleVisibility.equals(DEFAULT_TAB_TITLE_VISIBILITY)) {
             mBinding.deskClockBottomMenu.setLabelVisibilityMode(NavigationBarView.LABEL_VISIBILITY_LABELED);
@@ -753,13 +826,13 @@ public class DeskClock extends BaseActivity implements FabContainer {
             new int[][]{{android.R.attr.state_selected}, {android.R.attr.state_pressed}, {}},
             new int[]{primaryColor, primaryColor, onBackgroundColor}));
 
-        if (ThemeUtils.isNight(getResources()) && SettingsDAO.getDarkMode(mPrefs).equals(AMOLED_DARK_MODE)) {
+        if (isNight() && SettingsDAO.getDarkMode(getPrefs()).equals(AMOLED_DARK_MODE)) {
             mBinding.deskClockBottomMenu.setBackgroundColor(Color.BLACK);
             mBinding.deskClockBottomMenu.setItemTextColor(new ColorStateList(
                 new int[][]{{android.R.attr.state_selected}, {android.R.attr.state_pressed}, {}},
                 new int[]{primaryColor, primaryColor, Color.WHITE}));
         } else {
-            final boolean isCardBackgroundDisplayed = SettingsDAO.isCardBackgroundDisplayed(mPrefs);
+            final boolean isCardBackgroundDisplayed = SettingsDAO.isCardBackgroundDisplayed(getPrefs());
 
             if (isCardBackgroundDisplayed) {
                 mBinding.deskClockBottomMenu.setBackgroundColor(surfaceColor);
@@ -781,7 +854,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
      */
     @SuppressLint("RestrictedApi")
     private void updateBottomNavTypeface() {
-        if (mRegularTypeface == null) {
+        if (mGeneralTypeface == null) {
             return;
         }
 
@@ -790,7 +863,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
         for (int i = 0; i < menuView.getChildCount(); i++) {
             View itemView = menuView.getChildAt(i);
 
-            ThemeUtils.applyTypeface(itemView, mRegularTypeface);
+            ThemeUtils.applyTypeface(itemView, mGeneralTypeface);
         }
     }
 
@@ -820,7 +893,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
                         if (item != null) {
                             title = item.getTitle();
                             if (title != null) {
-                                CustomTooltip.showAbove(v, title.toString(), false);
+                                CustomTooltip.showAbove(v, mGeneralTypeface, getDisplayMetrics(), title.toString(), false);
                             }
                         }
 
@@ -843,16 +916,16 @@ public class DeskClock extends BaseActivity implements FabContainer {
                 switch (action) {
                     case TimerService.ACTION_SHOW_TIMER -> {
                         Events.sendTimerEvent(R.string.action_show, label);
-                        if (UiDataModel.getUiDataModel().isTabVisible(UiDataModel.Tab.TIMERS)) {
-                            UiDataModel.getUiDataModel().setSelectedTab(UiDataModel.Tab.TIMERS);
+                        if (getUiDataModel().isTabVisible(UiDataModel.Tab.TIMERS)) {
+                            getUiDataModel().setSelectedTab(UiDataModel.Tab.TIMERS);
                         }
                         // Consume the action to prevent it from being reused
                         intent.setAction(null);
                     }
                     case StopwatchService.ACTION_SHOW_STOPWATCH -> {
                         Events.sendStopwatchEvent(R.string.action_show, label);
-                        if (UiDataModel.getUiDataModel().isTabVisible(UiDataModel.Tab.STOPWATCH)) {
-                            UiDataModel.getUiDataModel().setSelectedTab(UiDataModel.Tab.STOPWATCH);
+                        if (getUiDataModel().isTabVisible(UiDataModel.Tab.STOPWATCH)) {
+                            getUiDataModel().setSelectedTab(UiDataModel.Tab.STOPWATCH);
                         }
                         // Consume the action to prevent it from being reused
                         intent.setAction(null);
@@ -868,15 +941,15 @@ public class DeskClock extends BaseActivity implements FabContainer {
      * <p>This method synchronizes the BottomNavigationView items and the ViewPager. If the currently active tab is hidden by the new
      * preferences, it automatically falls back to the first available tab.</p>
      */
-    private void refreshTabsVisibility(UiDataModel.Tab oldTab, boolean tabsChanged) {
+    private void refreshTabsVisibility(@NonNull UiDataModel.Tab oldTab, boolean tabsChanged) {
         // Update the menu icons
         Menu menu = mBinding.deskClockBottomMenu.getMenu();
         boolean menuChanged = false;
 
-        boolean showAlarm = UiDataModel.getUiDataModel().isTabVisible(UiDataModel.Tab.ALARMS);
-        boolean showClock = UiDataModel.getUiDataModel().isTabVisible(UiDataModel.Tab.CLOCKS);
-        boolean showTimer = UiDataModel.getUiDataModel().isTabVisible(UiDataModel.Tab.TIMERS);
-        boolean showStopwatch = UiDataModel.getUiDataModel().isTabVisible(UiDataModel.Tab.STOPWATCH);
+        boolean showAlarm = getUiDataModel().isTabVisible(UiDataModel.Tab.ALARMS);
+        boolean showClock = getUiDataModel().isTabVisible(UiDataModel.Tab.CLOCKS);
+        boolean showTimer = getUiDataModel().isTabVisible(UiDataModel.Tab.TIMERS);
+        boolean showStopwatch = getUiDataModel().isTabVisible(UiDataModel.Tab.STOPWATCH);
 
         if (menu.findItem(R.id.page_alarm).isVisible() != showAlarm) {
             menu.findItem(R.id.page_alarm).setVisible(showAlarm);
@@ -903,7 +976,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
         // Indicate in the menu which tab is currently active to force the Material indicator to redraw
         // when the tabs visibility has been changed
         mBinding.deskClockBottomMenu.post(() -> {
-            UiDataModel.Tab currentTab = UiDataModel.getUiDataModel().getSelectedTab();
+            UiDataModel.Tab currentTab = getUiDataModel().getSelectedTab();
             int currentItemId = switch (currentTab) {
                 case ALARMS -> R.id.page_alarm;
                 case CLOCKS -> R.id.page_clock;
@@ -922,7 +995,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
                 }
             }
 
-            if (!SettingsDAO.getTabTitleVisibility(mPrefs).equals(TAB_TITLE_VISIBILITY_NEVER) && mFontPath != null) {
+            if (!SettingsDAO.getTabTitleVisibility(getPrefs()).equals(TAB_TITLE_VISIBILITY_NEVER) && mFontPath != null) {
                 updateBottomNavTypeface();
             }
 
@@ -930,10 +1003,10 @@ public class DeskClock extends BaseActivity implements FabContainer {
         });
 
         // Re-enable the listener
-        UiDataModel.getUiDataModel().addTabListener(mTabChangeWatcher);
+        getUiDataModel().addTabListener(mTabChangeWatcher);
 
         // Check to see if the tab has been modified after being hidden
-        UiDataModel.Tab newTab = UiDataModel.getUiDataModel().getSelectedTab();
+        UiDataModel.Tab newTab = getUiDataModel().getSelectedTab();
 
         if (oldTab != newTab) {
             // The active tab has been hidden: select the first visible tab
@@ -956,7 +1029,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
     @SuppressLint("ResourceType")
     private void updateCurrentTab() {
         // Fetch the selected tab from the source of truth: UiDataModel.
-        final UiDataModel.Tab selectedTab = UiDataModel.getUiDataModel().getSelectedTab();
+        final UiDataModel.Tab selectedTab = getUiDataModel().getSelectedTab();
         // Update the selected tab in the mBottomNavigation if it does not agree with UiDataModel.
         if (mBinding.deskClockBottomMenu.getSelectedItemId() != selectedTab.getPageResId()) {
             mBinding.deskClockBottomMenu.setSelectedItemId(selectedTab.getPageResId());
@@ -964,8 +1037,8 @@ public class DeskClock extends BaseActivity implements FabContainer {
 
         // Update the selected fragment in the viewpager if it does not agree with UiDataModel.
         int targetIndex = -1;
-        for (int i = 0; i < UiDataModel.getUiDataModel().getTabCount(); i++) {
-            if (UiDataModel.getUiDataModel().getTabAt(i) == selectedTab) {
+        for (int i = 0; i < getUiDataModel().getTabCount(); i++) {
+            if (getUiDataModel().getTabAt(i) == selectedTab) {
                 targetIndex = i;
                 break;
             }
@@ -990,14 +1063,14 @@ public class DeskClock extends BaseActivity implements FabContainer {
      * or user preference enabled), apply the {@code FLAG_KEEP_SCREEN_ON} flag.
      */
     public void updateKeepScreenOn() {
-        boolean screenShouldStayOn = SettingsDAO.shouldScreenRemainOn(mPrefs);
+        boolean screenShouldStayOn = SettingsDAO.shouldScreenRemainOn(getPrefs());
 
         if (!screenShouldStayOn) {
-            UiDataModel.Tab selectedTab = UiDataModel.getUiDataModel().getSelectedTab();
+            UiDataModel.Tab selectedTab = getUiDataModel().getSelectedTab();
 
             switch (selectedTab) {
-                case TIMERS -> screenShouldStayOn = DataModel.getDataModel().hasActiveTimer();
-                case STOPWATCH -> screenShouldStayOn = DataModel.getDataModel().getStopwatch().isRunning();
+                case TIMERS -> screenShouldStayOn = getDataModel().hasActiveTimer();
+                case STOPWATCH -> screenShouldStayOn = getDataModel().getStopwatch().isRunning();
             }
         }
 
@@ -1018,10 +1091,10 @@ public class DeskClock extends BaseActivity implements FabContainer {
      * @param oldTab the previously selected tab
      * @param newTab the newly selected tab
      */
-    private void updateTabRunnable(UiDataModel.Tab oldTab, UiDataModel.Tab newTab) {
+    private void updateTabRunnable(@Nullable UiDataModel.Tab oldTab, @Nullable UiDataModel.Tab newTab) {
         // Stop the runnable from the previous tab (if it exists and is still visible)
         if (oldTab != null) {
-            int oldIndex = UiDataModel.getUiDataModel().getTabIndex(oldTab);
+            int oldIndex = getUiDataModel().getTabIndex(oldTab);
             if (oldIndex != -1 && oldIndex < mFragmentTabPagerAdapter.getCount()) {
                 DeskClockFragment oldFragment = mFragmentTabPagerAdapter.getDeskClockFragment(oldIndex);
                 if (oldFragment instanceof RunnableFragment runnableOld) {
@@ -1032,7 +1105,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
 
         // Launch the new tab runnable
         if (newTab != null) {
-            int newIndex = UiDataModel.getUiDataModel().getTabIndex(newTab);
+            int newIndex = getUiDataModel().getTabIndex(newTab);
             if (newIndex != -1 && newIndex < mFragmentTabPagerAdapter.getCount()) {
                 DeskClockFragment newFragment = mFragmentTabPagerAdapter.getDeskClockFragment(newIndex);
                 if (newFragment instanceof RunnableFragment runnableNew) {
@@ -1045,6 +1118,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
     /**
      * @return the DeskClockFragment that is currently selected according to UiDataModel
      */
+    @NonNull
     private DeskClockFragment getSelectedDeskClockFragment() {
         for (int i = 0; i < mFragmentTabPagerAdapter.getCount(); i++) {
             final DeskClockFragment fragment = mFragmentTabPagerAdapter.getDeskClockFragment(i);
@@ -1052,13 +1126,14 @@ public class DeskClock extends BaseActivity implements FabContainer {
                 return fragment;
             }
         }
-        final UiDataModel.Tab selectedTab = UiDataModel.getUiDataModel().getSelectedTab();
+        final UiDataModel.Tab selectedTab = getUiDataModel().getSelectedTab();
         throw new IllegalStateException("Unable to locate selected fragment (" + selectedTab + ")");
     }
 
     /**
      * @return a Snackbar that displays the message with the given id for 5 seconds
      */
+    @NonNull
     private Snackbar createSnackbar(@StringRes int messageId) {
         return Snackbar.make(mBinding.contentView, messageId, 5000);
     }
@@ -1149,7 +1224,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
      */
     private final class AutoStartShowListener extends AnimatorListenerAdapter {
         @Override
-        public void onAnimationEnd(Animator animation) {
+        public void onAnimationEnd(@NonNull Animator animation) {
             // Prepare the hide animation for its next use; by default do not auto-show after hide.
             mHideAnimation.removeListener(mAutoStartShowListener);
 
@@ -1169,7 +1244,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
      */
     private final class SilentSettingChangeWatcher implements OnSilentSettingsListener {
         @Override
-        public void onSilentSettingsChange(SilentSetting after) {
+        public void onSilentSettingsChange(@Nullable SilentSetting after) {
             if (mShowSilentSettingSnackbarRunnable != null) {
                 mBinding.contentView.removeCallbacks(mShowSilentSettingSnackbarRunnable);
                 mShowSilentSettingSnackbarRunnable = null;
@@ -1191,7 +1266,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
 
         private final SilentSetting mSilentSetting;
 
-        private ShowSilentSettingSnackbarRunnable(SilentSetting silentSetting) {
+        private ShowSilentSettingSnackbarRunnable(@NonNull SilentSetting silentSetting) {
             mSilentSetting = silentSetting;
         }
 
@@ -1202,10 +1277,23 @@ public class DeskClock extends BaseActivity implements FabContainer {
             // Set the associated corrective action if one exists.
             if (mSilentSetting.isActionEnabled()) {
                 final int actionResId = mSilentSetting.getActionResId();
-                snackbar.setAction(actionResId, v -> mSilentSetting.executeAction(v.getContext()));
+
+                snackbar.setAction(actionResId, v -> {
+                    boolean success = mSilentSetting.executeAction(v.getContext());
+
+                    if (!success) {
+                        SharedPreferences prefs = getPrefs();
+                        final int style = ThemeUtils.getAccentStyle(DeskClock.this,
+                            SettingsDAO.isAutoNightAccentColorEnabled(prefs),
+                            SettingsDAO.getAccentColor(prefs),
+                            SettingsDAO.getNightAccentColor(prefs));
+
+                        CustomToast.show(DeskClock.this, style, mGeneralTypeface, R.string.app_message_error);
+                    }
+                });
             }
 
-            SnackbarManager.show(snackbar);
+            SnackbarManager.show(snackbar, mGeneralTypeface);
         }
     }
 
@@ -1217,9 +1305,9 @@ public class DeskClock extends BaseActivity implements FabContainer {
         private UiDataModel.Tab mPreviousTab = null;
 
         @Override
-        public void selectedTabChanged(UiDataModel.Tab newSelectedTab) {
+        public void selectedTabChanged(@NonNull UiDataModel.Tab newSelectedTab) {
             if (mPreviousTab == null) {
-                mPreviousTab = UiDataModel.getUiDataModel().getSelectedTab();
+                mPreviousTab = getUiDataModel().getSelectedTab();
             }
 
             // Update the view pager and tab layout to agree with the model.
@@ -1232,7 +1320,7 @@ public class DeskClock extends BaseActivity implements FabContainer {
 
             // Avoid sending events for the initial tab selection on launch and re-selecting a tab
             // after a configuration change.
-            if (DataModel.getDataModel().isApplicationInForeground()) {
+            if (getDataModel().isApplicationInForeground()) {
                 switch (newSelectedTab) {
                     case ALARMS -> Events.sendAlarmEvent(R.string.action_show, R.string.label_deskclock);
                     case CLOCKS -> Events.sendClockEvent(R.string.action_show, R.string.label_deskclock);

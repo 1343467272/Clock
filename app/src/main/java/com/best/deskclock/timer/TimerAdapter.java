@@ -8,11 +8,9 @@ package com.best.deskclock.timer;
 
 import static androidx.core.util.TypedValueCompat.dpToPx;
 import static com.best.deskclock.settings.PreferencesDefaultValues.DEFAULT_SORT_TIMER_MANUALLY;
-import static com.best.deskclock.settings.PreferencesKeys.KEY_TIMER_ORDER;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.SparseBooleanArray;
@@ -21,20 +19,23 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.util.Consumer;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.best.deskclock.R;
 import com.best.deskclock.base.AppExecutors;
 import com.best.deskclock.data.DataModel;
-import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.data.Timer;
 import com.best.deskclock.data.TimerListener;
 import com.best.deskclock.uicomponents.ItemTouchHelperContract;
+import com.best.deskclock.uidata.UiConfig;
 import com.best.deskclock.utils.ThemeUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * This adapter produces a {@link TimerViewHolder} for each timer.
@@ -48,59 +49,73 @@ public class TimerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     private static final String PAYLOAD_UPDATE_BACKGROUND = "PAYLOAD_UPDATE_BACKGROUND";
     private static final String PAYLOAD_UPDATE_STATE = "PAYLOAD_UPDATE_STATE";
 
+    private UiConfig.Fonts mFonts;
+    private final UiConfig.Screen mScreen;
+    private final UiConfig.Haptics mHaptics;
+    private final DataModel mDataModel;
+    private final Locale mLocale;
+    private TimerSettings mSettings;
     private final SparseBooleanArray mAnimatedTimerIds = new SparseBooleanArray();
     private List<Timer> mCachedTimers = new ArrayList<>();
+    private final Consumer<String> mTimerOrderSaver;
     private final TimerClickHandler mTimerClickHandler;
-    private final Context mContext;
-    private final SharedPreferences mPrefs;
-    private final Typeface mRegularTypeface;
-    private final Typeface mBoldTypeface;
-    private TimerSettings mSettings;
     private RecyclerView mRecyclerView;
-    private final boolean mIsTablet;
-    private final boolean mIsLandscape;
 
     private final Drawable.ConstantState mBgStandard;
     private final Drawable.ConstantState mBgStart;  // Top (Portrait) or Left (Landscape)
     private final Drawable.ConstantState mBgMiddle; // Middle
     private final Drawable.ConstantState mBgEnd;    // Bottom (Portrait) or Right (Landscape)
 
-    public TimerAdapter(Context context, SharedPreferences sharedPreferences, TimerClickHandler timerClickHandler, boolean isTablet,
-                        boolean isLandscape, Typeface regularTypeface, Typeface boldTypeface, TimerSettings settings) {
+    public TimerAdapter(@NonNull Context context, @NonNull DataModel dataModel, @NonNull TimerClickHandler timerClickHandler,
+                        @NonNull UiConfig.Fonts fonts, @NonNull UiConfig.Screen screen, @NonNull UiConfig.CardStyle cardStyle,
+                        @Nullable UiConfig.Haptics haptics, @NonNull Locale locale, @NonNull TimerSettings settings,
+                        @NonNull Consumer<String> timerOrderSaver) {
 
-        mContext = context;
-        mPrefs = sharedPreferences;
+        mDataModel = dataModel;
         mTimerClickHandler = timerClickHandler;
-        mIsTablet = isTablet;
-        mIsLandscape = isLandscape;
-        mRegularTypeface = regularTypeface;
-        mBoldTypeface = boldTypeface;
+        mFonts = fonts;
+        mScreen = screen;
+        mHaptics = haptics;
+        mLocale = locale;
         mSettings = settings;
+        mTimerOrderSaver = timerOrderSaver;
 
-        mBgStandard = ThemeUtils.rippleDrawable(context, ThemeUtils.cardBackground(context)).getConstantState();
+        mBgStandard = ThemeUtils.rippleDrawable(context, ThemeUtils.cardBackground(context, screen.metrics(),
+            cardStyle.isBackgroundDisplayed(), cardStyle.isBorderDisplayed(), cardStyle.isAmoledDarkMode())).getConstantState();
 
-        if (!mIsTablet) {
-            if (isLandscape) {
-                mBgStart = ThemeUtils.rippleDrawable(
-                    context, ThemeUtils.expressiveCardBackgroundForLandscape(context, 0, 3)).getConstantState();
-                mBgMiddle = ThemeUtils.rippleDrawable(
-                    context, ThemeUtils.expressiveCardBackgroundForLandscape(context, 1, 3)).getConstantState();
-                mBgEnd = ThemeUtils.rippleDrawable(
-                    context, ThemeUtils.expressiveCardBackgroundForLandscape(context, 2, 3)).getConstantState();
+        if (!screen.isTablet()) {
+            if (screen.isLandscape()) {
+                mBgStart = ThemeUtils.rippleDrawable(context,
+                    ThemeUtils.expressiveCardBackgroundForLandscape(context, screen.metrics(), cardStyle.isBackgroundDisplayed(),
+                        cardStyle.isBorderDisplayed(), cardStyle.isAmoledDarkMode(), 0, 3)).getConstantState();
+                mBgMiddle = ThemeUtils.rippleDrawable(context,
+                    ThemeUtils.expressiveCardBackgroundForLandscape(context, screen.metrics(), cardStyle.isBackgroundDisplayed(),
+                        cardStyle.isBorderDisplayed(), cardStyle.isAmoledDarkMode(), 1, 3)).getConstantState();
+                mBgEnd = ThemeUtils.rippleDrawable(context,
+                    ThemeUtils.expressiveCardBackgroundForLandscape(context, screen.metrics(), cardStyle.isBackgroundDisplayed(),
+                        cardStyle.isBorderDisplayed(), cardStyle.isAmoledDarkMode(), 2, 3)).getConstantState();
             } else {
-                mBgStart = ThemeUtils.rippleDrawable(
-                    context, ThemeUtils.expressiveCardBackground(context, 0, 3)).getConstantState();
-                mBgMiddle = ThemeUtils.rippleDrawable(
-                    context, ThemeUtils.expressiveCardBackground(context, 1, 3)).getConstantState();
-                mBgEnd = ThemeUtils.rippleDrawable(
-                    context, ThemeUtils.expressiveCardBackground(context, 2, 3)).getConstantState();
+                mBgStart = ThemeUtils.rippleDrawable(context,
+                    ThemeUtils.expressiveCardBackground(context, screen.metrics(), cardStyle.isBackgroundDisplayed(),
+                        cardStyle.isBorderDisplayed(), cardStyle.isAmoledDarkMode(), 0, 3)).getConstantState();
+                mBgMiddle = ThemeUtils.rippleDrawable(context,
+                    ThemeUtils.expressiveCardBackground(context, screen.metrics(), cardStyle.isBackgroundDisplayed(),
+                        cardStyle.isBorderDisplayed(), cardStyle.isAmoledDarkMode(), 1, 3)).getConstantState();
+                mBgEnd = ThemeUtils.rippleDrawable(context,
+                    ThemeUtils.expressiveCardBackground(context, screen.metrics(), cardStyle.isBackgroundDisplayed(),
+                        cardStyle.isBorderDisplayed(), cardStyle.isAmoledDarkMode(), 2, 3)).getConstantState();
             }
         } else {
             mBgStart = mBgMiddle = mBgEnd = null;
         }
     }
 
-    public boolean isTablet() { return mIsTablet; }
+    public TimerClickHandler getTimerClickHandler() { return mTimerClickHandler; }
+    public TimerSettings getSettings() { return mSettings; }
+    public UiConfig.Fonts getFonts() { return mFonts; }
+    public UiConfig.Screen getScreen() { return mScreen; }
+    public Locale getLocale() { return mLocale; }
+    public UiConfig.Haptics getHaptics() { return mHaptics; }
     public Drawable.ConstantState getBgStandard() { return mBgStandard; }
     public Drawable.ConstantState getBgStart() { return mBgStart; }
     public Drawable.ConstantState getBgMiddle() { return mBgMiddle; }
@@ -125,11 +140,7 @@ public class TimerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         Timer timer = holder.getTimer();
 
         if (timer != null) {
-            if (holder.mTimerItemCompact != null) {
-                holder.mTimerItemCompact.updateTimeDisplay(timer, false);
-            } else if (holder.mTimerItem != null) {
-                holder.mTimerItem.updateTimeDisplay(timer, false);
-            }
+            holder.mTimerView.updateTimeDisplay(timer, false);
 
             if (!timer.isReset()) {
                 holder.startUpdating();
@@ -152,12 +163,10 @@ public class TimerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
     @Override
     public int getItemViewType(int position) {
-        boolean isPortrait = ThemeUtils.isPortrait();
-
         if (getTimers().size() == 1) {
-            return (ThemeUtils.isTablet() || isPortrait) ? SINGLE_TIMER : MULTIPLE_TIMERS;
+            return (mScreen.isTablet() || mScreen.isPortrait()) ? SINGLE_TIMER : MULTIPLE_TIMERS;
         } else {
-            if (isPortrait && SettingsDAO.isCompactTimersDisplayed(mPrefs)) {
+            if (mScreen.isPortrait() && mSettings.isCompactTimersDisplayed) {
                 return MULTIPLE_TIMERS_COMPACT;
             } else {
                 return MULTIPLE_TIMERS;
@@ -179,8 +188,7 @@ public class TimerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             view = inflater.inflate(R.layout.timer_item_compact, parent, false);
         }
 
-        return new TimerViewHolder(
-            view, this, mTimerClickHandler, viewType, mRegularTypeface, mBoldTypeface, mIsTablet, mIsLandscape);
+        return new TimerViewHolder(view, this, viewType);
     }
 
     @Override
@@ -188,7 +196,7 @@ public class TimerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         TimerViewHolder holder = (TimerViewHolder) itemViewHolder;
         Timer timer = getTimer(position);
 
-        holder.applySettings(mSettings);
+        holder.applySettings();
 
         boolean hasBeenAnimated = mAnimatedTimerIds.get(timer.getId(), false);
         boolean isFirstAppearance = !hasBeenAnimated;
@@ -219,7 +227,7 @@ public class TimerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     }
 
     @Override
-    public void timerAdded(Timer timer) {
+    public void timerAdded(@NonNull Timer timer) {
         refreshTimersCache();
         saveTimerList();
 
@@ -241,8 +249,9 @@ public class TimerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         updateTime();
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     @Override
-    public void timerRemoved(Timer timer) {
+    public void timerRemoved(@NonNull Timer timer) {
         mAnimatedTimerIds.delete(timer.getId());
 
         int positionToRemove = getTimerPosition(timer.getId());
@@ -266,8 +275,9 @@ public class TimerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         }
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     @Override
-    public void timerUpdated(Timer before, Timer after) {
+    public void timerUpdated(@NonNull Timer before, @NonNull Timer after) {
         int oldPosition = getTimerPosition(before.getId());
 
         refreshTimersCache();
@@ -305,13 +315,13 @@ public class TimerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     }
 
     @Override
-    public void onRowSelected(RecyclerView.ViewHolder viewHolder) {
+    public void onRowSelected(@NonNull RecyclerView.ViewHolder viewHolder) {
         // Draw a shadow under the timer card when it's dragging.
-        viewHolder.itemView.setTranslationZ(dpToPx(6, mContext.getResources().getDisplayMetrics()));
+        viewHolder.itemView.setTranslationZ(dpToPx(6, mScreen.metrics()));
     }
 
     @Override
-    public void onRowClear(RecyclerView.ViewHolder viewHolder) {
+    public void onRowClear(@NonNull RecyclerView.ViewHolder viewHolder) {
         // Remove the shadow under the city card when the drag is complete.
         viewHolder.itemView.setTranslationZ(0f);
     }
@@ -331,10 +341,18 @@ public class TimerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         return RecyclerView.NO_POSITION;
     }
 
-    public void updateSettings(TimerSettings settings) {
+    @SuppressLint("NotifyDataSetChanged")
+    public void updateSettings(@NonNull TimerSettings settings) {
         mSettings = settings;
 
         refreshTimersCache();
+
+        notifyDataSetChanged();
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    public void updateFonts(@NonNull UiConfig.Fonts fonts) {
+        mFonts = fonts;
 
         notifyDataSetChanged();
     }
@@ -389,12 +407,12 @@ public class TimerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         return mCachedTimers;
     }
 
-    private List<Timer> buildSortedTimerList(List<Timer> sourceTimers) {
+    private List<Timer> buildSortedTimerList(@NonNull List<Timer> sourceTimers) {
         if (!mSettings.timerSorting.equals(DEFAULT_SORT_TIMER_MANUALLY)) {
-            Collections.sort(sourceTimers, Timer.createTimerStateComparator(mContext));
+            Collections.sort(sourceTimers, Timer.createTimerStateComparator(mSettings.timerSorting));
             return sourceTimers;
         } else {
-            String savedOrder = mPrefs.getString(KEY_TIMER_ORDER, null);
+            String savedOrder = mSettings.savedTimerOrder;
             if (savedOrder != null) {
                 String[] timerIds = savedOrder.split(",");
                 List<Timer> orderedList = new ArrayList<>();
@@ -421,8 +439,9 @@ public class TimerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         }
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void loadTimersAsync() {
-        List<Timer> sourceTimers = new ArrayList<>(DataModel.getDataModel().getTimers());
+        List<Timer> sourceTimers = new ArrayList<>(mDataModel.getTimers());
 
         AppExecutors.getDiskIO().execute(() -> {
             final List<Timer> sortedTimers = buildSortedTimerList(sourceTimers);
@@ -435,15 +454,13 @@ public class TimerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     }
 
     public void refreshTimersCache() {
-        List<Timer> sourceTimers = new ArrayList<>(DataModel.getDataModel().getTimers());
+        List<Timer> sourceTimers = new ArrayList<>(mDataModel.getTimers());
         mCachedTimers = buildSortedTimerList(sourceTimers);
     }
 
     public void saveTimerList() {
-        SharedPreferences.Editor editor = mPrefs.edit();
-
         if (getTimers().isEmpty()) {
-            editor.remove(KEY_TIMER_ORDER);
+            mTimerOrderSaver.accept(null);
         } else {
             // Convert list of IDs to string
             StringBuilder sb = new StringBuilder();
@@ -456,14 +473,12 @@ public class TimerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
                 sb.setLength(sb.length() - 1);
             }
 
-            editor.putString(KEY_TIMER_ORDER, sb.toString());
+            mTimerOrderSaver.accept(sb.toString());
         }
-
-        editor.apply();
     }
 
     public void swapTimers(int fromPosition, int toPosition) {
-        List<Timer> dataModelTimers = DataModel.getDataModel().getTimers();
+        List<Timer> dataModelTimers = mDataModel.getTimers();
 
         if (fromPosition < toPosition) {
             for (int i = fromPosition; i < toPosition; i++) {

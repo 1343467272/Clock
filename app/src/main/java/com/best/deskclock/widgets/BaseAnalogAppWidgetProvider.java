@@ -14,8 +14,11 @@ import android.content.SharedPreferences;
 import android.graphics.drawable.Icon;
 import android.widget.RemoteViews;
 
+import androidx.annotation.NonNull;
+
 import com.best.deskclock.DeskClock;
 import com.best.deskclock.R;
+import com.best.deskclock.data.WidgetDAO;
 import com.best.deskclock.utils.LogUtils;
 import com.best.deskclock.utils.SdkUtils;
 import com.best.deskclock.utils.WidgetUtils;
@@ -29,35 +32,36 @@ import com.best.deskclock.utils.WidgetUtils;
  */
 public abstract class BaseAnalogAppWidgetProvider extends AppWidgetProvider {
 
-    protected abstract int getLayoutId(SharedPreferences prefs);
+    protected abstract int getLayoutId(@NonNull SharedPreferences prefs);
 
     protected abstract int getWidgetViewId();
 
-    protected abstract Icon getDialIcon(Context context, SharedPreferences prefs);
+    protected abstract Icon getDialIcon(@NonNull Context context, @NonNull SharedPreferences prefs);
 
-    protected abstract Icon getHourHandIcon(Context context, SharedPreferences prefs);
+    protected abstract Icon getHourHandIcon(@NonNull Context context, @NonNull SharedPreferences prefs);
 
-    protected abstract Icon getMinuteHandIcon(Context context, SharedPreferences prefs);
+    protected abstract Icon getMinuteHandIcon(@NonNull Context context, @NonNull SharedPreferences prefs);
 
-    protected abstract Icon getSecondHandIcon(Context context, SharedPreferences prefs);
+    protected abstract Icon getSecondHandIcon(@NonNull Context context, @NonNull SharedPreferences prefs);
 
-    protected abstract boolean isSecondHandDisplayed(SharedPreferences prefs);
+    protected abstract boolean isSecondHandDisplayed(@NonNull SharedPreferences prefs);
 
-    protected abstract void applyDialColor(Icon dialIcon, SharedPreferences prefs);
+    protected abstract void applyDialColor(@NonNull Icon dialIcon, @NonNull SharedPreferences prefs);
 
-    protected abstract void applyHourHandColor(Icon hourHandIcon, SharedPreferences prefs);
+    protected abstract void applyHourHandColor(@NonNull Icon hourHandIcon, @NonNull SharedPreferences prefs);
 
-    protected abstract void applyMinuteHandColor(Icon minuteHandIcon, SharedPreferences prefs);
+    protected abstract void applyMinuteHandColor(@NonNull Icon minuteHandIcon, @NonNull SharedPreferences prefs);
 
-    protected abstract void applySecondHandColor(Icon secondHandIcon, SharedPreferences prefs);
+    protected abstract void applySecondHandColor(@NonNull Icon secondHandIcon, @NonNull SharedPreferences prefs);
 
-    protected void updateAnalogWidget(Context context, AppWidgetManager wm, int widgetId) {
+    protected void updateAnalogWidget(@NonNull Context context, @NonNull AppWidgetManager wm, int widgetId) {
         SharedPreferences prefs = getDefaultSharedPreferences(context);
         RemoteViews views = relayoutWidget(context, prefs, wm, widgetId);
         wm.updateAppWidget(widgetId, views);
     }
 
-    protected RemoteViews relayoutWidget(Context context, SharedPreferences prefs, AppWidgetManager wm, int widgetId) {
+    protected RemoteViews relayoutWidget(@NonNull Context context, @NonNull SharedPreferences prefs, @NonNull AppWidgetManager wm,
+                                         int widgetId) {
 
         RemoteViews rv = new RemoteViews(context.getPackageName(), getLayoutId(prefs));
 
@@ -98,14 +102,14 @@ public abstract class BaseAnalogAppWidgetProvider extends AppWidgetProvider {
      * Called when widgets must provide remote views.
      */
     @Override
-    public void onUpdate(Context context, AppWidgetManager wm, int[] widgetIds) {
+    public void onUpdate(@NonNull Context context, @NonNull AppWidgetManager wm, @NonNull int[] widgetIds) {
         for (int widgetId : widgetIds) {
             updateAnalogWidget(context, wm, widgetId);
         }
     }
 
     @Override
-    public void onReceive(Context context, Intent intent) {
+    public void onReceive(@NonNull Context context, @NonNull Intent intent) {
         LogUtils.i(getClass().getSimpleName() + " - onReceive: " + intent);
 
         super.onReceive(context, intent);
@@ -116,9 +120,10 @@ public abstract class BaseAnalogAppWidgetProvider extends AppWidgetProvider {
         }
 
         ComponentName provider = new ComponentName(context, getClass());
-        int widgetIds = wm.getAppWidgetIds(provider).length;
+        int widgetCount = wm.getAppWidgetIds(provider).length;
+        int delta = WidgetDAO.updateWidgetCount(getDefaultSharedPreferences(context), getClass(), widgetCount);
 
-        WidgetUtils.updateWidgetCount(context, getClass(), widgetIds, R.string.category_analog_widget);
+        WidgetUtils.updateWidgetCount(delta, R.string.category_analog_widget);
     }
 }
 

@@ -8,21 +8,31 @@ package com.best.deskclock.alarms.alarmselection;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.text.format.DateFormat;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.content.IntentCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.best.deskclock.R;
 import com.best.deskclock.base.AppExecutors;
 import com.best.deskclock.base.BaseActivity;
 import com.best.deskclock.controller.HandleApiCalls;
+import com.best.deskclock.data.SettingsDAO;
+import com.best.deskclock.data.Weekdays;
 import com.best.deskclock.databinding.SelectionLayoutBinding;
 import com.best.deskclock.provider.Alarm;
+import com.best.deskclock.uidata.UiConfig;
 import com.best.deskclock.utils.LogUtils;
+import com.best.deskclock.utils.ThemeUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class AlarmSelectionActivity extends BaseActivity implements AlarmSelectionAdapter.OnAlarmClickListener {
 
@@ -39,12 +49,14 @@ public class AlarmSelectionActivity extends BaseActivity implements AlarmSelecti
      */
     private static final int ACTION_INVALID = -1;
 
+    private String mAlarmFontPath;
+    private Typeface mAlarmBoldTypeface;
     private final List<AlarmSelection> mSelections = new ArrayList<>();
 
     private int mAction;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         // This activity is shown if:
         // a) No search mode was specified in which case we show all enabled alarms.
         // b) If search mode was next and there was multiple alarms firing next
@@ -55,6 +67,8 @@ public class AlarmSelectionActivity extends BaseActivity implements AlarmSelecti
         super.onCreate(savedInstanceState);
 
         SelectionLayoutBinding binding = SelectionLayoutBinding.inflate(getLayoutInflater());
+
+        mAlarmFontPath = SettingsDAO.getAlarmFont(getPrefs());
 
         setContentView(binding.getRoot());
 
@@ -79,23 +93,61 @@ public class AlarmSelectionActivity extends BaseActivity implements AlarmSelecti
             }
         }
 
-        AlarmSelectionAdapter adapter = new AlarmSelectionAdapter(this, mSelections, this);
+        Locale locale = getLocale();
+        String skeleton = getString(R.string.abbrev_month_day_no_year);
+        String pattern = DateFormat.getBestDateTimePattern(locale, skeleton);
+
+        String skeletonWithYear = getString(R.string.full_month_day_with_year);
+        String patternWithYear = DateFormat.getBestDateTimePattern(locale, skeletonWithYear);
+
+        UiConfig.DateFormat dateFormat = new UiConfig.DateFormat(locale, pattern, patternWithYear);
+
+        Weekdays.Order weekdayOrder = SettingsDAO.getWeekdayOrder(getPrefs());
+
+        AlarmSelectionAdapter adapter = new AlarmSelectionAdapter(
+            mSelections, getFontsConfig(), dateFormat, weekdayOrder, getDataModel().is24HourFormat(), this);
         binding.alarmRecyclerView.setAdapter(adapter);
     }
 
     @Override
-    public void onAlarmClick(Alarm alarm) {
+    public void onAlarmClick(@NonNull Alarm alarm) {
         processAlarmActionAsync(alarm);
         finish();
     }
 
-    void processAlarmActionAsync(Alarm alarm) {
+    @NonNull
+    @Override
+    protected UiConfig.Fonts getFontsConfig() {
+        return new UiConfig.Fonts(
+            getGeneralTypeface(),
+            getGeneralBoldTypeface(),
+            getAlarmBoldTypeface(),
+            null,
+            null,
+            null
+        );
+    }
+
+    /**
+     * Lazy loading for the bold alarm font (used for AM/PM).
+     *
+     * @return the bold alarm font.
+     */
+    protected final Typeface getAlarmBoldTypeface() {
+        if (mAlarmBoldTypeface == null) {
+            mAlarmBoldTypeface = ThemeUtils.boldTypeface(mAlarmFontPath);
+        }
+
+        return mAlarmBoldTypeface;
+    }
+
+    void processAlarmActionAsync(@NonNull Alarm alarm) {
         final Context appContext = getApplicationContext();
         final int action = mAction;
 
         AppExecutors.getDiskIO().execute(() -> {
             switch (action) {
-                case ACTION_DISMISS -> HandleApiCalls.dismissAlarm(alarm, appContext);
+                case ACTION_DISMISS -> HandleApiCalls.dismissAlarm(appContext, getPrefs(), alarm);
                 case ACTION_INVALID -> LogUtils.i("Invalid action");
             }
         });

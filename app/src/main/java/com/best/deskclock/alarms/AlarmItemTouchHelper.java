@@ -3,10 +3,8 @@
 package com.best.deskclock.alarms;
 
 import static androidx.core.util.TypedValueCompat.dpToPx;
-import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreferences;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -14,10 +12,10 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.text.TextPaint;
-import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -29,8 +27,7 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.best.deskclock.R;
-import com.best.deskclock.data.SettingsDAO;
-import com.best.deskclock.utils.ThemeUtils;
+import com.best.deskclock.uidata.UiConfig;
 import com.best.deskclock.utils.Utils;
 import com.google.android.material.color.MaterialColors;
 
@@ -47,11 +44,9 @@ import com.google.android.material.color.MaterialColors;
 public class AlarmItemTouchHelper extends ItemTouchHelper.SimpleCallback {
 
     private final AlarmTouchContract mContract;
-    private final boolean mIsVibrationEnabled;
-    private final boolean mIsTablet;
-    private final boolean mIsLandscape;
-    private final boolean mIsRtl;
-
+    private final UiConfig.Screen mScreen;
+    private final UiConfig.Haptics mHaptics;
+    private final int mTouchSlop;
     private int dragFrom = RecyclerView.NO_POSITION;
     private int dragTo = RecyclerView.NO_POSITION;
     private final Rect mClipBounds = new Rect();
@@ -75,22 +70,19 @@ public class AlarmItemTouchHelper extends ItemTouchHelper.SimpleCallback {
     private boolean mIsTouchingItem = false;
     private boolean mIsTouchingClock = false;
 
-    public AlarmItemTouchHelper(Context context, AlarmTouchContract contract, RecyclerView recyclerView, boolean isTablet,
-                                boolean isLandscape) {
+    public AlarmItemTouchHelper(@NonNull Context context, @NonNull AlarmTouchContract contract, @NonNull RecyclerView recyclerView,
+                                @NonNull UiConfig.Fonts fonts, @NonNull UiConfig.Screen screen, @NonNull UiConfig.Haptics haptics) {
 
         super(ItemTouchHelper.UP | ItemTouchHelper.DOWN, ItemTouchHelper.END);
 
         mContract = contract;
-        SharedPreferences prefs = getDefaultSharedPreferences(context);
-        mIsVibrationEnabled = SettingsDAO.isVibrationsEnabled(prefs);
-        mIsTablet = isTablet;
-        mIsLandscape = isLandscape;
-        mIsRtl = ThemeUtils.isRTL(context);
-        DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+        mScreen = screen;
+        mHaptics = haptics;
+        mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
 
-        mLargeRadius = dpToPx(18, displayMetrics);
-        mSmallRadius = dpToPx(4, displayMetrics);
-        mDeleteIconHorizontalMargin = (int) dpToPx(16, displayMetrics);
+        mLargeRadius = dpToPx(18, screen.metrics());
+        mSmallRadius = dpToPx(4, screen.metrics());
+        mDeleteIconHorizontalMargin = (int) dpToPx(16, screen.metrics());
         mDeleteText = context.getString(R.string.delete);
 
         mSwipeBackground = new GradientDrawable();
@@ -105,11 +97,10 @@ public class AlarmItemTouchHelper extends ItemTouchHelper.SimpleCallback {
 
         mDeleteTextPaint = new TextPaint();
         mDeleteTextPaint.setAntiAlias(true);
-        mDeleteTextPaint.setTextSize(TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_SP, 16, context.getResources().getDisplayMetrics()));
+        mDeleteTextPaint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 16, screen.metrics()));
         mDeleteTextPaint.setColor(MaterialColors.getColor(context, com.google.android.material.R.attr.colorOnError, Color.BLACK));
-        mDeleteTextPaint.setTypeface(ThemeUtils.boldTypeface(SettingsDAO.getGeneralFont(prefs)));
-        mDeleteTextPaint.setTextAlign(mIsRtl ? Paint.Align.RIGHT : Paint.Align.LEFT);
+        mDeleteTextPaint.setTypeface(fonts.bold());
+        mDeleteTextPaint.setTextAlign(screen.isRtl() ? Paint.Align.RIGHT : Paint.Align.LEFT);
 
         mTopRadii = new float[]{
             mLargeRadius, mLargeRadius, mLargeRadius, mLargeRadius,
@@ -135,6 +126,10 @@ public class AlarmItemTouchHelper extends ItemTouchHelper.SimpleCallback {
                         mIsTouchingItem = (child != null);
 
                         if (child != null) {
+                            if (rv.getParent() != null) {
+                                rv.getParent().requestDisallowInterceptTouchEvent(true);
+                            }
+
                             RecyclerView.ViewHolder holder = rv.getChildViewHolder(child);
 
                             if (holder instanceof AlarmItemViewHolder alarmItemViewHolder) {
@@ -169,11 +164,16 @@ public class AlarmItemTouchHelper extends ItemTouchHelper.SimpleCallback {
 
                         float dx = e.getX() - mStartX;
                         float dy = Math.abs(e.getY() - mStartY);
-                        boolean isSwipeToDeleteDirection = mIsRtl ? (dx < 0) : (dx > 0);
+                        boolean isSwipeToDeleteDirection = screen.isRtl() ? (dx < 0) : (dx > 0);
 
-                        if (isSwipeToDeleteDirection && Math.abs(dx) > dy) {
-                            if (rv.getParent() != null) {
+                        if (rv.getParent() != null) {
+                            if (isSwipeToDeleteDirection) {
+                                // Confirm that the ViewPager is blocked if the user swipes in the correct direction to delete an alarm.
                                 rv.getParent().requestDisallowInterceptTouchEvent(true);
+                            } else if (Math.abs(dx) > dy && Math.abs(dx) > mTouchSlop) {
+                                // The user intentionally swiped in the opposite direction for a distance greater
+                                // than the official Android TouchSlop.
+                                rv.getParent().requestDisallowInterceptTouchEvent(false);
                             }
                         }
                     }
@@ -202,10 +202,26 @@ public class AlarmItemTouchHelper extends ItemTouchHelper.SimpleCallback {
     }
 
     @Override
+    public float getSwipeThreshold(@NonNull RecyclerView.ViewHolder viewHolder) {
+        View itemView = viewHolder.itemView;
+
+        if (itemView.getParent() instanceof RecyclerView recyclerView) {
+            // The width ratio between the alarm card and the full grid.
+            float widthRatio = (float) itemView.getWidth() / recyclerView.getWidth();
+
+            // Returns 50% of the alarm card width.
+            return 0.5f * widthRatio;
+        }
+
+        // Fallback value
+        return 0.5f;
+    }
+
+    @Override
     public int getDragDirs(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
         if (!mContract.canDrag() || mIsTouchingClock) {
             return 0;
-        } else if (mIsTablet || mIsLandscape) {
+        } else if (mScreen.isTablet() || mScreen.isLandscape()) {
             return ItemTouchHelper.UP | ItemTouchHelper.DOWN | ItemTouchHelper.START | ItemTouchHelper.END;
         } else {
             return super.getDragDirs(recyclerView, viewHolder);
@@ -241,8 +257,8 @@ public class AlarmItemTouchHelper extends ItemTouchHelper.SimpleCallback {
     public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
         mIsAlarmDeleted = true;
 
-        if (mIsVibrationEnabled) {
-            Utils.performHapticFeedback(viewHolder.itemView, HapticFeedbackConstantsCompat.VIRTUAL_KEY);
+        if (mHaptics.isVibrationsEnabled()) {
+            Utils.performHapticFeedback(viewHolder.itemView, true, HapticFeedbackConstantsCompat.VIRTUAL_KEY);
         }
 
         mContract.onRowSwiped(viewHolder);
@@ -369,8 +385,8 @@ public class AlarmItemTouchHelper extends ItemTouchHelper.SimpleCallback {
         viewHolder.itemView.setClipBounds(null);
 
         if (mIsSwiping) {
-            if (!mIsAlarmDeleted && mIsVibrationEnabled) {
-                Utils.performHapticFeedback(viewHolder.itemView, HapticFeedbackConstantsCompat.CLOCK_TICK);
+            if (!mIsAlarmDeleted && mHaptics.isVibrationsEnabled()) {
+                Utils.performHapticFeedback(viewHolder.itemView, true, HapticFeedbackConstantsCompat.CLOCK_TICK);
             }
 
             mIsSwiping = false;

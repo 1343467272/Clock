@@ -7,13 +7,16 @@
 package com.best.deskclock.uidata;
 
 import static android.view.View.LAYOUT_DIRECTION_RTL;
-import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreferences;
 import static com.best.deskclock.settings.PreferencesDefaultValues.DEFAULT_TAB_TO_DISPLAY_INTEGER;
 import static com.best.deskclock.uidata.UiDataModel.Tab;
 
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Typeface;
 import android.text.TextUtils;
+
+import androidx.annotation.NonNull;
 
 import com.best.deskclock.R;
 import com.best.deskclock.alarms.AlarmUpdateHandler;
@@ -23,6 +26,7 @@ import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.data.Stopwatch;
 import com.best.deskclock.data.Timer;
 import com.best.deskclock.provider.Alarm;
+import com.best.deskclock.utils.ThemeUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,9 +53,9 @@ final class TabModel {
 
     private final List<Tab> mActiveTabs = new ArrayList<>();
 
-    TabModel(Context context) {
+    TabModel(@NonNull Context context, @NonNull SharedPreferences prefs) {
         mContext = context;
-        mPrefs = getDefaultSharedPreferences(context);
+        mPrefs = prefs;
         updateActiveTabs();
     }
 
@@ -97,6 +101,7 @@ final class TabModel {
             return false;
         }
 
+        DataModel dataModel = DataModel.getDataModel();
         List<Tab> recentlyHiddenTabs = new ArrayList<>(mActiveTabs);
         recentlyHiddenTabs.removeAll(newActiveTabs);
 
@@ -110,9 +115,15 @@ final class TabModel {
 
         // Disable alarms if the Alarm tab is not visible
         if (recentlyHiddenTabs.contains(Tab.ALARMS)) {
+            final Context appContext = mContext.getApplicationContext();
+            final ContentResolver cr = appContext.getContentResolver();
+            final Typeface font = ThemeUtils.loadFont(SettingsDAO.getGeneralFont(mPrefs));
+            final boolean isVibrationsEnabled = SettingsDAO.isVibrationsEnabled(mPrefs);
+
             AppExecutors.getDiskIO().execute(() -> {
-                final AlarmUpdateHandler alarmUpdateHandler = new AlarmUpdateHandler(mContext, null, null);
-                final List<Alarm> alarms = Alarm.getAlarms(mContext.getContentResolver(), null);
+                final AlarmUpdateHandler alarmUpdateHandler = new AlarmUpdateHandler(
+                    appContext, mPrefs, font, null, null, isVibrationsEnabled);
+                final List<Alarm> alarms = Alarm.getAlarms(cr, null);
 
                 for (Alarm alarm : alarms) {
                     if (alarm.enabled) {
@@ -126,18 +137,18 @@ final class TabModel {
 
         // Reset running timers if the Timer tab is not visible
         if (recentlyHiddenTabs.contains(Tab.TIMERS)) {
-            for (Timer timer : new ArrayList<>(DataModel.getDataModel().getTimers())) {
+            for (Timer timer : new ArrayList<>(dataModel.getTimers())) {
                 if (!timer.isReset()) {
-                    DataModel.getDataModel().resetTimer(timer, R.string.label_deskclock);
+                    dataModel.resetTimer(timer, R.string.label_deskclock);
                 }
             }
         }
 
         // Reset running stopwatch if the Stopwatch tab is not visible
         if (recentlyHiddenTabs.contains(Tab.STOPWATCH)) {
-            final Stopwatch stopwatch = DataModel.getDataModel().getStopwatch();
+            final Stopwatch stopwatch = dataModel.getStopwatch();
             if (!stopwatch.isReset()) {
-                DataModel.getDataModel().resetStopwatch();
+                dataModel.resetStopwatch();
             }
         }
 
@@ -147,14 +158,14 @@ final class TabModel {
     /**
      * @param tabListener to be notified when the selected tab changes
      */
-    void addTabListener(TabListener tabListener) {
+    void addTabListener(@NonNull TabListener tabListener) {
         mTabListeners.add(tabListener);
     }
 
     /**
      * @param tabListener to no longer be notified when the selected tab changes
      */
-    void removeTabListener(TabListener tabListener) {
+    void removeTabListener(@NonNull TabListener tabListener) {
         mTabListeners.remove(tabListener);
     }
 
@@ -191,8 +202,18 @@ final class TabModel {
      * @param tab the tab to find
      * @return the current dynamic index of the tab, or -1 if hidden
      */
-    int getTabIndex(Tab tab) {
-        return mActiveTabs.indexOf(tab);
+    int getTabIndex(@NonNull Tab tab) {
+        final int ordinal = mActiveTabs.indexOf(tab);
+
+        if (ordinal == -1) {
+            return -1;
+        }
+
+        if (TextUtils.getLayoutDirectionFromLocale(Locale.getDefault()) == LAYOUT_DIRECTION_RTL) {
+            return getTabCount() - ordinal - 1;
+        }
+
+        return ordinal;
     }
 
     /**
@@ -213,7 +234,7 @@ final class TabModel {
     /**
      * @param tab an enumerated value indicating the newly selected primary tab
      */
-    void setSelectedTab(Tab tab) {
+    void setSelectedTab(@NonNull Tab tab) {
         final Tab oldSelectedTab = getSelectedTab();
         if (oldSelectedTab != tab) {
             mSelectedTab = tab;

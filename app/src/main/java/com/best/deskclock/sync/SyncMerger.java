@@ -142,7 +142,7 @@ public final class SyncMerger {
     private static void silenceFiringAlarm(Context context, ContentResolver cr, long alarmId) {
         final AlarmInstance instance = AlarmInstance.getFiredOrSnoozedInstanceForAlarm(cr, alarmId);
         if (instance != null && instance.mAlarmState == AlarmInstance.FIRED_STATE) {
-            AlarmStateManager.deleteInstanceAndUpdateParent(context, instance, true);
+            AlarmStateManager.deleteInstanceAndUpdateParent(context, DeskClockApplication.getDefaultSharedPreferences(context), instance, true);
         }
     }
 

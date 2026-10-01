@@ -27,6 +27,7 @@ import android.os.IBinder;
 import android.os.Looper;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.best.deskclock.R;
 import com.best.deskclock.data.DataModel;
@@ -88,25 +89,29 @@ public final class TimerService extends Service {
     public static final String ACTION_RESET_EXPIRED_TIMERS = ACTION_PREFIX + "RESET_EXPIRED_TIMERS";
     public static final String ACTION_RESET_MISSED_TIMERS = ACTION_PREFIX + "RESET_MISSED_TIMERS";
 
-    public static Intent createTimerExpiredIntent(Context context, Timer timer) {
+    @NonNull
+    public static Intent createTimerExpiredIntent(@NonNull Context context, @Nullable Timer timer) {
         final int timerId = timer == null ? -1 : timer.getId();
         return new Intent(context, TimerService.class)
             .setAction(ACTION_TIMER_EXPIRED)
             .putExtra(EXTRA_TIMER_ID, timerId);
     }
 
-    public static Intent createResetExpiredTimersIntent(Context context) {
+    @NonNull
+    public static Intent createResetExpiredTimersIntent(@NonNull Context context) {
         return new Intent(context, TimerService.class).setAction(ACTION_RESET_EXPIRED_TIMERS);
     }
 
 
-    public static Intent createAddCustomTimeToTimerIntent(Context context, int timerId) {
+    @NonNull
+    public static Intent createAddCustomTimeToTimerIntent(@NonNull Context context, int timerId) {
         return new Intent(context, TimerService.class)
             .setAction(ACTION_ADD_CUSTOM_TIME_TO_TIMER)
             .putExtra(EXTRA_TIMER_ID, timerId);
     }
 
-    public static Intent createUpdateNotificationIntent(Context context) {
+    @NonNull
+    public static Intent createUpdateNotificationIntent(@NonNull Context context) {
         return new Intent(context, TimerService.class).setAction(ACTION_UPDATE_NOTIFICATION);
     }
 
@@ -128,8 +133,9 @@ public final class TimerService extends Service {
     private AudioManager mAudioManager;
     private AudioFocusRequest mAudioFocusRequest;
 
+    @Nullable
     @Override
-    public IBinder onBind(Intent intent) {
+    public IBinder onBind(@NonNull Intent intent) {
         return null;
     }
 
@@ -139,9 +145,12 @@ public final class TimerService extends Service {
 
         mPrefs = getDefaultSharedPreferences(this);
         // Set up for flip and shake actions
-        mSensorManager = getApplicationContext().getSystemService(SensorManager.class);
         mIsFlipActionEnabled = SettingsDAO.isFlipActionForTimersEnabled(mPrefs);
         mIsShakeActionEnabled = SettingsDAO.isShakeActionForTimersEnabled(mPrefs);
+
+        if (mIsFlipActionEnabled || mIsShakeActionEnabled) {
+            mSensorManager = getApplicationContext().getSystemService(SensorManager.class);
+        }
 
         mAudioManager = getApplicationContext().getSystemService(AudioManager.class);
 
@@ -181,22 +190,29 @@ public final class TimerService extends Service {
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
+    public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
+        final DataModel dataModel = DataModel.getDataModel();
+
         try {
+            if (intent == null) {
+                return START_NOT_STICKY;
+            }
+
             final String action = intent.getAction();
             final int label = intent.getIntExtra(Events.EXTRA_EVENT_LABEL, R.string.label_intent);
+
             if (action != null) {
                 switch (action) {
                     case ACTION_UPDATE_NOTIFICATION -> {
-                        DataModel.getDataModel().updateTimerNotification();
+                        dataModel.updateTimerNotification();
                         return START_NOT_STICKY;
                     }
                     case ACTION_RESET_EXPIRED_TIMERS -> {
-                        DataModel.getDataModel().resetOrDeleteExpiredTimers(label);
+                        dataModel.resetOrDeleteExpiredTimers(label);
                         return START_NOT_STICKY;
                     }
                     case ACTION_RESET_MISSED_TIMERS -> {
-                        DataModel.getDataModel().resetOrDeleteMissedTimers(label);
+                        dataModel.resetOrDeleteMissedTimers(label);
                         return START_NOT_STICKY;
                     }
                 }
@@ -204,7 +220,7 @@ public final class TimerService extends Service {
 
             // Look up the timer in question.
             final int timerId = intent.getIntExtra(EXTRA_TIMER_ID, -1);
-            final Timer timer = DataModel.getDataModel().getTimer(timerId);
+            final Timer timer = dataModel.getTimer(timerId);
 
             // If the timer cannot be located, ignore the action.
             if (timer == null) {
@@ -216,23 +232,23 @@ public final class TimerService extends Service {
                 switch (action) {
                     case ACTION_START_TIMER -> {
                         Events.sendTimerEvent(R.string.action_start, label);
-                        DataModel.getDataModel().startTimer(this, timer);
+                        dataModel.startTimer(this, timer);
                     }
                     case ACTION_PAUSE_TIMER -> {
                         Events.sendTimerEvent(R.string.action_pause, label);
-                        DataModel.getDataModel().pauseTimer(timer);
+                        dataModel.pauseTimer(timer);
                     }
                     case ACTION_ADD_CUSTOM_TIME_TO_TIMER -> {
                         Events.sendTimerEvent(R.string.action_add_custom_time_to_timer, label);
-                        DataModel.getDataModel().addCustomTimeToTimer(timer);
+                        dataModel.addCustomTimeToTimer(timer);
                     }
                     case ACTION_RESET_TIMER -> {
-                        DataModel.getDataModel().resetTimer(timer, label);
+                        dataModel.resetTimer(timer, label);
                         detachListeners();
                     }
                     case ACTION_TIMER_EXPIRED -> {
                         Events.sendTimerEvent(R.string.action_fire, label);
-                        DataModel.getDataModel().expireTimer(this, timer);
+                        dataModel.expireTimer(this, timer);
                         turnOnFlash(timer);
                         stopMedia(timer);
                         attachListeners();
@@ -241,7 +257,7 @@ public final class TimerService extends Service {
             }
         } finally {
             // This service is foreground when expired timers exist and stopped when none exist.
-            final List<Timer> expiredTimers = DataModel.getDataModel().getExpiredTimers();
+            final List<Timer> expiredTimers = dataModel.getExpiredTimers();
 
             if (expiredTimers.isEmpty()) {
                 stopSelf();
@@ -290,7 +306,7 @@ public final class TimerService extends Service {
         }
     }
 
-    private void turnOnFlash(Timer timer) {
+    private void turnOnFlash(@NonNull Timer timer) {
         if (!timer.isFlashOn()) {
             // If the last timer added to the list of expired timers does not have the flash enabled
             // while another timer is triggered with the flash on, stop the flash.
@@ -346,7 +362,7 @@ public final class TimerService extends Service {
         }
     }
 
-    private void stopMedia(Timer timer) {
+    private void stopMedia(@NonNull Timer timer) {
         if (mAudioManager == null || !timer.getTurnOffMedia()) {
             return;
         }
@@ -384,7 +400,7 @@ public final class TimerService extends Service {
         private int mSampleIndex;
 
         @Override
-        public void onAccuracyChanged(Sensor sensor, int acc) {
+        public void onAccuracyChanged(@NonNull Sensor sensor, int acc) {
         }
 
         @Override
@@ -403,7 +419,7 @@ public final class TimerService extends Service {
         }
 
         @Override
-        public void onSensorChanged(SensorEvent event) {
+        public void onSensorChanged(@NonNull SensorEvent event) {
             // Add a sample overwriting the oldest one. Several samples
             // are used to avoid the erroneous values the sensor sometimes
             // returns.
@@ -446,7 +462,7 @@ public final class TimerService extends Service {
         private boolean mInitialized = false;
 
         @Override
-        public void onAccuracyChanged(Sensor sensor, int acc) {
+        public void onAccuracyChanged(@NonNull Sensor sensor, int acc) {
         }
 
         @Override
@@ -458,7 +474,7 @@ public final class TimerService extends Service {
             Arrays.fill(gravity, 0f);
         }
 
-        public void onSensorChanged(SensorEvent event) {
+        public void onSensorChanged(@NonNull SensorEvent event) {
             if (mStopped) {
                 return;
             }
@@ -499,6 +515,10 @@ public final class TimerService extends Service {
     };
 
     private void attachListeners() {
+        if (mSensorManager == null) {
+            return;
+        }
+
         if (mIsFlipActionEnabled) {
             mFlipListener.reset();
             mSensorManager.registerListener(mFlipListener,
@@ -515,6 +535,10 @@ public final class TimerService extends Service {
     }
 
     private void detachListeners() {
+        if (mSensorManager == null) {
+            return;
+        }
+
         if (mIsFlipActionEnabled) {
             mSensorManager.unregisterListener(mFlipListener);
         }

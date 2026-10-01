@@ -59,10 +59,12 @@
         <!-- Clock view -->
         <FrameLayout
             android:id="@+id/clock_layout"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:layout_marginHorizontal="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toTopOf="@+id/alarm_title">
 
@@ -115,7 +117,7 @@
             android:textSize="20sp"
             android:textColor="@android:color/white"
             android:includeFontPadding="false"
-            android:singleLine="true"
+            android:maxLines="1"
             android:ellipsize="marquee"
             android:marqueeRepeatLimit="marquee_forever"
             android:scrollHorizontally="true"
@@ -136,7 +138,7 @@
             android:textSize="20sp"
             android:textColor="@android:color/white"
             android:includeFontPadding="false"
-            android:singleLine="true"
+            android:maxLines="1"
             android:ellipsize="marquee"
             android:marqueeRepeatLimit="marquee_forever"
             android:scrollHorizontally="true"
@@ -150,16 +152,18 @@
         <!-- Dismiss only button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/dismiss_only_button"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="80dp"
             android:layout_marginHorizontal="20dp"
             android:textSize="20sp"
             android:textColor="@android:color/white"
             android:includeFontPadding="false"
-            android:singleLine="true"
+            android:maxLines="1"
             android:ellipsize="marquee"
             android:marqueeRepeatLimit="marquee_forever"
             android:scrollHorizontally="true"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toTopOf="@+id/alarm_horizontal_end_guide"
             tools:text="@string/button_action_dismiss"
             tools:textStyle="bold"
@@ -169,9 +173,10 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/slide_zone_layout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="80dp"
             android:layout_marginHorizontal="20dp"
             android:paddingHorizontal="12dp"
+            android:paddingVertical="10dp"
             android:clipToPadding="false"
             app:layout_constraintBottom_toTopOf="@+id/alarm_horizontal_end_guide"
             tools:background="@drawable/bg_alarm_slide_zone">
@@ -179,7 +184,7 @@
             <!-- Pill in the background of the Alarm button -->
             <com.best.deskclock.uicomponents.PillView
                 android:id="@+id/pill"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="0dp"
                 android:gravity="center"
                 android:layerType="hardware"
@@ -193,40 +198,48 @@
                 app:layout_constraintBottom_toBottomOf="@id/alarm_button" />
 
             <!-- Snooze text -->
-            <com.best.deskclock.uicomponents.AutoSizingTextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/snooze_text"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="0dp"
                 android:paddingStart="@null"
                 android:paddingEnd="6dp"
                 android:paddingVertical="10dp"
-                android:textSize="18sp"
                 android:gravity="start|center_vertical"
-                android:singleLine="true"
+                android:maxLines="1"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="12sp"
+                app:autoSizeMaxTextSize="18sp"
+                app:autoSizeStepGranularity="1sp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/alarm_button"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent"
                 tools:text="@string/button_action_snooze"
+                tools:textSize="18sp"
                 tools:textStyle="bold"
                 tools:textColor="@android:color/white" />
 
             <!-- Dismiss text -->
-            <com.best.deskclock.uicomponents.AutoSizingTextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/dismiss_text"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="0dp"
                 android:paddingStart="6dp"
                 android:paddingEnd="@null"
                 android:paddingVertical="10dp"
-                android:textSize="18sp"
                 android:gravity="end|center_vertical"
-                android:singleLine="true"
+                android:maxLines="1"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="12sp"
+                app:autoSizeMaxTextSize="18sp"
+                app:autoSizeStepGranularity="1sp"
                 app:layout_constraintStart_toEndOf="@+id/alarm_button"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent"
                 tools:text="@string/button_action_dismiss"
+                tools:textSize="18sp"
                 tools:textStyle="bold"
                 tools:textColor="@android:color/white" />
 
@@ -234,8 +247,7 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/alarm_button"
                 android:layout_width="wrap_content"
-                android:layout_height="60dp"
-                android:layout_marginVertical="10dp"
+                android:layout_height="0dp"
                 app:icon="@drawable/ic_tab_alarm_static"
                 app:iconSize="24dp"
                 app:iconTint="@android:color/white"
@@ -258,42 +270,72 @@
             app:layout_constraintTop_toBottomOf="@+id/slide_zone_layout"
             app:layout_constraintBottom_toTopOf="@+id/ringtone_layout">
 
-            <ImageView
+            <com.google.android.material.button.MaterialButton
+                style="?attr/materialIconButtonFilledStyle"
                 android:id="@+id/snooze_selector_minus"
                 android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:padding="12dp"
-                android:src="@drawable/ic_minus"
-                android:contentDescription="@null"
+                android:layout_height="0dp"
+                android:insetLeft="0dp"
+                android:insetRight="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:icon="@drawable/ic_minus"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconSize="36dp"
+                app:rippleColor="@null"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent" />
+                app:layout_constraintBottom_toBottomOf="parent"
+                tools:backgroundTint="#80ffffff"
+                tools:iconTint="@android:color/white" />
 
-            <com.best.deskclock.uicomponents.AutoSizingTextView
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/snooze_selector_text"
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
+                android:layout_height="0dp"
                 android:layout_marginHorizontal="20dp"
                 android:paddingHorizontal="10dp"
-                android:textSize="18sp"
-                android:gravity="center"
-                android:singleLine="true"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:insetLeft="0dp"
+                android:insetRight="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:maxLines="1"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="12sp"
+                app:autoSizeMaxTextSize="18sp"
+                app:autoSizeStepGranularity="1sp"
                 app:layout_constraintStart_toEndOf="@+id/snooze_selector_minus"
                 app:layout_constraintEnd_toStartOf="@+id/snooze_selector_plus"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
                 tools:text="Snooze 5 min"
+                tools:textSize="18sp"
                 tools:textStyle="bold"
-                tools:textColor="@android:color/white" />
+                tools:textColor="@android:color/white"
+                tools:backgroundTint="#80ffffff" />
 
-            <ImageView
+            <com.google.android.material.button.MaterialButton
+                style="?attr/materialIconButtonFilledStyle"
                 android:id="@+id/snooze_selector_plus"
                 android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:padding="12dp"
-                android:src="@drawable/ic_add"
-                android:contentDescription="@null"
+                android:layout_height="0dp"
+                android:insetLeft="0dp"
+                android:insetRight="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:icon="@drawable/ic_add"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconSize="36dp"
+                app:rippleColor="@null"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent" />
+                app:layout_constraintBottom_toBottomOf="parent"
+                tools:backgroundTint="#80ffffff"
+                tools:iconTint="@android:color/white" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

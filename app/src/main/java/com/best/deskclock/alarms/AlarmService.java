@@ -7,6 +7,7 @@
 package com.best.deskclock.alarms;
 
 import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreferences;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_AUTO_ROUTING_TO_EXTERNAL_AUDIO_DEVICE;
 
 import android.annotation.SuppressLint;
 import android.app.Service;
@@ -23,28 +24,34 @@ import android.hardware.SensorManager;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.os.VibrationEffect;
 import android.os.Vibrator;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.app.ServiceCompat;
 
 import com.best.deskclock.R;
 import com.best.deskclock.base.AlarmAlertWakeLock;
+import com.best.deskclock.base.AppExecutors;
 import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.events.Events;
 import com.best.deskclock.provider.AlarmInstance;
+import com.best.deskclock.ringtone.RingtonePlayer;
 import com.best.deskclock.sync.SyncState;
 import com.best.deskclock.utils.DeviceUtils;
 import com.best.deskclock.utils.LogUtils;
 import com.best.deskclock.utils.SdkUtils;
+import com.best.deskclock.utils.Utils;
 
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.Objects;
+import java.util.Queue;
 
 /**
  * This service is in charge of starting/stopping the alarm. It will bring up and manage the
@@ -67,6 +74,12 @@ public class AlarmService extends Service {
      * applications can dismiss the alarm (after ALARM_ALERT_ACTION and before ALARM_DONE_ACTION).
      */
     public static final String ALARM_DISMISS_ACTION = "com.best.deskclock.ALARM_DISMISS";
+
+    /**
+     * AlarmActivity and AlarmService listen for this broadcast intent so that other
+     * applications can mute the alarm (after ALARM_ALERT_ACTION and before ALARM_DONE_ACTION).
+     */
+    public static final String ALARM_MUTE_ACTION = "com.best.deskclock.ALARM_MUTE";
 
     /**
      * A private action sent by AlarmService when the alarm has started.
@@ -109,6 +122,11 @@ public class AlarmService extends Service {
     private static final int ALARM_DISMISS = 2;
 
     /**
+     * Constant for Mute
+     */
+    private static final int ALARM_MUTE = 3;
+
+    /**
      * Binder given to AlarmActivity.
      */
     private final IBinder mBinder = new Binder();
@@ -134,11 +152,20 @@ public class AlarmService extends Service {
     private Handler mHandler;
     private Runnable mFlashRunnable;
 
+    private final Queue<Long> mPendingAlarmIds = new LinkedList<>();
     private AlarmInstance mCurrentAlarm = null;
+
+    private final SharedPreferences.OnSharedPreferenceChangeListener mPrefListener =
+        (sharedPreferences, key) -> {
+            if (KEY_AUTO_ROUTING_TO_EXTERNAL_AUDIO_DEVICE.equals(key)) {
+                boolean enabled = SettingsDAO.isAutoRoutingToExternalAudioDevice(sharedPreferences);
+                AlarmKlaxon.setAutoRoutingEnabled(enabled);
+            }
+        };
 
     private final BroadcastReceiver mActionsReceiver = new BroadcastReceiver() {
         @Override
-        public void onReceive(Context context, Intent intent) {
+        public void onReceive(@NonNull Context context, @NonNull Intent intent) {
             final String action = intent.getAction();
             LogUtils.i("AlarmService received intent %s", action);
             if (mCurrentAlarm == null || mCurrentAlarm.mAlarmState != AlarmInstance.FIRED_STATE) {
@@ -158,14 +185,21 @@ public class AlarmService extends Service {
                         // If this broadcast receiver is handling the snooze intent then AlarmActivity
                         // must not be showing, so always show snooze toast.
                         recordAlarmSilenced(context);
-                        AlarmStateManager.setSnoozeState(context, mCurrentAlarm, true);
+                        AlarmStateManager.setSnoozeState(context, mPrefs, mCurrentAlarm, true);
                         Events.sendAlarmEvent(R.string.action_snooze, R.string.label_intent);
                     }
+
                     case ALARM_DISMISS_ACTION -> {
                         // Set the alarm state to dismissed.
                         recordAlarmSilenced(context);
-                        AlarmStateManager.deleteInstanceAndUpdateParent(context, mCurrentAlarm, true);
+                        AlarmStateManager.deleteInstanceAndUpdateParent(context, mPrefs, mCurrentAlarm, true);
                         Events.sendAlarmEvent(R.string.action_dismiss, R.string.label_intent);
+                    }
+
+                    case ALARM_MUTE_ACTION -> {
+                        stopAlarmKlaxon();
+                        stopFlash();
+                        Events.sendAlarmEvent(R.string.action_mute, R.string.label_intent);
                     }
                 }
             }
@@ -191,7 +225,7 @@ public class AlarmService extends Service {
         private int mSampleIndex;
 
         @Override
-        public void onAccuracyChanged(Sensor sensor, int acc) {
+        public void onAccuracyChanged(@NonNull Sensor sensor, int acc) {
         }
 
         @Override
@@ -211,7 +245,7 @@ public class AlarmService extends Service {
         }
 
         @Override
-        public void onSensorChanged(SensorEvent event) {
+        public void onSensorChanged(@NonNull SensorEvent event) {
             // Add a sample overwriting the oldest one. Several samples are used to avoid
             // the erroneous values the sensor sometimes returns.
             float z = event.values[2];
@@ -256,7 +290,7 @@ public class AlarmService extends Service {
         private boolean mInitialized = false;
 
         @Override
-        public void onAccuracyChanged(Sensor sensor, int acc) {
+        public void onAccuracyChanged(@NonNull Sensor sensor, int acc) {
         }
 
         @Override
@@ -268,7 +302,7 @@ public class AlarmService extends Service {
             Arrays.fill(gravity, 0f);
         }
 
-        public void onSensorChanged(SensorEvent event) {
+        public void onSensorChanged(@NonNull SensorEvent event) {
             if (mStopped) {
                 return;
             }
@@ -308,14 +342,15 @@ public class AlarmService extends Service {
         }
     };
 
+    @Nullable
     @Override
-    public IBinder onBind(Intent intent) {
+    public IBinder onBind(@NonNull Intent intent) {
         mIsBound = true;
         return mBinder;
     }
 
     @Override
-    public boolean onUnbind(Intent intent) {
+    public boolean onUnbind(@NonNull Intent intent) {
         mIsBound = false;
         return super.onUnbind(intent);
     }
@@ -326,20 +361,29 @@ public class AlarmService extends Service {
         super.onCreate();
 
         mPrefs = getDefaultSharedPreferences(this);
+
+        mPrefs.registerOnSharedPreferenceChangeListener(mPrefListener);
+
         // Register the broadcast receiver
         final IntentFilter filter = new IntentFilter(ALARM_SNOOZE_ACTION);
         filter.addAction(ALARM_DISMISS_ACTION);
+        filter.addAction(ALARM_MUTE_ACTION);
+
         if (SdkUtils.isAtLeastAndroid13()) {
             registerReceiver(mActionsReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
         } else {
             registerReceiver(mActionsReceiver, filter);
         }
+
         mIsRegistered = true;
 
         // Setup for flip and shake actions
-        mSensorManager = getApplicationContext().getSystemService(SensorManager.class);
         mFlipAction = SettingsDAO.getFlipAction(mPrefs);
         mShakeAction = SettingsDAO.getShakeAction(mPrefs);
+
+        if (mFlipAction != ALARM_NO_ACTION || mShakeAction != ALARM_NO_ACTION) {
+            mSensorManager = getApplicationContext().getSystemService(SensorManager.class);
+        }
 
         mVibrator = getApplicationContext().getSystemService(Vibrator.class);
         mCameraManager = getApplicationContext().getSystemService(CameraManager.class);
@@ -378,63 +422,121 @@ public class AlarmService extends Service {
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
+    public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
         LogUtils.v("AlarmService.onStartCommand() with %s", intent);
+
         if (intent == null) {
             return Service.START_NOT_STICKY;
         }
 
-        final long instanceId = AlarmInstance.getId(intent.getData());
+        final Uri dataUri = intent.getData();
+
+        if (dataUri == null) {
+            LogUtils.e("AlarmService started without data URI");
+            stopSelf();
+            return Service.START_NOT_STICKY;
+        }
+
+        final long instanceId = AlarmInstance.getId(dataUri);
+
         switch (Objects.requireNonNull(intent.getAction())) {
             case AlarmStateManager.CHANGE_STATE_ACTION -> {
-                AlarmStateManager.handleIntent(this, intent);
+                Context appContext = getApplicationContext();
+                ContentResolver cr = appContext.getContentResolver();
 
-                // If state is changed to firing, actually fire the alarm!
-                final int alarmState = intent.getIntExtra(AlarmStateManager.ALARM_STATE_EXTRA, -1);
-                if (alarmState == AlarmInstance.FIRED_STATE) {
-                    final ContentResolver cr = this.getContentResolver();
-                    final AlarmInstance instance = AlarmInstance.getInstance(cr, instanceId);
-                    if (instance == null) {
-                        LogUtils.e("No instance found to start alarm: %d", instanceId);
-                        if (mCurrentAlarm != null) {
-                            // Only release lock if we are not firing alarm
+                AlarmAlertWakeLock.acquireCpuWakeLock(appContext);
+
+                AppExecutors.getDiskIO().execute(() -> {
+                    AlarmStateManager.handleIntent(appContext, mPrefs, intent);
+
+                    // If state is changed to firing, actually fire the alarm!
+                    final int alarmState = intent.getIntExtra(AlarmStateManager.ALARM_STATE_EXTRA, -1);
+
+                    if (alarmState == AlarmInstance.FIRED_STATE) {
+                        final AlarmInstance instance = AlarmInstance.getInstance(cr, instanceId);
+
+                        if (instance == null) {
+                            LogUtils.e("No instance found to start alarm: %d", instanceId);
+
+                            if (mCurrentAlarm == null) {
+                                // Only release lock if we are not firing alarm
+                                AlarmAlertWakeLock.releaseCpuLock();
+                            }
+                            return;
+                        }
+
+                        if (mCurrentAlarm != null && mCurrentAlarm.mId == instanceId) {
+                            LogUtils.e("Alarm already started for instance: %d", instanceId);
+                            return;
+                        }
+
+                        AppExecutors.getMainThread().post(() -> startAlarm(instance));
+                    } else {
+                        if (mCurrentAlarm == null) {
                             AlarmAlertWakeLock.releaseCpuLock();
                         }
-                        break;
                     }
-
-                    if (mCurrentAlarm != null && mCurrentAlarm.mId == instanceId) {
-                        LogUtils.e("Alarm already started for instance: %d", instanceId);
-                        break;
-                    }
-                    startAlarm(instance);
-                }
+                });
             }
+
             case STOP_ALARM_ACTION -> {
-                if (mCurrentAlarm != null && mCurrentAlarm.mId != instanceId) {
+                if (mCurrentAlarm == null) {
+                    stopSelf();
+                    break;
+                }
+
+                if (mCurrentAlarm.mId != instanceId) {
                     LogUtils.e("Can't stop alarm for instance: %d because current alarm is: %d", instanceId, mCurrentAlarm.mId);
                     break;
                 }
+
                 stopCurrentAlarm();
-                stopSelf();
             }
+
             case STOP_ALARM_WITH_DOUBLE_VIBRATION_ACTION -> {
-                if (mCurrentAlarm != null && mCurrentAlarm.mId != instanceId) {
+                if (mCurrentAlarm == null) {
+                    stopSelf();
+                    break;
+                }
+
+                if (mCurrentAlarm.mId != instanceId) {
                     LogUtils.e("Can't perform double vibration and stop alarm for instance: %d because current alarm is: %d",
                         instanceId, mCurrentAlarm.mId);
                     break;
                 }
-                performDoubleVibration();
-                stopSelf();
+
+                LogUtils.v("AlarmService.stop with double vibration");
+
+                stopCurrentAlarm();
+
+                // Double vibration
+                Utils.executeVibrations(mVibrator, new long[]{300, 200, 100, 500}, -1);
             }
+
             case STOP_ALARM_WITH_SINGLE_VIBRATION_ACTION -> {
-                if (mCurrentAlarm != null && mCurrentAlarm.mId != instanceId) {
+                if (mCurrentAlarm == null) {
+                    stopSelf();
+                    break;
+                }
+
+                if (mCurrentAlarm.mId != instanceId) {
                     LogUtils.e("Can't perform single vibration and stop alarm for instance: %d because current alarm is: %d",
                         instanceId, mCurrentAlarm.mId);
                     break;
                 }
-                performSingleVibration();
-                stopSelf();
+
+                LogUtils.v("AlarmService.stop with single vibration");
+
+                stopCurrentAlarm();
+
+                // Single vibration
+                Utils.executeVibrations(mVibrator, new long[]{300, 500}, -1);
+            }
+
+            case ALARM_MUTE_ACTION -> {
+                // Stop hardware without changing the alarm state
+                stopAlarmKlaxon();
+                stopFlash();
             }
         }
 
@@ -445,8 +547,15 @@ public class AlarmService extends Service {
     public void onDestroy() {
         LogUtils.v("AlarmService.onDestroy() called");
         super.onDestroy();
+
+        if (mPrefs != null) {
+            mPrefs.unregisterOnSharedPreferenceChangeListener(mPrefListener);
+        }
+
+        mPendingAlarmIds.clear();
+
         if (mCurrentAlarm != null) {
-            stopCurrentAlarm();
+            cleanupAndStop();
         }
 
         stopFlash();
@@ -461,19 +570,44 @@ public class AlarmService extends Service {
         }
     }
 
-    private void startAlarm(AlarmInstance instance) {
+    private void startAlarm(@NonNull AlarmInstance instance) {
         LogUtils.v("AlarmService.start with instance: " + instance.mId);
         if (mCurrentAlarm != null) {
-            AlarmStateManager.setMissedState(this, mCurrentAlarm);
-            stopCurrentAlarm();
+            if (mCurrentAlarm.mId == instance.mId) {
+                return;
+            }
+
+            LogUtils.i("An alarm is already ringing. Adding instance %d to the queue.", instance.mId);
+            if (!mPendingAlarmIds.contains(instance.mId)) {
+                mPendingAlarmIds.offer(instance.mId);
+            }
+
+            return;
         }
 
         AlarmAlertWakeLock.acquireCpuWakeLock(this);
 
         mCurrentAlarm = instance;
 
-        AlarmNotifications.showAlarmNotification(this, mCurrentAlarm);
-        AlarmKlaxon.start(mCurrentAlarm);
+        AlarmNotifications.showAlarmNotification(
+            this, mCurrentAlarm, SettingsDAO.getLanguageCode(mPrefs), SettingsDAO.getGlobalIntentId(mPrefs));
+
+        RingtonePlayer.Config playerConfig = new RingtonePlayer.Config(
+            SettingsDAO.isAutoRoutingToExternalAudioDevice(mPrefs),
+            SettingsDAO.shouldUseCustomMediaVolume(mPrefs),
+            SettingsDAO.getExternalAudioDeviceVolumeValue(mPrefs)
+        );
+
+        AlarmKlaxon.Config klaxonConfig = new AlarmKlaxon.Config(
+            SettingsDAO.isAdvancedAudioPlaybackEnabled(mPrefs),
+            SettingsDAO.isPerAlarmVolumeEnabled(mPrefs),
+            SettingsDAO.getVibrationStartDelay(mPrefs),
+            SettingsDAO.isPerAlarmVibrationPatternEnabled(mPrefs),
+            SettingsDAO.getVibrationPattern(mPrefs),
+            playerConfig
+        );
+
+        AlarmKlaxon.start(klaxonConfig, mCurrentAlarm);
 
         if (mCurrentAlarm.mFlash) {
             if (mIsUserFlashlightOn) {
@@ -497,59 +631,44 @@ public class AlarmService extends Service {
     private void stopCurrentAlarm() {
         if (mCurrentAlarm == null) {
             LogUtils.v("There is no current alarm to stop");
+            stopSelf();
             return;
         }
 
         cleanupAndStop();
-    }
 
-    private void performSingleVibration() {
-        if (mCurrentAlarm == null) {
-            LogUtils.v("There is no current alarm to stop");
-            return;
-        }
+        ContentResolver cr = getApplicationContext().getContentResolver();
+        AppExecutors.getDiskIO().execute(() -> {
+            boolean alarmStarted = false;
 
-        final long instanceId = mCurrentAlarm.mId;
-        LogUtils.v("AlarmService.stop with single vibration with instance: %s", instanceId);
+            while (!mPendingAlarmIds.isEmpty()) {
+                Long nextId = mPendingAlarmIds.poll();
 
-        cleanupAndStop();
+                if (nextId == null) {
+                    continue;
+                }
 
-        if (mVibrator != null) {
-            if (SdkUtils.isAtLeastAndroid8()) {
-                mVibrator.vibrate(VibrationEffect.createWaveform(new long[]{300, 500}, VibrationEffect.DEFAULT_AMPLITUDE));
-            } else {
-                //noinspection deprecation
-                mVibrator.vibrate(new long[]{300, 500}, -1);
+                AlarmInstance next = AlarmInstance.getInstance(cr, nextId);
+
+                if (next != null && next.mAlarmState == AlarmInstance.FIRED_STATE) {
+                    LogUtils.i("Launching the pending alarm: " + nextId);
+                    AppExecutors.getMainThread().post(() -> startAlarm(next));
+
+                    alarmStarted = true;
+                    break;
+                }
             }
-        }
-    }
 
-    private void performDoubleVibration() {
-        if (mCurrentAlarm == null) {
-            LogUtils.v("There is no current alarm to stop");
-            return;
-        }
-
-        final long instanceId = mCurrentAlarm.mId;
-        LogUtils.v("AlarmService.stop with double vibration with instance: %s", instanceId);
-
-        cleanupAndStop();
-
-        if (mVibrator != null) {
-            if (SdkUtils.isAtLeastAndroid8()) {
-                mVibrator.vibrate(VibrationEffect.createWaveform(new long[]{300, 200, 100, 500}, VibrationEffect.DEFAULT_AMPLITUDE));
-            } else {
-                //noinspection deprecation
-                mVibrator.vibrate(new long[]{300, 200, 100, 500}, -1);
+            if (!alarmStarted) {
+                stopSelf();
             }
-        }
+        });
     }
 
     private void cleanupAndStop() {
         stopFlash();
 
-        AlarmKlaxon.stop();
-        AlarmKlaxon.deactivateRingtonePlayback();
+        stopAlarmKlaxon();
 
         Intent intent = new Intent(ALARM_DONE_ACTION);
         intent.setPackage(getPackageName());
@@ -560,6 +679,11 @@ public class AlarmService extends Service {
         mCurrentAlarm = null;
         detachListeners();
         AlarmAlertWakeLock.releaseCpuLock();
+    }
+
+    private void stopAlarmKlaxon() {
+        AlarmKlaxon.stop();
+        AlarmKlaxon.releaseResources();
     }
 
     private void stopFlash() {
@@ -607,7 +731,7 @@ public class AlarmService extends Service {
      * @param context  application context
      * @param instance you are trying to stop
      */
-    public static void stopAlarm(Context context, AlarmInstance instance) {
+    public static void stopAlarm(@NonNull Context context, @NonNull AlarmInstance instance) {
         final Intent intent = AlarmInstance.createIntent(context, AlarmService.class, instance.mId).setAction(STOP_ALARM_ACTION);
 
         // We don't need a wake lock here, since we are trying to kill an alarm
@@ -621,7 +745,7 @@ public class AlarmService extends Service {
      * @param context  application context
      * @param instance you are trying to stop
      */
-    public static void stopAlarmWithDoubleVibration(Context context, AlarmInstance instance) {
+    public static void stopAlarmWithDoubleVibration(@NonNull Context context, @NonNull AlarmInstance instance) {
         final Intent intent = AlarmInstance.createIntent(context, AlarmService.class, instance.mId);
         intent.setAction(STOP_ALARM_WITH_DOUBLE_VIBRATION_ACTION);
 
@@ -636,7 +760,7 @@ public class AlarmService extends Service {
      * @param context  application context
      * @param instance you are trying to stop
      */
-    public static void stopAlarmWithSingleVibration(Context context, AlarmInstance instance) {
+    public static void stopAlarmWithSingleVibration(@NonNull Context context, @NonNull AlarmInstance instance) {
         final Intent intent = AlarmInstance.createIntent(context, AlarmService.class, instance.mId);
         intent.setAction(STOP_ALARM_WITH_SINGLE_VIBRATION_ACTION);
 
@@ -645,6 +769,10 @@ public class AlarmService extends Service {
     }
 
     private void attachListeners() {
+        if (mSensorManager == null) {
+            return;
+        }
+
         if (mFlipAction != ALARM_NO_ACTION) {
             mFlipListener.reset();
             mSensorManager.registerListener(mFlipListener,
@@ -661,6 +789,10 @@ public class AlarmService extends Service {
     }
 
     private void detachListeners() {
+        if (mSensorManager == null) {
+            return;
+        }
+
         if (mFlipAction != ALARM_NO_ACTION) {
             mSensorManager.unregisterListener(mFlipListener);
         }
@@ -670,12 +802,29 @@ public class AlarmService extends Service {
     }
 
     private void handleAction(int action) {
-        if (action == ALARM_SNOOZE) { // Setup Snooze Action
-            startService(AlarmStateManager.createStateChangeIntent(
-                this, AlarmStateManager.ALARM_SNOOZE_TAG, mCurrentAlarm, AlarmInstance.SNOOZE_STATE));
-        } else if (action == ALARM_DISMISS) { // Setup Dismiss Action
-            startService(AlarmStateManager.createStateChangeIntent(
-                this, AlarmStateManager.ALARM_DISMISS_TAG, mCurrentAlarm, AlarmInstance.DISMISSED_STATE));
+        switch (action) {
+            case ALARM_SNOOZE ->
+                startService(AlarmStateManager.createStateChangeIntent(
+                    this,
+                    mCurrentAlarm,
+                    AlarmStateManager.ALARM_SNOOZE_TAG,
+                    AlarmInstance.SNOOZE_STATE,
+                    SettingsDAO.getGlobalIntentId(mPrefs))
+                );
+
+            case ALARM_DISMISS ->
+                startService(AlarmStateManager.createStateChangeIntent(
+                    this,
+                    mCurrentAlarm,
+                    AlarmStateManager.ALARM_DISMISS_TAG,
+                    AlarmInstance.DISMISSED_STATE,
+                    SettingsDAO.getGlobalIntentId(mPrefs))
+                );
+
+            case ALARM_MUTE -> {
+                stopAlarmKlaxon();
+                stopFlash();
+            }
         }
     }
 

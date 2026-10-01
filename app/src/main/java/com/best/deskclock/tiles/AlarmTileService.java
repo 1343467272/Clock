@@ -9,18 +9,21 @@ import static com.best.deskclock.uidata.UiDataModel.Tab.ALARMS;
 
 import android.annotation.SuppressLint;
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
 
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
 import com.best.deskclock.DeskClock;
 import com.best.deskclock.R;
-import com.best.deskclock.alarms.AlarmStateManager;
+import com.best.deskclock.base.AppExecutors;
 import com.best.deskclock.data.SettingsDAO;
+import com.best.deskclock.provider.AlarmInstance;
 import com.best.deskclock.uidata.UiDataModel;
 import com.best.deskclock.utils.AlarmUtils;
 import com.best.deskclock.utils.SdkUtils;
@@ -66,34 +69,44 @@ public class AlarmTileService extends TileService {
         updateTile(getQsTile());
     }
 
-    private void updateTile(Tile tile) {
+    private void updateTile(@Nullable Tile tile) {
         if (tile == null) {
             return;
         }
 
-        SharedPreferences prefs = getDefaultSharedPreferences(this);
-        if (!SettingsDAO.isAlarmTabVisible(prefs)) {
-            tile.setState(Tile.STATE_UNAVAILABLE);
-            if (SdkUtils.isAtLeastAndroid10()) {
-                tile.setSubtitle(null);
+        Context appContext = getApplicationContext();
+        SharedPreferences prefs = getDefaultSharedPreferences(appContext);
+
+        AppExecutors.getDiskIO().execute(() -> {
+            if (!SettingsDAO.isAlarmTabVisible(prefs)) {
+                tile.setState(Tile.STATE_UNAVAILABLE);
+                if (SdkUtils.isAtLeastAndroid10()) {
+                    tile.setSubtitle(null);
+                }
+
+                tile.updateTile();
+                return;
             }
 
-            tile.updateTile();
-            return;
-        }
+            final AlarmInstance nextAlarm = AlarmInstance.getNextFiringAlarm(appContext);
 
-        if (AlarmStateManager.getNextFiringAlarm(this) == null) {
-            tile.setState(Tile.STATE_INACTIVE);
-            if (SdkUtils.isAtLeastAndroid10()) {
-                tile.setSubtitle(getString(R.string.no_scheduled_alarms));
-            }
-        } else {
-            tile.setState(Tile.STATE_ACTIVE);
-            if (SdkUtils.isAtLeastAndroid10()) {
-                tile.setSubtitle(AlarmUtils.getNextAlarm(this));
-            }
-        }
+            final String nextAlarmText = nextAlarm != null ? AlarmUtils.getNextAlarm(appContext) : null;
 
-        tile.updateTile();
+            AppExecutors.getMainThread().post(() -> {
+                if (nextAlarm == null) {
+                    tile.setState(Tile.STATE_INACTIVE);
+                    if (SdkUtils.isAtLeastAndroid10()) {
+                        tile.setSubtitle(getString(R.string.no_scheduled_alarms));
+                    }
+                } else {
+                    tile.setState(Tile.STATE_ACTIVE);
+                    if (SdkUtils.isAtLeastAndroid10()) {
+                        tile.setSubtitle(nextAlarmText);
+                    }
+                }
+
+                tile.updateTile();
+            });
+        });
     }
 }

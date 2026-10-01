@@ -30,6 +30,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.LinearLayout;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.view.HapticFeedbackConstantsCompat;
 
 import com.best.deskclock.R;
@@ -37,6 +39,7 @@ import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.databinding.TimerSetupViewBinding;
 import com.best.deskclock.uicomponents.FabContainer;
 import com.best.deskclock.uidata.UiDataModel;
+import com.best.deskclock.utils.AnimatorUtils;
 import com.best.deskclock.utils.FormattedTextUtils;
 import com.best.deskclock.utils.ThemeUtils;
 import com.best.deskclock.utils.Utils;
@@ -51,24 +54,52 @@ public class TimerSetupView extends LinearLayout implements View.OnClickListener
 
     private final TimerSetupViewBinding mBinding;
 
+    private final DisplayMetrics mDisplayMetrics;
+    private final Typeface mGeneralTypeface;
+    private final boolean mIsCardBackgroundDisplayed;
+    private final boolean mIsCardBorderDisplayed;
+    private final boolean mIsVibrationsEnabled;
+    private final String mDarkMode;
+    private final boolean mIsNight;
+
     private final int[] mInput = {0, 0, 0, 0, 0, 0};
     private final CharSequence mTimeTemplate;
     private int mInputPointer = -1;
     private MaterialButton[] mDigitButton;
+    private final UiDataModel mUiDataModel;
 
     /**
      * Updates to the fab are requested via this container.
      */
     private FabContainer mFabContainer;
 
-    public TimerSetupView(Context context) {
+    private final Runnable mUpdateFabRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (mFabContainer != null) {
+                mFabContainer.updateFab(FAB_SHRINK_AND_EXPAND);
+            }
+        }
+    };
+
+    public TimerSetupView(@NonNull Context context) {
         this(context, null);
     }
 
-    public TimerSetupView(Context context, AttributeSet attrs) {
+    public TimerSetupView(@NonNull Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
 
-        final BidiFormatter bf = BidiFormatter.getInstance(false /* rtlContext */);
+        SharedPreferences prefs = getDefaultSharedPreferences(getContext());
+        mDisplayMetrics = getResources().getDisplayMetrics();
+        mGeneralTypeface = ThemeUtils.loadFont(SettingsDAO.getGeneralFont(prefs));
+        mIsCardBackgroundDisplayed = SettingsDAO.isCardBackgroundDisplayed(prefs);
+        mIsCardBorderDisplayed = SettingsDAO.isCardBorderDisplayed(prefs);
+        mIsVibrationsEnabled = SettingsDAO.isVibrationsEnabled(prefs);
+        mDarkMode = SettingsDAO.getDarkMode(prefs);
+        mIsNight = ThemeUtils.isNight(getResources());
+        mUiDataModel = UiDataModel.getUiDataModel();
+
+        final BidiFormatter bf = BidiFormatter.getInstance(false);
         final String hoursLabel = bf.unicodeWrap(context.getString(R.string.hours_label));
         final String minutesLabel = bf.unicodeWrap(context.getString(R.string.minutes_label));
         final String secondsLabel = bf.unicodeWrap(context.getString(R.string.seconds_label));
@@ -89,14 +120,7 @@ public class TimerSetupView extends LinearLayout implements View.OnClickListener
     protected void onFinishInflate() {
         super.onFinishInflate();
 
-        final SharedPreferences prefs = getDefaultSharedPreferences(getContext());
-        final Typeface generalTypeface = ThemeUtils.loadFont(SettingsDAO.getGeneralFont(prefs));
-        final DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
-
-        final boolean isCardBackgroundDisplayed = SettingsDAO.isCardBackgroundDisplayed(prefs);
-        final boolean isCardBorderDisplayed = SettingsDAO.isCardBorderDisplayed(prefs);
-        final String darkMode = SettingsDAO.getDarkMode(prefs);
-        final boolean isNight = ThemeUtils.isNight(getResources());
+        Locale locale = Utils.getLocaleFromContext(getContext());
 
         mDigitButton = new MaterialButton[]{
             mBinding.timerSetupDigitsLayout.timerSetupDigit0,
@@ -114,14 +138,14 @@ public class TimerSetupView extends LinearLayout implements View.OnClickListener
         for (int i = 0; i < mDigitButton.length; i++) {
             MaterialButton digitButton = mDigitButton[i];
 
-            digitButton.setText(String.format(Locale.getDefault(), "%d", i));
+            digitButton.setText(String.format(locale, "%d", i));
 
-            digitButton.setTypeface(generalTypeface);
+            digitButton.setTypeface(mGeneralTypeface);
 
-            if (isCardBackgroundDisplayed) {
+            if (mIsCardBackgroundDisplayed) {
                 digitButton.setBackgroundTintList(ColorStateList.valueOf(MaterialColors.getColor(
                     getContext(), com.google.android.material.R.attr.colorSurface, Color.BLACK)));
-            } else if (isNight && darkMode.equals(AMOLED_DARK_MODE)) {
+            } else if (mIsNight && mDarkMode.equals(AMOLED_DARK_MODE)) {
                 digitButton.setBackgroundTintList(ColorStateList.valueOf(Color.BLACK));
             } else {
                 digitButton.setBackgroundTintList(ColorStateList.valueOf(MaterialColors.getColor(
@@ -129,8 +153,8 @@ public class TimerSetupView extends LinearLayout implements View.OnClickListener
                 digitButton.setStateListAnimator(null);
             }
 
-            if (isCardBorderDisplayed) {
-                digitButton.setStrokeWidth((int) dpToPx(2, displayMetrics));
+            if (mIsCardBorderDisplayed) {
+                digitButton.setStrokeWidth((int) dpToPx(2, mDisplayMetrics));
                 digitButton.setStrokeColor(ColorStateList.valueOf(MaterialColors.getColor(
                     getContext(), androidx.appcompat.R.attr.colorPrimary, Color.BLACK)));
             }
@@ -139,16 +163,16 @@ public class TimerSetupView extends LinearLayout implements View.OnClickListener
         }
 
         MaterialButton doubleZeroButton = mBinding.timerSetupDigitsLayout.timerSetupDigit00;
-        doubleZeroButton.setText(String.format(Locale.getDefault(), "%02d", 0));
-        doubleZeroButton.setTypeface(generalTypeface);
+        doubleZeroButton.setText(String.format(locale, "%02d", 0));
+        doubleZeroButton.setTypeface(mGeneralTypeface);
         doubleZeroButton.setOnClickListener(this);
 
-        if (isCardBackgroundDisplayed) {
+        if (mIsCardBackgroundDisplayed) {
             doubleZeroButton.setBackgroundTintList(ColorStateList.valueOf(MaterialColors.getColor(
                 getContext(), com.google.android.material.R.attr.colorPrimaryContainer, Color.BLACK)));
             mBinding.timerSetupDigitsLayout.timerSetupDelete.setBackgroundTintList(ColorStateList.valueOf(MaterialColors.getColor(
                 getContext(), com.google.android.material.R.attr.colorPrimaryContainer, Color.BLACK)));
-        } else if (isNight && darkMode.equals((AMOLED_DARK_MODE))) {
+        } else if (mIsNight && mDarkMode.equals((AMOLED_DARK_MODE))) {
             doubleZeroButton.setBackgroundTintList(ColorStateList.valueOf(Color.BLACK));
             mBinding.timerSetupDigitsLayout.timerSetupDelete.setBackgroundTintList(ColorStateList.valueOf(Color.BLACK));
         } else {
@@ -160,11 +184,11 @@ public class TimerSetupView extends LinearLayout implements View.OnClickListener
             mBinding.timerSetupDigitsLayout.timerSetupDelete.setStateListAnimator(null);
         }
 
-        if (isCardBorderDisplayed) {
-            doubleZeroButton.setStrokeWidth((int) dpToPx(2, displayMetrics));
+        if (mIsCardBorderDisplayed) {
+            doubleZeroButton.setStrokeWidth((int) dpToPx(2, mDisplayMetrics));
             doubleZeroButton.setStrokeColor(ColorStateList.valueOf(MaterialColors.getColor(
                 getContext(), com.google.android.material.R.attr.colorPrimaryInverse, Color.BLACK)));
-            mBinding.timerSetupDigitsLayout.timerSetupDelete.setStrokeWidth((int) dpToPx(2, displayMetrics));
+            mBinding.timerSetupDigitsLayout.timerSetupDelete.setStrokeWidth((int) dpToPx(2, mDisplayMetrics));
             mBinding.timerSetupDigitsLayout.timerSetupDelete.setStrokeColor(ColorStateList.valueOf(MaterialColors.getColor(
                 getContext(), com.google.android.material.R.attr.colorPrimaryInverse, Color.BLACK)));
         }
@@ -176,12 +200,15 @@ public class TimerSetupView extends LinearLayout implements View.OnClickListener
         updateDeleteAndDivider();
     }
 
-    public void setFabContainer(FabContainer fabContainer) {
-        mFabContainer = fabContainer;
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+
+        removeCallbacks(mUpdateFabRunnable);
     }
 
     @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
+    public boolean onKeyDown(int keyCode, @NonNull KeyEvent event) {
         View view = null;
         if (keyCode == KeyEvent.KEYCODE_DEL) {
             view = mBinding.timerSetupDigitsLayout.timerSetupDelete;
@@ -201,8 +228,8 @@ public class TimerSetupView extends LinearLayout implements View.OnClickListener
     }
 
     @Override
-    public void onClick(View view) {
-        Utils.performHapticFeedback(view, HapticFeedbackConstantsCompat.CLOCK_TICK);
+    public void onClick(@NonNull View view) {
+        Utils.performHapticFeedback(view, mIsVibrationsEnabled, HapticFeedbackConstantsCompat.CLOCK_TICK);
 
         if (view == mBinding.timerSetupDigitsLayout.timerSetupDelete) {
             delete();
@@ -215,14 +242,21 @@ public class TimerSetupView extends LinearLayout implements View.OnClickListener
     }
 
     @Override
-    public boolean onLongClick(View view) {
+    public boolean onLongClick(@NonNull View view) {
         if (view == mBinding.timerSetupDigitsLayout.timerSetupDelete) {
-            Utils.performHapticFeedback(view, HapticFeedbackConstantsCompat.CLOCK_TICK);
+            Utils.performHapticFeedback(view, mIsVibrationsEnabled, HapticFeedbackConstantsCompat.CLOCK_TICK);
+
+            view.setPressed(false);
+            view.jumpDrawablesToCurrentState();
             reset();
             updateFab();
             return true;
         }
         return false;
+    }
+
+    public void setFabContainer(@NonNull FabContainer fabContainer) {
+        mFabContainer = fabContainer;
     }
 
     private int getDigitForId(int id) {
@@ -255,11 +289,10 @@ public class TimerSetupView extends LinearLayout implements View.OnClickListener
         final int minutes = mInput[3] * 10 + mInput[2];
         final int hours = mInput[5] * 10 + mInput[4];
 
-        final UiDataModel uiDataModel = UiDataModel.getUiDataModel();
         SpannableString text = new SpannableString(TextUtils.expandTemplate(mTimeTemplate,
-            uiDataModel.getFormattedNumber(hours, 2),
-            uiDataModel.getFormattedNumber(minutes, 2),
-            uiDataModel.getFormattedNumber(seconds, 2)));
+            mUiDataModel.getFormattedNumber(hours, 2),
+            mUiDataModel.getFormattedNumber(minutes, 2),
+            mUiDataModel.getFormattedNumber(seconds, 2)));
 
         int endIdx = text.length();
         int startIdx = seconds > 0 ? 8 : endIdx;
@@ -279,12 +312,13 @@ public class TimerSetupView extends LinearLayout implements View.OnClickListener
     }
 
     private void updateDeleteAndDivider() {
-        final boolean enabled = hasValidInput();
-        mBinding.timerSetupDigitsLayout.timerSetupDelete.setEnabled(enabled);
+        mBinding.timerSetupDigitsLayout.timerSetupDelete.setEnabled(hasValidInput());
     }
 
     private void updateFab() {
-        mFabContainer.updateFab(FAB_SHRINK_AND_EXPAND);
+        removeCallbacks(mUpdateFabRunnable);
+
+        postDelayed(mUpdateFabRunnable, AnimatorUtils.SHORT_ANIMATION_DURATION);
     }
 
     private void append(int digit) {
@@ -311,7 +345,7 @@ public class TimerSetupView extends LinearLayout implements View.OnClickListener
         // Update TalkBack to read the number being deleted.
         mBinding.timerSetupDigitsLayout.timerSetupDelete.setContentDescription(getContext().getString(
             R.string.timer_descriptive_delete,
-            UiDataModel.getUiDataModel().getFormattedNumber(digit))
+            mUiDataModel.getFormattedNumber(digit))
         );
 
         // Update the fab, delete, and divider when we have valid input.
@@ -336,7 +370,7 @@ public class TimerSetupView extends LinearLayout implements View.OnClickListener
         if (mInputPointer >= 0) {
             mBinding.timerSetupDigitsLayout.timerSetupDelete.setContentDescription(getContext().getString(
                 R.string.timer_descriptive_delete,
-                UiDataModel.getUiDataModel().getFormattedNumber(mInput[0])));
+                mUiDataModel.getFormattedNumber(mInput[0])));
         } else {
             mBinding.timerSetupDigitsLayout.timerSetupDelete.setContentDescription(getContext().getString(R.string.delete));
         }
@@ -380,7 +414,7 @@ public class TimerSetupView extends LinearLayout implements View.OnClickListener
     /**
      * @param state an opaque state of this view previously produced by {@link #getState()}
      */
-    public void setState(Serializable state) {
+    public void setState(@Nullable Serializable state) {
         final int[] input = (int[]) state;
         if (input != null && mInput.length == input.length) {
             for (int i = 0; i < mInput.length; i++) {
@@ -394,7 +428,7 @@ public class TimerSetupView extends LinearLayout implements View.OnClickListener
         }
     }
 
-    public void updateTimerSetupTimeFont(Typeface timerTimeFont) {
+    public void updateTimerSetupTimeFont(@NonNull Typeface timerTimeFont) {
         if (mBinding != null) {
             mBinding.timerSetupTimeLayout.timerSetupTime.setTypeface(timerTimeFont);
         }

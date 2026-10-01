@@ -16,6 +16,7 @@ import android.database.Cursor;
 import android.media.RingtoneManager;
 import android.net.Uri;
 
+import androidx.annotation.NonNull;
 import androidx.loader.content.AsyncTaskLoader;
 
 import com.best.deskclock.R;
@@ -32,12 +33,17 @@ import java.util.List;
  */
 public class RingtoneLoader extends AsyncTaskLoader<List<RingtoneAdapter.RingtoneItem>> {
 
+    private final DataModel mDataModel;
     private final Uri mDefaultRingtoneUri;
     private final String mDefaultRingtoneTitle;
     private List<CustomRingtone> mCustomRingtones;
 
-    RingtoneLoader(Context context, Uri defaultRingtoneUri, String defaultRingtoneTitle) {
+    RingtoneLoader(@NonNull Context context, @NonNull DataModel dataModel, @NonNull Uri defaultRingtoneUri,
+                   @NonNull String defaultRingtoneTitle) {
+
         super(context);
+
+        mDataModel = dataModel;
         mDefaultRingtoneUri = defaultRingtoneUri;
         mDefaultRingtoneTitle = defaultRingtoneTitle;
     }
@@ -46,15 +52,15 @@ public class RingtoneLoader extends AsyncTaskLoader<List<RingtoneAdapter.Rington
     protected void onStartLoading() {
         super.onStartLoading();
 
-        mCustomRingtones = DataModel.getDataModel().getCustomRingtones();
+        mCustomRingtones = mDataModel.getCustomRingtones();
         forceLoad();
     }
 
     @Override
     public List<RingtoneAdapter.RingtoneItem> loadInBackground() {
         // Prime the ringtone title cache for later access.
-        DataModel.getDataModel().loadRingtoneTitles();
-        DataModel.getDataModel().loadRingtonePermissions();
+        mDataModel.loadRingtoneTitles();
+        mDataModel.loadRingtonePermissions();
 
         // Fetch the standard system ringtones.
         final RingtoneManager ringtoneManager = new RingtoneManager(getContext());

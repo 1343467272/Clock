@@ -11,6 +11,8 @@ import android.view.animation.AccelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Interpolator;
 
+import androidx.annotation.NonNull;
+
 import com.best.deskclock.uidata.UiDataModel;
 import com.best.deskclock.utils.Utils;
 
@@ -42,18 +44,20 @@ public final class PulseScreensaverBackgroundRunnable implements Runnable {
 
     private final View mBackgroundView;
     private Animator mActiveAnimator;
+    private final UiDataModel mUiDataModel;
 
-    public PulseScreensaverBackgroundRunnable(View backgroundView) {
+    public PulseScreensaverBackgroundRunnable(@NonNull View backgroundView, @NonNull UiDataModel uiDataModel) {
         mBackgroundView = backgroundView;
+        mUiDataModel = uiDataModel;
     }
 
     public void start() {
         stop();
-        UiDataModel.getUiDataModel().addHalfMinuteCallback(this, -FADE_TIME);
+        mUiDataModel.addHalfMinuteCallback(this, -FADE_TIME);
     }
 
     public void stop() {
-        UiDataModel.getUiDataModel().removePeriodicCallback(this);
+        mUiDataModel.removePeriodicCallback(this);
         if (mActiveAnimator != null) {
             mActiveAnimator.end();
             mActiveAnimator = null;

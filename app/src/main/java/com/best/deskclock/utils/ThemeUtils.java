@@ -9,7 +9,6 @@ package com.best.deskclock.utils;
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
 import static androidx.core.util.TypedValueCompat.dpToPx;
-import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreferences;
 import static com.best.deskclock.settings.PreferencesDefaultValues.*;
 
 import android.annotation.SuppressLint;
@@ -43,6 +42,7 @@ import android.widget.TextView;
 import androidx.annotation.AttrRes;
 import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.view.menu.ActionMenuItemView;
 import androidx.appcompat.widget.ActionMenuView;
 import androidx.appcompat.widget.Toolbar;
@@ -52,6 +52,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.best.deskclock.R;
 import com.best.deskclock.data.SettingsDAO;
@@ -74,7 +75,7 @@ public class ThemeUtils {
      *
      * @param window The activity window (via getWindow()).
      */
-    public static void allowDisplayCutout(Window window) {
+    public static void allowDisplayCutout(@NonNull Window window) {
         if (SdkUtils.isAtLeastAndroid9()) {
             WindowManager.LayoutParams layoutParams = window.getAttributes();
             layoutParams.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
@@ -85,7 +86,7 @@ public class ThemeUtils {
     /**
      * Hides the system navigation and status bars for an immersive experience.
      */
-    public static void hideSystemBars(Window window, View view) {
+    public static void hideSystemBars(@NonNull Window window, @NonNull View view) {
         WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, view);
         controller.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
         controller.hide(WindowInsetsCompat.Type.systemBars());
@@ -94,7 +95,7 @@ public class ThemeUtils {
     /**
      * @return {@code true} if the device is in dark mode. {@code false} otherwise.
      */
-    public static boolean isNight(final Resources res) {
+    public static boolean isNight(@NonNull Resources res) {
         return (res.getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
     }
 
@@ -124,30 +125,28 @@ public class ThemeUtils {
     /**
      * @return {@code true} if the current layout direction is RTL. {@code false} otherwise.
      */
-    public static boolean isRTL(Context context) {
+    public static boolean isRTL(@NonNull Context context) {
         return context.getResources().getConfiguration().getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
     }
 
     /**
      * @return {@code true} if the system animations are disabled. {@code false} otherwise.
      */
-    public static boolean areSystemAnimationsDisabled(Context context) {
+    public static boolean areSystemAnimationsDisabled(@NonNull Context context) {
         return android.provider.Settings.Global.getFloat(context.getContentResolver(),
             android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f;
     }
 
     /**
      * Loads a {@link Typeface} from the given font file path.
-     * <p>
-     * This method attempts to create a typeface from the specified file path.
-     * If the path is null, the file does not exist, or the font cannot be loaded,
-     * the default system font will be used.
-     * </p>
+     *
+     * <p>This method attempts to create a typeface from the specified file path.
+     * If the path is null, the file does not exist, or the font cannot be loaded, the default system font will be used.</p>
      *
      * @param fontPath the absolute path to the font file (.ttf or .otf), may be null
      * @return the loaded {@link Typeface}, or {@code null} if loading fails
      */
-    public static Typeface loadFont(String fontPath) {
+    public static Typeface loadFont(@Nullable String fontPath) {
         if (fontPath == null) {
             return null;
         }
@@ -174,14 +173,13 @@ public class ThemeUtils {
 
     /**
      * Returns a bold {@link Typeface} based on the font located at the given path.
-     * <p>
-     * If the font cannot be loaded or the path is null, a default bold
-     * sans-serif typeface is returned instead.
+     *
+     * <p>If the font cannot be loaded or the path is null, a default bold sans-serif typeface is returned instead.</p>
      *
      * @param fontPath the file path of the custom font to load, or null
      * @return a bold Typeface, either custom or default
      */
-    public static Typeface boldTypeface(String fontPath) {
+    public static Typeface boldTypeface(@Nullable String fontPath) {
         if (fontPath == null) {
             return Typeface.create("sans-serif", Typeface.BOLD);
         }
@@ -204,7 +202,7 @@ public class ThemeUtils {
         return boldTypeface;
     }
 
-    public static void removeFontFromCache(String fontPath) {
+    public static void removeFontFromCache(@Nullable String fontPath) {
         if (fontPath == null) {
             return;
         }
@@ -220,8 +218,9 @@ public class ThemeUtils {
      * the method iterates through all children and applies the typeface to each one.</p>
      *
      * @param root the root view from which the typeface should be applied recursively
+     * @param typeface the {@link Typeface} to apply
      */
-    public static void applyTypeface(View root, Typeface typeface) {
+    public static void applyTypeface(@NonNull View root, @Nullable Typeface typeface) {
         if (typeface == null) {
             return;
         }
@@ -239,7 +238,8 @@ public class ThemeUtils {
      * @param root the root view to search
      * @return a list of all TextViews found in the view hierarchy
      */
-    public static List<TextView> findAllTextViews(View root) {
+    @NonNull
+    public static List<TextView> findAllTextViews(@NonNull View root) {
         List<TextView> result = new ArrayList<>();
         if (root instanceof TextView) {
             result.add((TextView) root);
@@ -262,7 +262,8 @@ public class ThemeUtils {
      * @param itemView the root view to inspect
      * @return a cached or newly discovered list of TextViews
      */
-    private static List<TextView> getCachedTextViews(View itemView) {
+    @NonNull
+    private static List<TextView> getCachedTextViews(@NonNull View itemView) {
         List<TextView> cached = textViewCache.get(itemView);
         if (cached != null) {
             return cached;
@@ -271,6 +272,24 @@ public class ThemeUtils {
         List<TextView> found = findAllTextViews(itemView);
         textViewCache.put(itemView, found);
         return found;
+    }
+
+    /**
+     * Recursively traverses the view tree and applies the specified typeface to all {@link TextView} instances found.
+     *
+     * @param view     The root view to start the traversal from (e.g., a BottomSheet or Layout).
+     * @param typeface The typeface to apply.
+     */
+    public static void applyFontToTextViews(@Nullable View view, @Nullable Typeface typeface) {
+        if (view == null || typeface == null) return;
+
+        if (view instanceof TextView textView) {
+            textView.setTypeface(typeface);
+        } else if (view instanceof ViewGroup viewGroup) {
+            for (int i = 0; i < viewGroup.getChildCount(); i++) {
+                applyFontToTextViews(viewGroup.getChildAt(i), typeface);
+            }
+        }
     }
 
     /**
@@ -286,8 +305,8 @@ public class ThemeUtils {
      * @param nightAccentColor              the accent color selected for night mode
      * @return the style resource ID matching the resolved accent color
      */
-    public static int getAccentStyle(Context context, boolean isAutoNightAccentColorEnabled,
-                                     String accentColor, String nightAccentColor) {
+    public static int getAccentStyle(@NonNull Context context, boolean isAutoNightAccentColorEnabled, @NonNull String accentColor,
+                                     @NonNull String nightAccentColor) {
 
         String colorKey = isNight(context.getResources()) && !isAutoNightAccentColorEnabled
             ? nightAccentColor
@@ -317,7 +336,7 @@ public class ThemeUtils {
      * @param accentColor The selected accent color identifier.
      * @return The resolved background color integer for night mode.
      */
-    public static int getNightBackgroundColor(Context context, String accentColor) {
+    public static int getNightBackgroundColor(@NonNull Context context, @NonNull String accentColor) {
         return switch (accentColor) {
             case BLACK_ACCENT_COLOR -> ContextCompat.getColor(context, android.R.color.black);
             case BLUE_ACCENT_COLOR -> ContextCompat.getColor(context, R.color.nightBlueColorBackground);
@@ -337,30 +356,43 @@ public class ThemeUtils {
     }
 
     /**
+     * Resolves the currently active accent color based on the current theme (day/night)
+     * and user preferences for automatic night accent colors.
+     *
+     * @param context                       The context used to determine if night mode is active.
+     * @param isAutoNightAccentColorEnabled {@code true} if automatic night mode accent colors are enabled; {@code false} otherwise.
+     * @param nightAccentColor              The selected night accent color identifier.
+     * @param accentColor                   The selected accent color identifier.
+     * @return The resolved accent color string identifier.
+     */
+    @NonNull
+    public static String getActiveAccentColor(@NonNull Context context, boolean isAutoNightAccentColorEnabled,
+                                              @NonNull String nightAccentColor, @NonNull String accentColor) {
+
+        return isNight(context.getResources()) && !isAutoNightAccentColorEnabled
+            ? nightAccentColor
+            : accentColor;
+    }
+
+    /**
      * Creates a themed context applying the user's selected accent color style.
      *
      * <p>This ensures that custom toasts correctly resolve Material color attributes
      * such as {@code colorSecondary}, even when called from non-UI contexts.</p>
      *
-     * @param context the base context
-     * @param prefs   the shared preferences containing theme settings
+     * @param context     the base context
+     * @param accentStyle the style resource corresponding to the user's selected accent color
      * @return a ContextThemeWrapper applying the correct accent style
      */
-    public static Context getThemedContext(Context context, SharedPreferences prefs) {
+    @NonNull
+    public static Context getThemedContext(@NonNull Context context, int accentStyle) {
         Context baseContext = context;
 
         if (context instanceof Application) {
             baseContext = new ContextThemeWrapper(context, R.style.Theme_DeskClock);
         }
 
-        int style = getAccentStyle(
-            baseContext,
-            SettingsDAO.isAutoNightAccentColorEnabled(prefs),
-            SettingsDAO.getAccentColor(prefs),
-            SettingsDAO.getNightAccentColor(prefs)
-        );
-
-        return new ContextThemeWrapper(baseContext, style);
+        return new ContextThemeWrapper(baseContext, accentStyle);
     }
 
     /**
@@ -369,9 +401,12 @@ public class ThemeUtils {
      * <p>This method disables the default system tooltips and replaces them with
      * custom tooltips displayed below each icon when long‑pressed.</p>
      *
-     * @param toolbar the Toolbar whose action items should receive custom tooltips
+     * @param toolbar        the Toolbar whose action items should receive custom tooltips
+     * @param typeface       the {@link Typeface} applied to the text
+     * @param displayMetrics the display metrics containing screen size and density
      */
-    public static void applyToolbarTooltips(Toolbar toolbar) {
+    public static void applyToolbarTooltips(@NonNull Toolbar toolbar, @NonNull Typeface typeface, @NonNull DisplayMetrics displayMetrics) {
+
         for (int i = 0; i < toolbar.getChildCount(); i++) {
             View child = toolbar.getChildAt(i);
 
@@ -388,7 +423,7 @@ public class ThemeUtils {
                         MenuItem item = ((ActionMenuItemView) v).getItemData();
                         CharSequence title = item.getTitle();
                         if (title != null) {
-                            CustomTooltip.showBelow(v, title.toString());
+                            CustomTooltip.showBelow(v, typeface, displayMetrics, title.toString());
                         }
                         return true;
                     });
@@ -400,7 +435,10 @@ public class ThemeUtils {
     /**
      * Apply a Material Expressive background to a group of views.
      */
-    public static void applyExpressiveBackgroundsToGroup(Context context, SharedPreferences prefs, View... views) {
+    public static void applyExpressiveBackgroundsToGroup(@NonNull Context context, @NonNull DisplayMetrics displayMetrics,
+                                                         boolean isCardBackgroundDisplayed, boolean isCardBorderDisplayed,
+                                                         boolean isAmoledDarkMode, @NonNull View... views) {
+
         List<View> visibleViews = new ArrayList<>();
         for (View view : views) {
             if (view.getVisibility() == View.VISIBLE) {
@@ -414,7 +452,7 @@ public class ThemeUtils {
         }
 
         Integer backgroundColor = null;
-        if (!SettingsDAO.isCardBackgroundDisplayed(prefs)) {
+        if (!isCardBackgroundDisplayed) {
             backgroundColor = MaterialColors.getColor(
                 context, com.google.android.material.R.attr.colorSurfaceContainerLowest, Color.BLACK);
         }
@@ -422,7 +460,8 @@ public class ThemeUtils {
         for (int i = 0; i < totalCount; i++) {
             View view = visibleViews.get(i);
 
-            Drawable cardBackground = expressiveCardBackgroundWithColor(context, i, totalCount, backgroundColor);
+            Drawable cardBackground = expressiveCardBackgroundWithColor(context, displayMetrics, isCardBackgroundDisplayed,
+                isCardBorderDisplayed, isAmoledDarkMode, i, totalCount, backgroundColor);
 
             view.setBackground(rippleDrawable(context, cardBackground));
         }
@@ -431,45 +470,64 @@ public class ThemeUtils {
     /**
      * @return a Material card.
      */
-    public static Drawable cardBackground(Context context) {
+    @NonNull
+    public static Drawable cardBackground(@NonNull Context context, @NonNull DisplayMetrics displayMetrics,
+                                          boolean isCardBackgroundDisplayed, boolean isCardBorderDisplayed, boolean isAmoledDarkMode) {
+
         final GradientDrawable gradientDrawable = new GradientDrawable();
-        final float radius = dpToPx(18, context.getResources().getDisplayMetrics());
+        final float radius = dpToPx(18, displayMetrics);
 
         gradientDrawable.setCornerRadius(radius);
 
-        return applyCardStyle(context, gradientDrawable, null);
+        return applyCardStyle(
+            context, displayMetrics, isCardBackgroundDisplayed, isCardBorderDisplayed, isAmoledDarkMode, gradientDrawable, null);
     }
 
     /**
      * @return a Material Expressive card.
      */
-    public static Drawable expressiveCardBackground(Context context, int position, int totalCount) {
-        return buildExpressiveCard(context, position, totalCount, false, null);
+    @NonNull
+    public static Drawable expressiveCardBackground(@NonNull Context context, @NonNull DisplayMetrics displayMetrics,
+                                                    boolean isCardBackgroundDisplayed, boolean isCardBorderDisplayed,
+                                                    boolean isAmoledDarkMode, int position, int totalCount) {
+
+        return buildExpressiveCard(context, displayMetrics, isCardBackgroundDisplayed, isCardBorderDisplayed, isAmoledDarkMode, position,
+            totalCount, false, null);
     }
 
     /**
      * @return a Material Expressive card with a custom background color.
      */
-    public static Drawable expressiveCardBackgroundWithColor(Context context, int position, int totalCount,
+    @NonNull
+    public static Drawable expressiveCardBackgroundWithColor(@NonNull Context context, @NonNull DisplayMetrics displayMetrics,
+                                                             boolean isCardBackgroundDisplayed, boolean isCardBorderDisplayed,
+                                                             boolean isAmoledDarkMode, int position, int totalCount,
                                                              @ColorInt Integer color) {
 
-        return buildExpressiveCard(context, position, totalCount, false, color);
+        return buildExpressiveCard(context, displayMetrics, isCardBackgroundDisplayed, isCardBorderDisplayed, isAmoledDarkMode, position,
+            totalCount, false, color);
     }
 
     /**
      * @return a Material Expressive card for the landscape mode.
      */
-    public static Drawable expressiveCardBackgroundForLandscape(Context context, int position, int totalCount) {
-        return buildExpressiveCard(context, position, totalCount, true, null);
+    @NonNull
+    public static Drawable expressiveCardBackgroundForLandscape(@NonNull Context context, @NonNull DisplayMetrics displayMetrics,
+                                                                boolean isCardBackgroundDisplayed, boolean isCardBorderDisplayed,
+                                                                boolean isAmoledDarkMode, int position, int totalCount) {
+
+        return buildExpressiveCard(context, displayMetrics, isCardBackgroundDisplayed, isCardBorderDisplayed, isAmoledDarkMode, position,
+            totalCount, true, null);
     }
 
     /**
      * Convenience method for creating a Material Expressive card.
      */
-    private static Drawable buildExpressiveCard(Context context, int position, int totalCount,
-                                                boolean isHorizontal, @ColorInt Integer color) {
+    @NonNull
+    private static Drawable buildExpressiveCard(@NonNull Context context, @NonNull DisplayMetrics displayMetrics,
+                                                boolean isCardBackgroundDisplayed, boolean isCardBorderDisplayed, boolean isAmoledDarkMode,
+                                                int position, int totalCount, boolean isHorizontal, @ColorInt Integer color) {
 
-        final DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
         final float largeRadius = dpToPx(18, displayMetrics);
         final float smallRadius = dpToPx(4, displayMetrics);
         final GradientDrawable gradientDrawable = new GradientDrawable();
@@ -521,31 +579,32 @@ public class ThemeUtils {
             gradientDrawable.setCornerRadius(smallRadius);
         }
 
-        return applyCardStyle(context, gradientDrawable, color);
+        return applyCardStyle(
+            context, displayMetrics, isCardBackgroundDisplayed, isCardBorderDisplayed, isAmoledDarkMode, gradientDrawable, color);
     }
 
     /**
      * Convenience methode for applying a background color and border to a drawable
      * according to user preferences.
      */
-    private static Drawable applyCardStyle(Context context, GradientDrawable drawable, @ColorInt Integer color) {
-        final SharedPreferences prefs = getDefaultSharedPreferences(context);
-        final String darkMode = SettingsDAO.getDarkMode(prefs);
-        final DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+    @NonNull
+    private static Drawable applyCardStyle(@NonNull Context context, @NonNull DisplayMetrics displayMetrics,
+                                           boolean isCardBackgroundDisplayed, boolean isCardBorderDisplayed, boolean isAmoledDarkMode,
+                                           @NonNull GradientDrawable drawable, @ColorInt Integer color) {
 
         if (color != null) {
             drawable.setColor(color);
-        } else if (SettingsDAO.isCardBackgroundDisplayed(prefs)) {
+        } else if (isCardBackgroundDisplayed) {
             drawable.setColor(MaterialColors.getColor(context, com.google.android.material.R.attr.colorSurface, Color.BLACK));
         } else {
-            if (isNight(context.getResources()) && darkMode.equals(AMOLED_DARK_MODE)) {
+            if (isNight(context.getResources()) && isAmoledDarkMode) {
                 drawable.setColor(Color.BLACK);
             } else {
                 drawable.setColor(MaterialColors.getColor(context, android.R.attr.colorBackground, Color.BLACK));
             }
         }
 
-        if (SettingsDAO.isCardBorderDisplayed(prefs)) {
+        if (isCardBorderDisplayed) {
             drawable.setShape(GradientDrawable.RECTANGLE);
             drawable.setStroke((int) dpToPx(2, displayMetrics), MaterialColors.getColor(
                 context, androidx.appcompat.R.attr.colorPrimary, Color.BLACK)
@@ -558,6 +617,7 @@ public class ThemeUtils {
     /**
      * Convenience method for creating circle drawable.
      */
+    @NonNull
     public static Drawable circleDrawable() {
         final GradientDrawable gradientDrawable = new GradientDrawable();
         gradientDrawable.setShape(GradientDrawable.OVAL);
@@ -568,8 +628,9 @@ public class ThemeUtils {
     /**
      * Convenience method for creating pill background.
      */
-    public static Drawable pillBackground(Context context, int color) {
-        final int radius = (int) dpToPx(50, context.getResources().getDisplayMetrics());
+    @NonNull
+    public static Drawable pillBackground(@NonNull DisplayMetrics displayMetrics, int color) {
+        final int radius = (int) dpToPx(50, displayMetrics);
         final GradientDrawable drawable = new GradientDrawable();
 
         drawable.setCornerRadius(radius);
@@ -581,17 +642,21 @@ public class ThemeUtils {
     /**
      * Convenience method for creating pill background.
      */
-    public static Drawable pillBackgroundFromAttr(Context context, @AttrRes int colorAttributeResId) {
+    @NonNull
+    public static Drawable pillBackgroundFromAttr(@NonNull Context context, @NonNull DisplayMetrics displayMetrics,
+                                                  @AttrRes int colorAttributeResId) {
+
         int color = MaterialColors.getColor(context, colorAttributeResId, Color.BLACK);
-        return pillBackground(context, color);
+        return pillBackground(displayMetrics, color);
     }
 
     /**
      * Convenience method to create ripple drawable.
      */
-    public static RippleDrawable rippleDrawable(Context context, @ColorInt int color) {
+    @NonNull
+    public static RippleDrawable rippleDrawable(@NonNull Context context, @NonNull DisplayMetrics displayMetrics, @ColorInt int color) {
         final GradientDrawable gradientDrawable = new GradientDrawable();
-        gradientDrawable.setCornerRadius((int) dpToPx(18, context.getResources().getDisplayMetrics()));
+        gradientDrawable.setCornerRadius((int) dpToPx(18, displayMetrics));
         gradientDrawable.setColor(color);
 
         return rippleDrawable(context, gradientDrawable);
@@ -600,7 +665,8 @@ public class ThemeUtils {
     /**
      * Convenience method to create ripple drawable.
      */
-    public static RippleDrawable rippleDrawable(Context context, Drawable background) {
+    @NonNull
+    public static RippleDrawable rippleDrawable(@NonNull Context context, @NonNull Drawable background) {
         int rippleColor = MaterialColors.getColor(context, androidx.appcompat.R.attr.colorControlHighlight, Color.BLACK);
 
         return new RippleDrawable(ColorStateList.valueOf(rippleColor), background, null);
@@ -610,9 +676,12 @@ public class ThemeUtils {
      * Convenience method to create a pill-shaped ripple drawable using the default system ripple color.
      * A mask is automatically applied if the background color is transparent.
      */
-    public static RippleDrawable pillRippleDrawable(Context context, @ColorInt int backgroundColor) {
-        Drawable background = pillBackground(context, backgroundColor);
-        Drawable mask = (backgroundColor == Color.TRANSPARENT) ? pillBackground(context, Color.BLACK) : null;
+    @NonNull
+    public static RippleDrawable pillRippleDrawable(@NonNull Context context, @NonNull DisplayMetrics displayMetrics,
+                                                    @ColorInt int backgroundColor) {
+
+        Drawable background = pillBackground(displayMetrics, backgroundColor);
+        Drawable mask = (backgroundColor == Color.TRANSPARENT) ? pillBackground(displayMetrics, Color.BLACK) : null;
 
         int rippleColor = MaterialColors.getColor(context, androidx.appcompat.R.attr.colorControlHighlight, Color.BLACK);
 
@@ -634,7 +703,7 @@ public class ThemeUtils {
      * @param button  The ImageView button to update.
      * @param enabled Whether the button should be enabled.
      */
-    public static void updateSliderButtonEnabledState(Context context, ImageView button, boolean enabled) {
+    public static void updateSliderButtonEnabledState(@NonNull Context context, @NonNull ImageView button, boolean enabled) {
         button.setEnabled(enabled);
 
         if (enabled) {
@@ -642,6 +711,63 @@ public class ThemeUtils {
         } else {
             button.setImageTintList(ColorStateList.valueOf(ContextCompat.getColor(context, R.color.colorDisabled)));
         }
+    }
+
+    /**
+     * Applies dynamic padding to a RecyclerView to prevent its content from being obscured
+     * by the Floating Action Button (FAB).
+     *
+     * <p>The padding is applied to the bottom in portrait mode or on tablets, and to the side
+     * (respecting RTL/LTR layouts) for phones in landscape mode.</p>
+     *
+     * @param context        The context used to determine the layout direction (RTL or LTR).
+     * @param recyclerView   The target {@link RecyclerView} to apply the padding to.
+     * @param totalPaddingPx The padding to apply to the {@link RecyclerView}
+     */
+    public static void applyFabPaddingToRecyclerView(@NonNull Context context, @NonNull RecyclerView recyclerView, int totalPaddingPx) {
+        int paddingLeft = recyclerView.getPaddingLeft();
+        int paddingTop = recyclerView.getPaddingTop();
+        int paddingRight = recyclerView.getPaddingRight();
+        int paddingBottom = recyclerView.getPaddingBottom();
+
+        boolean isLandscapePhone = !isPortrait() && !isTablet();
+
+        if (isLandscapePhone) {
+            if (isRTL(context)) {
+                paddingLeft = totalPaddingPx;
+            } else {
+                paddingRight = totalPaddingPx;
+            }
+        } else {
+            paddingBottom = totalPaddingPx;
+        }
+
+        recyclerView.setClipToPadding(false);
+        recyclerView.setPadding(paddingLeft, paddingTop, paddingRight, paddingBottom);
+    }
+
+    /**
+     * Calculates the total clearance space in pixels required to safely bypass the
+     * Floating Action Button (FAB) without overlap.
+     *
+     * <p>This calculation accounts for the largest configured FAB size, the FAB's native
+     * margin from the screen edge, and a standard visual spacing gap.</p>
+     *
+     * @param prefs          The SharedPreferences used to retrieve the configured FAB sizes.
+     * @param displayMetrics The display metrics containing screen size and density.
+     * @return The total required clearance margin in pixels.
+     */
+    public static int getFabClearanceMarginPx(@NonNull SharedPreferences prefs, @NonNull DisplayMetrics displayMetrics) {
+        int centralFabSize = SettingsDAO.getCentralFabSize(prefs);
+        int sideFabSize = SettingsDAO.getSideFabSize(prefs);
+        int maxFabSizeDp = Math.max(centralFabSize, sideFabSize);
+
+        int fabSizePx = (int) dpToPx(maxFabSizeDp, displayMetrics);
+        int distanceToFabPx = (int) dpToPx(10, displayMetrics);
+        // Identical to the marginBottom of the FAB in the DeskClock.xml layout
+        int fabScreenMarginPx = (int) dpToPx(10, displayMetrics);
+
+        return fabSizePx + fabScreenMarginPx + distanceToFabPx;
     }
 
     /**
@@ -672,15 +798,13 @@ public class ThemeUtils {
      * Applies the appropriate enter transition (Fade or Slide) when creating an activity.
      * Should be called in onCreate() before super.onCreate().
      *
-     * @param activity The activity being created
+     * @param activity         The {@link Activity} being created
+     * @param isFadeTransition {@code true} if the enter transition is a fade effect; a slide effect otherwise
      */
     @SuppressWarnings("deprecation")
-    public static void setActivityEnterTransition(Activity activity) {
-        SharedPreferences prefs = getDefaultSharedPreferences(activity);
-        boolean isFadeEnabled = SettingsDAO.isFadeTransitionsEnabled(prefs);
-
-        int enterAnim = isFadeEnabled ? R.anim.fade_in : R.anim.activity_slide_from_right;
-        int exitAnim = isFadeEnabled ? R.anim.fade_out : R.anim.activity_slide_to_left;
+    public static void setActivityEnterTransition(@NonNull Activity activity, boolean isFadeTransition) {
+        int enterAnim = isFadeTransition ? R.anim.fade_in : R.anim.activity_slide_from_right;
+        int exitAnim = isFadeTransition ? R.anim.fade_out : R.anim.activity_slide_to_left;
 
         if (SdkUtils.isAtLeastAndroid14()) {
             activity.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, enterAnim, exitAnim);
@@ -692,15 +816,13 @@ public class ThemeUtils {
     /**
      * Starts an activity with the appropriate transition (Fade or Slide).
      *
-     * @param context The calling activity or fragment
-     * @param intent  The intent of the activity to start
+     * @param context          The calling {@link Activity} or fragment
+     * @param intent           The intent of the activity to start
+     * @param isFadeTransition {@code true} if the transition is a fade effect; a slide effect otherwise
      */
-    public static void startActivityWithTransition(Context context, Intent intent) {
-        SharedPreferences prefs = getDefaultSharedPreferences(context);
-        boolean isFadeEnabled = SettingsDAO.isFadeTransitionsEnabled(prefs);
-
-        int enterAnim = isFadeEnabled ? R.anim.fade_in : R.anim.activity_slide_from_right;
-        int exitAnim = isFadeEnabled ? R.anim.fade_out : R.anim.activity_slide_to_left;
+    public static void startActivityWithTransition(@NonNull Context context, @NonNull Intent intent, boolean isFadeTransition) {
+        int enterAnim = isFadeTransition ? R.anim.fade_in : R.anim.activity_slide_from_right;
+        int exitAnim = isFadeTransition ? R.anim.fade_out : R.anim.activity_slide_to_left;
 
         Bundle options = ActivityOptionsCompat.makeCustomAnimation(context, enterAnim, exitAnim).toBundle();
 
@@ -710,16 +832,15 @@ public class ThemeUtils {
     /**
      * Finishes an activity with the appropriate return transition (Fade or Slide).
      *
-     * @param activity The activity to finish
+     * @param activity         The {@link Activity} to finish
+     * @param isFadeTransition {@code true} if the transition is a fade effect; a slide effect otherwise
      */
     @SuppressWarnings("deprecation")
-    public static void finishActivityWithTransition(Activity activity) {
+    public static void finishActivityWithTransition(@NonNull Activity activity, boolean isFadeTransition) {
         activity.finish();
 
-        SharedPreferences prefs = getDefaultSharedPreferences(activity);
-        boolean isFadeEnabled = SettingsDAO.isFadeTransitionsEnabled(prefs);
-        int enterAnim = isFadeEnabled ? R.anim.fade_in : R.anim.activity_slide_from_left;
-        int exitAnim = isFadeEnabled ? R.anim.fade_out : R.anim.activity_slide_to_right;
+        int enterAnim = isFadeTransition ? R.anim.fade_in : R.anim.activity_slide_from_left;
+        int exitAnim = isFadeTransition ? R.anim.fade_out : R.anim.activity_slide_to_right;
 
         if (SdkUtils.isAtLeastAndroid14()) {
             activity.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_CLOSE, enterAnim, exitAnim);

@@ -12,6 +12,7 @@ import static com.best.deskclock.data.Timer.State.EXPIRED;
 import static com.best.deskclock.data.Timer.State.RESET;
 import static com.best.deskclock.settings.PreferencesDefaultValues.TIMEOUT_END_OF_RINGTONE;
 import static com.best.deskclock.settings.PreferencesDefaultValues.TIMEOUT_NEVER;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_AUTO_ROUTING_TO_EXTERNAL_AUDIO_DEVICE;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -35,6 +36,8 @@ import android.os.PowerManager;
 import android.service.quicksettings.TileService;
 import android.util.ArraySet;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.core.app.ServiceCompat;
 import androidx.core.content.ContextCompat;
@@ -43,6 +46,7 @@ import com.best.deskclock.R;
 import com.best.deskclock.base.AlarmAlertWakeLock;
 import com.best.deskclock.base.AppExecutors;
 import com.best.deskclock.events.Events;
+import com.best.deskclock.ringtone.RingtonePlayer;
 import com.best.deskclock.tiles.TimerTileService;
 import com.best.deskclock.timer.TimerAlertReceiver;
 import com.best.deskclock.timer.TimerKlaxon;
@@ -74,6 +78,15 @@ final class TimerModel {
     private final SharedPreferences mPrefs;
     private final Handler mMainHandler = new Handler(Looper.getMainLooper());
     private Runnable mAutoSilenceRunnable;
+
+    @SuppressWarnings("FieldCanBeLocal")
+    private final SharedPreferences.OnSharedPreferenceChangeListener mPrefListener =
+        (sharedPreferences, key) -> {
+            if (KEY_AUTO_ROUTING_TO_EXTERNAL_AUDIO_DEVICE.equals(key)) {
+                boolean enabled = SettingsDAO.isAutoRoutingToExternalAudioDevice(sharedPreferences);
+                TimerKlaxon.setAutoRoutingEnabled(enabled);
+            }
+        };
 
     /**
      * The alarm manager system service that calls back when timers expire.
@@ -156,13 +169,17 @@ final class TimerModel {
      */
     private Service mService;
 
-    TimerModel(Context context, SharedPreferences prefs, RingtoneModel ringtoneModel, NotificationModel notificationModel) {
+    TimerModel(@NonNull Context context, @NonNull SharedPreferences prefs, @NonNull RingtoneModel ringtoneModel,
+               @NonNull NotificationModel notificationModel) {
+
         mContext = context.getApplicationContext();
         mPrefs = prefs;
         mRingtoneModel = ringtoneModel;
         mNotificationModel = notificationModel;
         mNotificationManager = mContext.getSystemService(NotificationManager.class);
         mAlarmManager = mContext.getSystemService(AlarmManager.class);
+
+        prefs.registerOnSharedPreferenceChangeListener(mPrefListener);
 
         // Update timer notification when locale changes.
         final IntentFilter localeBroadcastFilter = new IntentFilter();
@@ -179,22 +196,22 @@ final class TimerModel {
         }
     }
 
-    static void schedulePendingIntent(AlarmManager am, long triggerTime, PendingIntent pi) {
+    static void schedulePendingIntent(@NonNull AlarmManager alarmManager, long triggerTime, @NonNull PendingIntent pendingIntent) {
         // Ensure the timer fires even if the device is dozing.
-        am.setExactAndAllowWhileIdle(ELAPSED_REALTIME_WAKEUP, triggerTime, pi);
+        alarmManager.setExactAndAllowWhileIdle(ELAPSED_REALTIME_WAKEUP, triggerTime, pendingIntent);
     }
 
     /**
      * @param timerListener to be notified when timers are added, updated and removed
      */
-    void addTimerListener(TimerListener timerListener) {
+    void addTimerListener(@NonNull TimerListener timerListener) {
         mTimerListeners.add(timerListener);
     }
 
     /**
      * @param timerListener to no longer be notified when timers are added, updated and removed
      */
-    void removeTimerListener(TimerListener timerListener) {
+    void removeTimerListener(@NonNull TimerListener timerListener) {
         mTimerListeners.remove(timerListener);
     }
 
@@ -223,6 +240,7 @@ final class TimerModel {
      * @param timerId identifies the timer to return
      * @return the timer with the given {@code timerId}
      */
+    @Nullable
     Timer getTimer(int timerId) {
         for (Timer timer : getMutableTimers()) {
             if (timer.getId() == timerId) {
@@ -247,8 +265,10 @@ final class TimerModel {
      * @param deleteAfterUse    {@code true} indicates the timer should be deleted when it is reset
      * @return the newly added timer
      */
-    Timer addTimer(long length, String label, String buttonTime, Uri ringtone, int autoSilence, int crescendoDuration, boolean isVibrate,
-                   String vibrationPattern, boolean isFlashOn, boolean turnOffMedia, boolean deleteAfterUse) {
+    @NonNull
+    Timer addTimer(long length, @Nullable String label, @NonNull String buttonTime, @Nullable Uri ringtone, int autoSilence,
+                   int crescendoDuration, boolean isVibrate, @NonNull String vibrationPattern, boolean isFlashOn, boolean turnOffMedia,
+                   boolean deleteAfterUse) {
 
         // Create the timer instance.
         Timer timer = new Timer(-1, RESET, length, length, Timer.UNUSED, Timer.UNUSED, length, label, buttonTime, ringtone,
@@ -308,7 +328,7 @@ final class TimerModel {
      * @param service used to start foreground notifications related to expired timers
      * @param timer   the timer to be expired
      */
-    void expireTimer(Service service, Timer timer) {
+    void expireTimer(@Nullable Service service, @NonNull Timer timer) {
         if (mService == null) {
             // If this is the first expired timer, retain the service that will be used to start
             // the heads-up notification in the foreground.
@@ -327,7 +347,7 @@ final class TimerModel {
      *
      * @param timer an updated timer to store
      */
-    void updateTimer(Timer timer) {
+    void updateTimer(@NonNull Timer timer) {
         final Timer before = doUpdateTimer(timer);
 
         // Update the notification after updating the timer data.
@@ -350,7 +370,7 @@ final class TimerModel {
      * @param timer        the timer to be deleted
      * @param eventLabelId the label of the timer event to send; 0 if no event should be sent
      */
-    void removeTimer(Timer timer, @StringRes int eventLabelId) {
+    void removeTimer(@NonNull Timer timer, @StringRes int eventLabelId) {
         doRemoveTimer(timer, eventLabelId);
 
         // Update the timer notifications after removing the timer data.
@@ -372,7 +392,7 @@ final class TimerModel {
      * @param timer        the timer to be reset
      * @param eventLabelId the label of the timer event to send; 0 if no event should be sent
      */
-    public void resetTimer(Timer timer, @StringRes int eventLabelId) {
+    public void resetTimer(@NonNull Timer timer, @StringRes int eventLabelId) {
         doResetTimer(timer, eventLabelId);
 
         // Update the notification after updating the timer data.
@@ -503,7 +523,7 @@ final class TimerModel {
     /**
      * @param uri the uri of the ringtone to play for all timers
      */
-    void setTimerRingtoneUri(Uri uri) {
+    void setTimerRingtoneUri(@NonNull Uri uri) {
         SettingsDAO.setTimerRingtoneUri(mPrefs, uri);
 
         mTimerRingtoneUri = null;
@@ -537,7 +557,7 @@ final class TimerModel {
     /**
      * @return the duration for which a timer can ring before expiring and being reset
      */
-    long getTimerAutoSilenceDuration(Timer timer) {
+    long getTimerAutoSilenceDuration(@NonNull Timer timer) {
         return timer.getAutoSilence();
     }
 
@@ -565,7 +585,8 @@ final class TimerModel {
                     mExpiredTimers.add(timer);
                 }
             }
-            Collections.sort(mExpiredTimers, Timer.createTimerStateComparator(mContext));
+
+            Collections.sort(mExpiredTimers, Timer.createTimerStateComparator(SettingsDAO.getTimerSortingPreference(mPrefs)));
         }
 
         return mExpiredTimers;
@@ -580,7 +601,8 @@ final class TimerModel {
                     mMissedTimers.add(timer);
                 }
             }
-            Collections.sort(mMissedTimers, Timer.createTimerStateComparator(mContext));
+
+            Collections.sort(mMissedTimers, Timer.createTimerStateComparator(SettingsDAO.getTimerSortingPreference(mPrefs)));
         }
 
         return mMissedTimers;
@@ -593,7 +615,7 @@ final class TimerModel {
      * @param timer an updated timer to store
      * @return the state of the timer prior to the update
      */
-    private Timer doUpdateTimer(Timer timer) {
+    private Timer doUpdateTimer(@NonNull Timer timer) {
         // Retrieve the cached form of the timer.
         final List<Timer> timers = getMutableTimers();
 
@@ -651,7 +673,7 @@ final class TimerModel {
      *
      * @param timer an existing timer to be removed
      */
-    private void doRemoveTimer(Timer timer, @StringRes int eventLabelId) {
+    private void doRemoveTimer(@NonNull Timer timer, @StringRes int eventLabelId) {
         if (eventLabelId != 0) {
             Events.sendTimerEvent(R.string.action_delete, eventLabelId);
         }
@@ -708,7 +730,7 @@ final class TimerModel {
      *
      * @param timer an existing timer to be reset
      */
-    private void doResetTimer(Timer timer, @StringRes int eventLabelId) {
+    private void doResetTimer(@NonNull Timer timer, @StringRes int eventLabelId) {
         if (!timer.isReset()) {
             final Timer reset = timer.reset();
             doUpdateTimer(reset);
@@ -723,7 +745,7 @@ final class TimerModel {
      *
      * @param timer the timer to be updated
      */
-    private void doUpdateAfterRebootTimer(Timer timer) {
+    private void doUpdateAfterRebootTimer(@NonNull Timer timer) {
         Timer updated = timer.updateAfterReboot();
         if (updated.getRemainingTime() < MISSED_THRESHOLD && updated.isRunning()) {
             updated = updated.miss();
@@ -731,7 +753,7 @@ final class TimerModel {
         doUpdateTimer(updated);
     }
 
-    private void doUpdateAfterTimeSetTimer(Timer timer) {
+    private void doUpdateAfterTimeSetTimer(@NonNull Timer timer) {
         final Timer updated = timer.updateAfterTimeSet();
         doUpdateTimer(updated);
     }
@@ -797,7 +819,7 @@ final class TimerModel {
      * @param before the state of the timer before the change; {@code null} indicates added
      * @param after  the state of the timer after the change; {@code null} indicates delete
      */
-    private void updateRinger(Timer before, Timer after) {
+    private void updateRinger(@Nullable Timer before, @Nullable Timer after) {
         // Retrieve the states before and after the change.
         final Timer.State beforeState = before == null ? null : before.getState();
         final Timer.State afterState = after == null ? null : after.getState();
@@ -813,7 +835,18 @@ final class TimerModel {
                 AlarmAlertWakeLock.acquireCpuWakeLock(mContext);
             }
 
-            TimerKlaxon.start(after);
+            RingtonePlayer.Config playerConfig = new RingtonePlayer.Config(
+                SettingsDAO.isAutoRoutingToExternalAudioDevice(mPrefs),
+                SettingsDAO.shouldUseCustomMediaVolume(mPrefs),
+                SettingsDAO.getExternalAudioDeviceVolumeValue(mPrefs)
+            );
+
+            TimerKlaxon.Config klaxonConfig = new TimerKlaxon.Config(
+                SettingsDAO.isAdvancedAudioPlaybackEnabled(mPrefs),
+                playerConfig
+            );
+
+            TimerKlaxon.start(after, klaxonConfig);
 
             stopRingtoneAfterDelay(after);
         }
@@ -821,7 +854,7 @@ final class TimerModel {
         // If the expired timer was the last to reset, stop ringing.
         if (beforeState == EXPIRED && mRingingIds.remove(before.getId()) && mRingingIds.isEmpty()) {
             TimerKlaxon.stop();
-            TimerKlaxon.deactivateRingtonePlayback();
+            TimerKlaxon.releaseResources();
             AlarmAlertWakeLock.releaseCpuLock();
 
             if (mAutoSilenceRunnable != null) {
@@ -834,7 +867,7 @@ final class TimerModel {
     /**
      * Stop timer ringing after a duration selected in Timers settings.
      */
-    private void stopRingtoneAfterDelay(Timer timer) {
+    private void stopRingtoneAfterDelay(@NonNull Timer timer) {
         long duration;
 
         // Timer silence has been set to "Never"
@@ -855,7 +888,7 @@ final class TimerModel {
 
         mAutoSilenceRunnable = () -> {
             TimerKlaxon.stop();
-            TimerKlaxon.deactivateRingtonePlayback();
+            TimerKlaxon.releaseResources();
             markExpiredTimersAsMissed();
             AlarmAlertWakeLock.releaseCpuLock();
         };
@@ -895,7 +928,8 @@ final class TimerModel {
 
             // Notifications should be displayed if the app is not open and the timer is unexpired.
             if (!inForeground && (timer.isRunning() || timer.isPaused())) {
-                Notification notification = mNotificationBuilder.build(mContext, mNotificationModel, timer);
+                Notification notification = mNotificationBuilder.build(
+                    mContext, mNotificationModel, timer, SettingsDAO.getLanguageCode(mPrefs));
                 mNotificationManager.notify(notificationId, notification);
             } else {
                 mNotificationManager.cancel(notificationId);
@@ -923,7 +957,8 @@ final class TimerModel {
 
             // Notifications should be displayed if the app is not open and the timer is missed.
             if (!inForeground && timer.isMissed()) {
-                Notification notification = mNotificationBuilder.buildMissed(mContext, mNotificationModel, timer);
+                Notification notification = mNotificationBuilder.buildMissed(
+                    mContext, mNotificationModel, timer, SettingsDAO.getLanguageCode(mPrefs), SettingsDAO.isSingleTimerModeEnabled(mPrefs));
                 mNotificationManager.notify(notificationId, notification);
             } else {
                 mNotificationManager.cancel(notificationId);
@@ -972,7 +1007,8 @@ final class TimerModel {
         }
 
         // Otherwise build and post a foreground notification reflecting the latest expired timers.
-        final Notification notification = mNotificationBuilder.buildHeadsUp(mContext, expired);
+        final Notification notification = mNotificationBuilder.buildHeadsUp(
+            mContext, expired, SettingsDAO.getLanguageCode(mPrefs), mNotificationModel, SettingsDAO.isSingleTimerModeEnabled(mPrefs));
         final int notificationId = mNotificationModel.getExpiredTimerNotificationId();
         int foregroundServiceType = 0;
 
@@ -997,7 +1033,7 @@ final class TimerModel {
      */
     private final class LocaleChangedReceiver extends BroadcastReceiver {
         @Override
-        public void onReceive(Context context, Intent intent) {
+        public void onReceive(@NonNull Context context, @NonNull Intent intent) {
             mTimerRingtoneTitle = null;
             updateNotification();
             updateMissedNotification();

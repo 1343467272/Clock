@@ -12,8 +12,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.provider.AlarmClock;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.best.deskclock.R;
-import com.best.deskclock.alarms.AlarmStateManager;
+import com.best.deskclock.base.AppExecutors;
 import com.best.deskclock.provider.Alarm;
 import com.best.deskclock.provider.AlarmInstance;
 import com.best.deskclock.utils.LogUtils;
@@ -38,8 +41,9 @@ class FetchMatchingAlarmsAction implements Runnable {
     private final List<Alarm> mMatchingAlarms = new ArrayList<>();
     private final Activity mActivity;
 
-    public FetchMatchingAlarmsAction(Context context, List<Alarm> alarms, Intent intent,
-                                     Activity activity) {
+    public FetchMatchingAlarmsAction(@NonNull Context context, @NonNull List<Alarm> alarms, @NonNull Intent intent,
+                                     @Nullable Activity activity) {
+
         mContext = context;
         // Only enabled alarms are passed
         mAlarms = alarms;
@@ -101,7 +105,7 @@ class FetchMatchingAlarmsAction implements Runnable {
                     // Return the matched firing alarms
                     return;
                 }
-                final AlarmInstance nextAlarm = AlarmStateManager.getNextFiringAlarm(mContext);
+                final AlarmInstance nextAlarm = AlarmInstance.getNextFiringAlarm(mContext);
                 if (nextAlarm == null) {
                     final String reason = mContext.getString(R.string.no_scheduled_alarms);
                     notifyFailureAndLog(reason, mActivity);
@@ -139,7 +143,8 @@ class FetchMatchingAlarmsAction implements Runnable {
         }
     }
 
-    private List<Alarm> getAlarmsByHourMinutes(int hour24, int minutes, ContentResolver cr) {
+    @NonNull
+    private List<Alarm> getAlarmsByHourMinutes(int hour24, int minutes, @NonNull ContentResolver cr) {
         // If we want to dismiss we should only add enabled alarms
         final String selection = String.format("%s=? AND %s=? AND %s=?", Alarm.HOUR, Alarm.MINUTES, Alarm.ENABLED);
         final String[] args = {String.valueOf(hour24), String.valueOf(minutes), "1"};
@@ -150,8 +155,15 @@ class FetchMatchingAlarmsAction implements Runnable {
         return mMatchingAlarms;
     }
 
-    private void notifyFailureAndLog(String reason, Activity activity) {
+    private void notifyFailureAndLog(@NonNull String reason, @Nullable Activity activity) {
         LogUtils.e(reason);
-        Controller.getController().notifyVoiceFailure(activity, reason);
+
+        if (activity != null) {
+            AppExecutors.getMainThread().post(() -> {
+                if (!activity.isDestroyed()) {
+                    Controller.getController().notifyVoiceFailure(activity, reason);
+                }
+            });
+        }
     }
 }

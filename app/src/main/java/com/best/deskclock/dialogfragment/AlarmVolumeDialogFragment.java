@@ -20,6 +20,7 @@ import android.os.Looper;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.FragmentManager;
@@ -33,8 +34,6 @@ import com.best.deskclock.utils.RingtoneUtils;
 import com.best.deskclock.utils.ThemeUtils;
 import com.best.deskclock.utils.Utils;
 import com.google.android.material.slider.Slider;
-
-import java.util.Locale;
 
 /**
  * DialogFragment to set the volume for alarms.
@@ -68,7 +67,8 @@ public class AlarmVolumeDialogFragment extends DialogFragment {
      *
      * @param alarmVolumeValue The volume value in step.
      */
-    public static AlarmVolumeDialogFragment newInstance(int alarmVolumeValue, Uri ringtoneUri) {
+    @NonNull
+    public static AlarmVolumeDialogFragment newInstance(int alarmVolumeValue, @Nullable Uri ringtoneUri) {
         final Bundle args = new Bundle();
         args.putInt(ARG_ALARM_VOLUME_VALUE, alarmVolumeValue);
 
@@ -84,7 +84,7 @@ public class AlarmVolumeDialogFragment extends DialogFragment {
     /**
      * Displays {@link AlarmVolumeDialogFragment}.
      */
-    public static void show(FragmentManager manager, AlarmVolumeDialogFragment fragment) {
+    public static void show(@NonNull FragmentManager manager, @NonNull AlarmVolumeDialogFragment fragment) {
         Utils.showDialogFragment(manager, fragment, TAG);
     }
 
@@ -101,7 +101,7 @@ public class AlarmVolumeDialogFragment extends DialogFragment {
 
     @NonNull
     @Override
-    public Dialog onCreateDialog(Bundle savedInstanceState) {
+    public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
         SharedPreferences prefs = getDefaultSharedPreferences(requireContext());
         Typeface typeface = ThemeUtils.loadFont(SettingsDAO.getGeneralFont(prefs));
 
@@ -285,7 +285,7 @@ public class AlarmVolumeDialogFragment extends DialogFragment {
         if (targetIconResId != mCurrentIconResId) {
             mCurrentIconResId = targetIconResId;
 
-            mDialogTitle.setCompoundDrawablesWithIntrinsicBounds(
+            mDialogTitle.setCompoundDrawablesRelativeWithIntrinsicBounds(
                 AppCompatResources.getDrawable(requireContext(), targetIconResId), null, null, null);
             mDialogTitle.setCompoundDrawablePadding((int) dpToPx(18, getResources().getDisplayMetrics()));
         }
@@ -299,7 +299,7 @@ public class AlarmVolumeDialogFragment extends DialogFragment {
      */
     private void updateVolumeText(int currentVolume, int maxVolume) {
         int percent = (int) (((float) currentVolume / maxVolume) * 100);
-        mBinding.alarmVolumeValue.setText(String.format(Locale.getDefault(), "%d%%", percent));
+        mBinding.alarmVolumeValue.setText(String.format(Utils.getLocaleFromContext(requireContext()), "%d%%", percent));
     }
 
     /**
@@ -320,7 +320,7 @@ public class AlarmVolumeDialogFragment extends DialogFragment {
      * @param warningText The TextView used for the warning message.
      * @param progress    The current slider value.
      */
-    private void updateWarningVisibility(TextView warningText, int progress) {
+    private void updateWarningVisibility(@NonNull TextView warningText, int progress) {
         warningText.setVisibility(progress <= 0 ? VISIBLE : GONE);
     }
 

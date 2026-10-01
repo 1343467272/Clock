@@ -7,13 +7,14 @@
 package com.best.deskclock.worldclock;
 
 import static androidx.core.util.TypedValueCompat.dpToPx;
-import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreferences;
+
+import static com.best.deskclock.settings.PreferencesKeys.KEY_CITY_NOTE;
 
 import android.annotation.SuppressLint;
-import android.content.SharedPreferences;
-import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.InputType;
+import android.text.TextUtils;
+import android.text.format.DateFormat;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -24,20 +25,24 @@ import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.graphics.Insets;
-import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.best.deskclock.R;
 import com.best.deskclock.base.BaseActivity;
+import com.best.deskclock.data.City;
 import com.best.deskclock.data.DataModel;
 import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.databinding.CitiesActivityBinding;
 import com.best.deskclock.databinding.CityListHeaderMainTitleBinding;
+import com.best.deskclock.uidata.UiConfig;
 import com.best.deskclock.utils.InsetsUtils;
 import com.best.deskclock.utils.ThemeUtils;
+
+import java.util.Locale;
 
 /**
  * This activity allows the user to alter the cities selected for display.
@@ -63,23 +68,13 @@ public final class CitySelectionActivity extends BaseActivity {
      */
     private CityAdapter mCitiesAdapter;
 
-    private SharedPreferences mPrefs;
-
     public SearchView mSearchView;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         mBinding = CitiesActivityBinding.inflate(getLayoutInflater());
-
-        // To manually manage insets
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
-
-        ThemeUtils.allowDisplayCutout(getWindow());
-
-        mPrefs = getDefaultSharedPreferences(this);
-        Typeface typeface = ThemeUtils.loadFont(SettingsDAO.getGeneralFont(mPrefs));
 
         setContentView(mBinding.getRoot());
 
@@ -94,11 +89,12 @@ public final class CitySelectionActivity extends BaseActivity {
         mSearchView.setIconifiedByDefault(false);
         mSearchView.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         mSearchView.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
-        mSearchView.setBackground(ThemeUtils.pillBackgroundFromAttr(this, com.google.android.material.R.attr.colorSecondaryContainer));
+        mSearchView.setBackground(
+            ThemeUtils.pillBackgroundFromAttr(this, getDisplayMetrics(), com.google.android.material.R.attr.colorSecondaryContainer));
 
         // Apply custom font to the search text
         TextView searchText = mSearchView.findViewById(androidx.appcompat.R.id.search_src_text);
-        searchText.setTypeface(typeface);
+        searchText.setTypeface(getGeneralTypeface());
 
         // Use a rounded icon for the search icon
         ImageView searchIcon = mSearchView.findViewById(androidx.appcompat.R.id.search_mag_icon);
@@ -114,18 +110,44 @@ public final class CitySelectionActivity extends BaseActivity {
 
         mBinding.toolbar.addView(mSearchView);
 
-        mCitiesAdapter = new CityAdapter(this);
+        Locale locale = getLocale();
+        String pattern24 = DateFormat.getBestDateTimePattern(locale, getString(R.string.time_24_hour));
+        String pattern12 = DateFormat.getBestDateTimePattern(locale, getString(R.string.time_12_hour));
+        boolean is24HoursMode = DateFormat.is24HourFormat(this);
+
+        if (TextUtils.getLayoutDirectionFromLocale(locale) == View.LAYOUT_DIRECTION_RTL) {
+            // There's an RTL layout bug that causes jank when fast-scrolling through
+            // the list in 12-hour mode in an RTL locale. We can work around this by
+            // ensuring the strings are the same length by using "hh" instead of "h".
+            pattern12 = pattern12.replace("h", "hh");
+        }
+
+        UiConfig.TimeFormat timeFormat = new UiConfig.TimeFormat(locale, pattern12, pattern24, is24HoursMode);
+
+        mCitiesAdapter = new CityAdapter(this, getDataModel(), getFontsConfig(), timeFormat,
+            SettingsDAO.isCityFlagEnabled(getPrefs()), isRtl(), new CityAdapter.CityAdapterProvider() {
+            @Override
+            public DataModel.CitySort getCitySort() {
+                return SettingsDAO.getCitySort(getPrefs());
+            }
+
+            @Override
+            public void onCityDeselected(@NonNull City city) {
+                // Delete the associated note
+                getPrefs().edit().remove(KEY_CITY_NOTE + city.getId()).apply();
+            }
+        });
 
         mSearchView.post(() -> mSearchView.clearFocus());
 
         mSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
-            public boolean onQueryTextSubmit(String query) {
+            public boolean onQueryTextSubmit(@NonNull String query) {
                 return false;
             }
 
             @Override
-            public boolean onQueryTextChange(String query) {
+            public boolean onQueryTextChange(@NonNull String query) {
                 mCitiesAdapter.filter(query);
                 updateFastScrolling();
                 return true;
@@ -134,7 +156,7 @@ public final class CitySelectionActivity extends BaseActivity {
 
         CityListHeaderMainTitleBinding headerBinding =
             CityListHeaderMainTitleBinding.inflate(getLayoutInflater(), mBinding.citiesList, false);
-        headerBinding.cityListHeaderMainTitle.setTypeface(typeface);
+        headerBinding.cityListHeaderMainTitle.setTypeface(getGeneralTypeface());
         headerBinding.cityListHeaderMainTitle.setOnClickListener(null);
 
         mBinding.citiesList.addHeaderView(headerBinding.getRoot());
@@ -153,7 +175,7 @@ public final class CitySelectionActivity extends BaseActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                ThemeUtils.finishActivityWithTransition(CitySelectionActivity.this);
+                ThemeUtils.finishActivityWithTransition(CitySelectionActivity.this, SettingsDAO.isFadeTransitionsEnabled(getPrefs()));
             }
         });
     }
@@ -170,7 +192,8 @@ public final class CitySelectionActivity extends BaseActivity {
         super.onResume();
 
         // Recompute the contents of the adapter before displaying on screen.
-        mCitiesAdapter.refresh();
+        boolean is24HoursMode = DateFormat.is24HourFormat(this);
+        mCitiesAdapter.refresh(is24HoursMode);
     }
 
     @Override
@@ -178,7 +201,7 @@ public final class CitySelectionActivity extends BaseActivity {
         super.onPause();
 
         // Save the selected cities.
-        DataModel.getDataModel().setSelectedCities(mCitiesAdapter.getSelectedCities());
+        getDataModel().setSelectedCities(mCitiesAdapter.getSelectedCities());
     }
 
     @Override
@@ -192,18 +215,18 @@ public final class CitySelectionActivity extends BaseActivity {
 
     @SuppressLint("AlwaysShowAction")
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
+    public boolean onCreateOptionsMenu(@NonNull Menu menu) {
         menu.add(Menu.NONE, 0, Menu.NONE, getMenuTitle()).setIcon(R.drawable.ic_sort).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
 
-        mBinding.toolbar.post(() -> ThemeUtils.applyToolbarTooltips(mBinding.toolbar));
+        mBinding.toolbar.post(() -> ThemeUtils.applyToolbarTooltips(mBinding.toolbar, getGeneralTypeface(), getDisplayMetrics()));
 
         return true;
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         // Save the new sort order.
-        DataModel.getDataModel().toggleCitySort();
+        getDataModel().toggleCitySort();
 
         item.setTitle(getMenuTitle());
 
@@ -228,13 +251,13 @@ public final class CitySelectionActivity extends BaseActivity {
 
             v.setPadding(bars.left, bars.top, bars.right, 0);
 
-            int bottomPadding = (int) dpToPx(10, getResources().getDisplayMetrics());
+            int bottomPadding = (int) dpToPx(10, getDisplayMetrics());
             mBinding.citiesList.setPadding(0, 0, 0, bars.bottom + bottomPadding);
         });
     }
 
     private int getMenuTitle() {
-        if (SettingsDAO.getCitySort(mPrefs) == DataModel.CitySort.NAME) {
+        if (SettingsDAO.getCitySort(getPrefs()) == DataModel.CitySort.NAME) {
             return R.string.menu_item_sort_by_gmt_offset;
         } else {
             return R.string.menu_item_sort_by_name;

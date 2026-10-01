@@ -18,6 +18,8 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.service.quicksettings.TileService;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.core.content.ContextCompat;
 
@@ -73,7 +75,7 @@ final class StopwatchModel {
      */
     private List<Lap> mLaps;
 
-    StopwatchModel(Context context, SharedPreferences prefs, NotificationModel notificationModel) {
+    StopwatchModel(@NonNull Context context, SharedPreferences prefs, NotificationModel notificationModel) {
         mContext = context.getApplicationContext();
         mPrefs = prefs;
         mNotificationModel = notificationModel;
@@ -149,7 +151,7 @@ final class StopwatchModel {
     /**
      * @param stopwatch the new state of the stopwatch
      */
-    void setStopwatch(Stopwatch stopwatch) {
+    void setStopwatch(@NonNull Stopwatch stopwatch) {
         final Stopwatch before = getStopwatch();
         if (before != stopwatch) {
             StopwatchDAO.setStopwatch(mPrefs, stopwatch);
@@ -179,6 +181,7 @@ final class StopwatchModel {
     /**
      * @return the laps recorded for this stopwatch
      */
+    @NonNull
     List<Lap> getLaps() {
         return Collections.unmodifiableList(getMutableLaps());
     }
@@ -186,6 +189,7 @@ final class StopwatchModel {
     /**
      * @return a newly recorded lap completed now; {@code null} if no more laps can be added
      */
+    @Nullable
     Lap addLap() {
         if (!mStopwatch.isRunning() || !canAddMoreLaps()) {
             return null;
@@ -281,7 +285,8 @@ final class StopwatchModel {
         }
 
         // Otherwise build and post a notification reflecting the latest stopwatch state.
-        final Notification notification = mNotificationBuilder.build(mContext, mNotificationModel, stopwatch);
+        final Notification notification = mNotificationBuilder.build(
+            mContext, mNotificationModel, stopwatch, SettingsDAO.getLanguageCode(mPrefs));
 
         mNotificationManager.notify(mNotificationModel.getStopwatchNotificationId(), notification);
     }
@@ -299,7 +304,7 @@ final class StopwatchModel {
      */
     private final class LocaleChangedReceiver extends BroadcastReceiver {
         @Override
-        public void onReceive(Context context, Intent intent) {
+        public void onReceive(@NonNull Context context, @NonNull Intent intent) {
             updateNotification();
         }
     }

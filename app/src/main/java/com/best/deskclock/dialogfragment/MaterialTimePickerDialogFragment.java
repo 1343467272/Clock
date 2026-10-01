@@ -7,7 +7,6 @@ import static com.best.deskclock.settings.PreferencesDefaultValues.DEFAULT_TIME_
 import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.format.DateFormat;
@@ -16,12 +15,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.Observer;
 
-import com.best.deskclock.data.SettingsDAO;
-import com.best.deskclock.utils.ThemeUtils;
 import com.google.android.material.timepicker.MaterialTimePicker;
 import com.google.android.material.timepicker.TimeFormat;
 
@@ -37,15 +36,15 @@ public class MaterialTimePickerDialogFragment {
     /**
      * Displays a dialog to select the hour and minutes and AM/PM for 12-hour mode.
      */
-    public static void show(Context context, FragmentManager fragmentManager, String tag, int initialHour, int initialMinute,
-                            SharedPreferences prefs) {
+    public static void show(@NonNull Context context, @NonNull FragmentManager fragmentManager, @NonNull String tag, int initialHour,
+                            int initialMinute, @NonNull String timePickerStyle, @Nullable Typeface alarmFont,
+                            @NonNull Typeface generalFont) {
 
         @TimeFormat int clockFormat;
         boolean isSystem24Hour = DateFormat.is24HourFormat(context);
         clockFormat = isSystem24Hour ? TimeFormat.CLOCK_24H : TimeFormat.CLOCK_12H;
 
-        String style = SettingsDAO.getMaterialTimePickerStyle(prefs);
-        int inputMode = style.equals(DEFAULT_TIME_PICKER_STYLE)
+        int inputMode = timePickerStyle.equals(DEFAULT_TIME_PICKER_STYLE)
             ? MaterialTimePicker.INPUT_MODE_CLOCK
             : MaterialTimePicker.INPUT_MODE_KEYBOARD;
 
@@ -66,9 +65,9 @@ public class MaterialTimePickerDialogFragment {
         picker.getViewLifecycleOwnerLiveData().observeForever(new Observer<>() {
 
             @Override
-            public void onChanged(LifecycleOwner owner) {
+            public void onChanged(@Nullable LifecycleOwner owner) {
                 if (owner != null) {
-                    PickerFonts fonts = loadFonts(prefs);
+                    PickerFonts fonts = new PickerFonts(alarmFont, generalFont);
                     setupPicker(picker, fonts);
                     picker.getViewLifecycleOwnerLiveData().removeObserver(this);
                 }
@@ -81,21 +80,10 @@ public class MaterialTimePickerDialogFragment {
     /**
      * Holds both alarm and general fonts for convenience.
      */
-    private record PickerFonts(Typeface alarm, Typeface general) {
-    }
-
-    /**
-     * Loads the custom fonts used by the picker.
-     *
-     * @param prefs shared preferences containing font settings
-     * @return a PickerFonts record containing alarm and general fonts
-     */
-    private static PickerFonts loadFonts(SharedPreferences prefs) {
-        return new PickerFonts(
-            ThemeUtils.loadFont(SettingsDAO.getAlarmFont(prefs)),
-            ThemeUtils.loadFont(SettingsDAO.getGeneralFont(prefs))
-        );
-    }
+    private record PickerFonts(
+        @Nullable Typeface alarm,
+        @NonNull Typeface general
+    ) { }
 
     /**
      * Applies fonts and installs listeners on the picker once its view is ready.
@@ -103,7 +91,7 @@ public class MaterialTimePickerDialogFragment {
      * @param picker the MaterialTimePicker instance
      * @param fonts  the loaded custom fonts
      */
-    private static void setupPicker(MaterialTimePicker picker, PickerFonts fonts) {
+    private static void setupPicker(@NonNull MaterialTimePicker picker, @NonNull PickerFonts fonts) {
         View root = picker.getView();
         if (root == null) {
             return;
@@ -128,7 +116,7 @@ public class MaterialTimePickerDialogFragment {
      * @param font        the typeface to apply
      * @param excludedIds view IDs that must not receive the font
      */
-    private static void applyFont(View root, Typeface font, int... excludedIds) {
+    private static void applyFont(@Nullable View root, @Nullable Typeface font, int... excludedIds) {
         if (font == null || root == null) {
             return;
         }
@@ -153,7 +141,7 @@ public class MaterialTimePickerDialogFragment {
      * @param root      the picker root view
      * @param alarmFont the font used for clock numbers
      */
-    private static void installClockFaceListener(View root, Typeface alarmFont) {
+    private static void installClockFaceListener(@NonNull View root, @Nullable Typeface alarmFont) {
         View clockFace = root.findViewById(com.google.android.material.R.id.material_clock_face);
         if (clockFace == null) {
             return;
@@ -177,7 +165,7 @@ public class MaterialTimePickerDialogFragment {
      * @param fonts  the loaded custom fonts
      */
     @SuppressLint("ClickableViewAccessibility")
-    private static void installModeSwitchListener(MaterialTimePicker picker, PickerFonts fonts) {
+    private static void installModeSwitchListener(@NonNull MaterialTimePicker picker, @NonNull PickerFonts fonts) {
         View root = picker.getView();
         if (root == null) {
             return;
@@ -214,7 +202,7 @@ public class MaterialTimePickerDialogFragment {
      * @param picker      the MaterialTimePicker instance
      * @param generalFont the font used for dialog UI elements
      */
-    private static void installDialogFontListener(MaterialTimePicker picker, Typeface generalFont) {
+    private static void installDialogFontListener(@NonNull MaterialTimePicker picker, @NonNull Typeface generalFont) {
         Dialog dialog = picker.getDialog();
         if (dialog == null) {
             return;

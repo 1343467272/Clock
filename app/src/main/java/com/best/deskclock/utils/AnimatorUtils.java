@@ -14,6 +14,7 @@ import android.animation.ValueAnimator;
 import android.view.View;
 import android.view.animation.Interpolator;
 
+import androidx.annotation.NonNull;
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 
 public class AnimatorUtils {
@@ -23,13 +24,19 @@ public class AnimatorUtils {
     @SuppressWarnings("unchecked")
     public static final TypeEvaluator<Integer> ARGB_EVALUATOR = new ArgbEvaluator();
 
-    public static ValueAnimator getScaleAnimator(View view, float... values) {
+    public static final long SHORT_ANIMATION_DURATION = 200;
+
+    public static final long MEDIUM_ANIMATION_DURATION = 300;
+
+    @NonNull
+    public static ValueAnimator getScaleAnimator(@NonNull View view, float... values) {
         return ObjectAnimator.ofPropertyValuesHolder(view,
             PropertyValuesHolder.ofFloat(View.SCALE_X, values),
             PropertyValuesHolder.ofFloat(View.SCALE_Y, values));
     }
 
-    public static ValueAnimator getAlphaAnimator(View view, float... values) {
+    @NonNull
+    public static ValueAnimator getAlphaAnimator(@NonNull View view, float... values) {
         return ObjectAnimator.ofFloat(view, View.ALPHA, values);
     }
 

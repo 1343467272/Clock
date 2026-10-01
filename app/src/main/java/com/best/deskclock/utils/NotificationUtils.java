@@ -14,9 +14,12 @@ import android.app.NotificationChannel;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.os.Build;
+import android.text.format.DateFormat;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import androidx.annotation.StringRes;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
@@ -25,9 +28,12 @@ import com.best.deskclock.alarms.AlarmNotifications;
 import com.best.deskclock.base.AppExecutors;
 import com.best.deskclock.provider.AlarmInstance;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -123,7 +129,7 @@ public class NotificationUtils {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
-    public static void createChannel(Context context, String id) {
+    public static void createChannel(@NonNull Context context, @NonNull String id) {
         if (!CHANNEL_PROPS.containsKey(id)) {
             Log.e(TAG, "Invalid channel requested: " + id);
             return;
@@ -158,7 +164,7 @@ public class NotificationUtils {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
-    private static void deleteChannel(NotificationManagerCompat nm, String channelId) {
+    private static void deleteChannel(@NonNull NotificationManagerCompat nm, @NonNull String channelId) {
         NotificationChannel channel = nm.getNotificationChannel(channelId);
         if (channel != null) {
             nm.deleteNotificationChannel(channelId);
@@ -166,7 +172,7 @@ public class NotificationUtils {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
-    public static void updateNotificationChannels(Context context) {
+    public static void updateNotificationChannels(@NonNull Context context) {
         NotificationManagerCompat nm = NotificationManagerCompat.from(context);
 
         // Whenever a channel's properties are updated, we must first delete the old channel ID,
@@ -185,7 +191,7 @@ public class NotificationUtils {
     /**
      * Clear all notifications. Useful after a restore or reset, for example.
      */
-    public static void clearAllNotifications(Context context) {
+    public static void clearAllNotifications(@NonNull Context context) {
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
         notificationManager.cancelAll();
     }
@@ -193,9 +199,11 @@ public class NotificationUtils {
     /**
      * Updates alarm notifications. Useful when changing languages, for example.
      */
-    public static void updateAlarmNotifications(Context appContext) {
+    public static void updateAlarmNotifications(@NonNull Context appContext, @NonNull String languageCode, int globalIntentId) {
+        final Context safeContext = appContext.getApplicationContext();
+        final ContentResolver contentResolver = safeContext.getContentResolver();
+
         AppExecutors.getDiskIO().execute(() -> {
-            final ContentResolver contentResolver = appContext.getContentResolver();
             final List<AlarmInstance> activeInstances = new ArrayList<>();
 
             activeInstances.addAll(AlarmInstance.getInstancesByState(contentResolver, AlarmInstance.NOTIFICATION_STATE));
@@ -205,10 +213,48 @@ public class NotificationUtils {
 
             AppExecutors.getMainThread().post(() -> {
                 for (AlarmInstance instance : activeInstances) {
-                    AlarmNotifications.updateNotification(appContext, instance);
+                    AlarmNotifications.updateNotification(safeContext, instance, languageCode, globalIntentId);
                 }
             });
         });
+    }
+
+    @NonNull
+    public static String getNotificationAlarmText(@NonNull Context context, @NonNull AlarmInstance instance, @NonNull String languageCode,
+                                                  boolean isSnoozeNotification) {
+
+        final Context localizedContext = Utils.getLocalizedContext(context, languageCode);
+        final Locale locale = Utils.getLocaleFromContext(localizedContext);
+        final boolean is24HourFormat = DateFormat.is24HourFormat(localizedContext);
+        final int skeletonResId = getSkeletonResId(is24HourFormat, Calendar.getInstance(), instance.getAlarmTime());
+        final String skeleton = localizedContext.getString(skeletonResId);
+        final String pattern = DateFormat.getBestDateTimePattern(locale, skeleton);
+        final SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern, locale);
+        final String alarmTimeStr = simpleDateFormat.format(instance.getAlarmTime().getTime());
+        final String formattedText = instance.mLabel.isEmpty() ? alarmTimeStr : alarmTimeStr + " - " + instance.mLabel;
+
+        return isSnoozeNotification ? formattedText : FormattedTextUtils.capitalizeFirstLetter(formattedText, locale);
+    }
+
+    @StringRes
+    private static int getSkeletonResId(boolean is24HourFormat, @NonNull Calendar now, @NonNull Calendar alarmTime) {
+        final int currentYear = now.get(Calendar.YEAR);
+        final int instanceYear = alarmTime.get(Calendar.YEAR);
+        final int currentDayOfYear = now.get(Calendar.DAY_OF_YEAR);
+        final int instanceDayOfYear = alarmTime.get(Calendar.DAY_OF_YEAR);
+
+        final boolean isToday = (currentYear == instanceYear) && (currentDayOfYear == instanceDayOfYear);
+
+        if (isToday) {
+            // The alarm is set for today: display the time only
+            return is24HourFormat ? R.string.time_24_hour : R.string.time_12_hour;
+        } else if (currentYear != instanceYear) {
+            // The alarm is set for another year: display the full date + time
+            return is24HourFormat ? R.string.abbrev_wday_month_day_with_year_24_hour : R.string.abbrev_wday_month_day_with_year_12_hour;
+        } else {
+            // The alarm is for another day in the same year: display the date without the year + time.
+            return is24HourFormat ? R.string.abbrev_wday_month_day_no_year_24_hour : R.string.abbrev_wday_month_day_no_year_12_hour;
+        }
     }
 
 }

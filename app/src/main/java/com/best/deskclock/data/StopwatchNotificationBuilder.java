@@ -20,6 +20,7 @@ import android.text.format.DateUtils;
 import android.widget.RemoteViews;
 
 import androidx.annotation.DrawableRes;
+import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationCompat.Action;
@@ -40,10 +41,12 @@ import java.util.List;
  */
 class StopwatchNotificationBuilder {
 
-    public Notification build(Context context, NotificationModel nm, Stopwatch stopwatch) {
+    public Notification build(@NonNull Context context, @NonNull NotificationModel nm, @NonNull Stopwatch stopwatch,
+                              @NonNull String languageCode) {
+
         @StringRes final int eventLabel = R.string.label_notification;
 
-        final Context localizedContext = Utils.getLocalizedContext(context);
+        final Context localizedContext = Utils.getLocalizedContext(context, languageCode);
 
         // Intent to load the app when the notification is tapped.
         final Intent showApp = new Intent(context, DeskClock.class)
@@ -70,6 +73,8 @@ class StopwatchNotificationBuilder {
         final List<Action> actions = new ArrayList<>(2);
 
         if (running) {
+            DataModel dataModel = DataModel.getDataModel();
+
             // Left button: Pause
             final Intent pause = new Intent(context, StopwatchService.class)
                 .setAction(StopwatchService.ACTION_PAUSE_STOPWATCH)
@@ -81,7 +86,7 @@ class StopwatchNotificationBuilder {
             actions.add(new Action.Builder(icon1, title1, intent1).build());
 
             // Right button: Add Lap
-            if (DataModel.getDataModel().canAddMoreLaps()) {
+            if (dataModel.canAddMoreLaps()) {
                 final Intent lap = new Intent(context, StopwatchService.class)
                     .setAction(StopwatchService.ACTION_LAP_STOPWATCH)
                     .putExtra(Events.EXTRA_EVENT_LABEL, eventLabel);
@@ -93,7 +98,7 @@ class StopwatchNotificationBuilder {
             }
 
             // Show the current lap number if any laps have been recorded.
-            final int lapCount = DataModel.getDataModel().getLaps().size();
+            final int lapCount = dataModel.getLaps().size();
             if (lapCount > 0) {
                 final int lapNumber = lapCount + 1;
                 final String lap = localizedContext.getString(R.string.sw_notification_lap_number, lapNumber);
@@ -130,6 +135,7 @@ class StopwatchNotificationBuilder {
 
         final Builder notification = new Builder(context, STOPWATCH_NOTIFICATION_CHANNEL_ID)
             .setLocalOnly(true)
+            .setShowWhen(false)
             .setOngoing(running)
             .setContentTitle(localizedContext.getString(R.string.stopwatch_channel))
             .setContentText(fallbackText)
@@ -142,8 +148,9 @@ class StopwatchNotificationBuilder {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setSmallIcon(R.drawable.ic_tab_stopwatch_static)
             .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
-            .setColor(ContextCompat.getColor(context, R.color.md_theme_primary))
-            .setGroup(nm.getStopwatchNotificationGroupKey());
+            .setColor(ContextCompat.getColor(context, R.color.notificationColor))
+            .setGroup(nm.getStopwatchNotificationGroupKey())
+            .setSortKey(nm.getStopwatchNotificationSortKey());
 
         // Add support for third-party apps to display active stopwatch
         Bundle extras = new Bundle();

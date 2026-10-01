@@ -2,19 +2,17 @@
 
 package com.best.deskclock.setup;
 
-import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreferences;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_IS_FIRST_LAUNCH;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.Nullable;
 import androidx.core.graphics.Insets;
 import androidx.core.text.HtmlCompat;
-import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.best.deskclock.BuildConfig;
@@ -25,7 +23,6 @@ import com.best.deskclock.databinding.FirstLaunchActivityBinding;
 import com.best.deskclock.settings.PermissionsManagementActivity;
 import com.best.deskclock.utils.InsetsUtils;
 import com.best.deskclock.utils.SdkUtils;
-import com.best.deskclock.utils.ThemeUtils;
 import com.best.deskclock.utils.Utils;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -34,17 +31,10 @@ public class FirstLaunch extends BaseActivity {
     private FirstLaunchActivityBinding mBinding;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         mBinding = FirstLaunchActivityBinding.inflate(getLayoutInflater());
-
-        SharedPreferences sharedPreferences = getDefaultSharedPreferences(this);
-
-        // To manually manage insets
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
-
-        ThemeUtils.allowDisplayCutout(getWindow());
 
         setContentView(mBinding.getRoot());
 
@@ -57,14 +47,14 @@ public class FirstLaunch extends BaseActivity {
         setupImportantInfoMessage();
 
         mBinding.nowButton.setOnClickListener(v -> {
-            sharedPreferences.edit().putBoolean(KEY_IS_FIRST_LAUNCH, false).apply();
+            getPrefs().edit().putBoolean(KEY_IS_FIRST_LAUNCH, false).apply();
             finish();
             startActivity(new Intent(this, DeskClock.class));
             startActivity(new Intent(this, PermissionsManagementActivity.class));
         });
 
         mBinding.laterButton.setOnClickListener(v -> {
-            sharedPreferences.edit().putBoolean(KEY_IS_FIRST_LAUNCH, false).apply();
+            getPrefs().edit().putBoolean(KEY_IS_FIRST_LAUNCH, false).apply();
             finish();
             startActivity(new Intent(this, DeskClock.class));
         });

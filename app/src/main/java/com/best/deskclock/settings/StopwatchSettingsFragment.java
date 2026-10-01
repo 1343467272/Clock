@@ -4,6 +4,7 @@ package com.best.deskclock.settings;
 
 import static android.app.Activity.RESULT_OK;
 import static com.best.deskclock.settings.PreferencesKeys.FILE_STOPWATCH_FONT;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_SW_DISPLAY_MILLISECONDS;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_SW_FONT;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_SW_VOLUME_DOWN_ACTION;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_SW_VOLUME_DOWN_ACTION_AFTER_LONG_PRESS;
@@ -12,14 +13,19 @@ import static com.best.deskclock.settings.PreferencesKeys.KEY_SW_VOLUME_UP_ACTIO
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.view.HapticFeedbackConstantsCompat;
 import androidx.preference.ListPreference;
 import androidx.preference.Preference;
+import androidx.preference.SwitchPreferenceCompat;
 
 import com.best.deskclock.R;
 import com.best.deskclock.base.AppExecutors;
@@ -28,11 +34,13 @@ import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.uicomponents.toast.CustomToast;
 import com.best.deskclock.utils.FileUtils;
 import com.best.deskclock.utils.ThemeUtils;
+import com.best.deskclock.utils.Utils;
 
 public class StopwatchSettingsFragment extends BaseSettingsScreenFragment
     implements Preference.OnPreferenceChangeListener, Preference.OnPreferenceClickListener {
 
     Preference mStopwatchFontPref;
+    SwitchPreferenceCompat mDisplayMillisecondsPref;
     ListPreference mVolumeUpActionPref;
     ListPreference mVolumeUpActionAfterLongPressPref;
     ListPreference mVolumeDownActionPref;
@@ -51,12 +59,15 @@ public class StopwatchSettingsFragment extends BaseSettingsScreenFragment
             }
 
             final Context appContext = requireContext().getApplicationContext();
+            final int style = getAccentStyle();
+            final Typeface font = getGeneralTypeface();
+            final SharedPreferences prefs = getPrefs();
 
             // Take persistent permission
             appContext.getContentResolver().takePersistableUriPermission(sourceUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
             String safeTitle = FileUtils.toSafeFileName(FILE_STOPWATCH_FONT);
-            String oldFontPath = mPrefs.getString(KEY_SW_FONT, null);
+            String oldFontPath = prefs.getString(KEY_SW_FONT, null);
 
             AppExecutors.getDiskIO().execute(() -> {
                 // Delete the old font if it exists
@@ -70,14 +81,14 @@ public class StopwatchSettingsFragment extends BaseSettingsScreenFragment
 
                 // Save the new path
                 if (copiedUri != null) {
-                    mPrefs.edit().putString(KEY_SW_FONT, copiedUri.getPath()).apply();
+                    prefs.edit().putString(KEY_SW_FONT, copiedUri.getPath()).apply();
                 }
 
                 AppExecutors.getMainThread().post(() -> {
                     if (copiedUri != null) {
-                        CustomToast.show(appContext, R.string.custom_font_toast_message_selected);
+                        CustomToast.show(appContext, style, font, R.string.custom_font_toast_message_selected);
                     } else {
-                        CustomToast.show(appContext, "Error importing font");
+                        CustomToast.show(appContext, style, font, R.string.font_message_error);
                     }
 
                     if (!isAdded() || mStopwatchFontPref == null) {
@@ -99,12 +110,13 @@ public class StopwatchSettingsFragment extends BaseSettingsScreenFragment
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         addPreferencesFromResource(R.xml.settings_stopwatch);
 
         mStopwatchFontPref = findPreference(KEY_SW_FONT);
+        mDisplayMillisecondsPref = findPreference(KEY_SW_DISPLAY_MILLISECONDS);
         mVolumeUpActionPref = findPreference(KEY_SW_VOLUME_UP_ACTION);
         mVolumeUpActionAfterLongPressPref = findPreference(KEY_SW_VOLUME_UP_ACTION_AFTER_LONG_PRESS);
         mVolumeDownActionPref = findPreference(KEY_SW_VOLUME_DOWN_ACTION);
@@ -121,18 +133,11 @@ public class StopwatchSettingsFragment extends BaseSettingsScreenFragment
     }
 
     @Override
-    public void onDestroy() {
-        nullifyPreferenceListeners(mStopwatchFontPref, mVolumeUpActionPref, mVolumeUpActionAfterLongPressPref, mVolumeDownActionPref,
-            mVolumeDownActionAfterLongPressPref);
-
-        nullifyAllPrefs();
-
-        super.onDestroy();
-    }
-
-    @Override
-    public boolean onPreferenceChange(Preference pref, Object newValue) {
+    public boolean onPreferenceChange(@NonNull Preference pref, @NonNull Object newValue) {
         switch (pref.getKey()) {
+            case KEY_SW_DISPLAY_MILLISECONDS ->
+                Utils.performHapticFeedback(getView(), isVibrationsEnabled(), HapticFeedbackConstantsCompat.VIRTUAL_KEY);
+
             case KEY_SW_VOLUME_UP_ACTION, KEY_SW_VOLUME_UP_ACTION_AFTER_LONG_PRESS, KEY_SW_VOLUME_DOWN_ACTION,
                  KEY_SW_VOLUME_DOWN_ACTION_AFTER_LONG_PRESS -> {
                 final ListPreference preference = (ListPreference) pref;
@@ -148,17 +153,19 @@ public class StopwatchSettingsFragment extends BaseSettingsScreenFragment
     public boolean onPreferenceClick(@NonNull Preference pref) {
         if (pref.getKey().equals(KEY_SW_FONT)) {
             selectCustomFile(mStopwatchFontPref, fontPickerLauncher,
-                SettingsDAO.getStopwatchFont(mPrefs), KEY_SW_FONT, true, null);
+                SettingsDAO.getStopwatchFont(getPrefs()), KEY_SW_FONT, true, null);
         }
 
         return true;
     }
 
     private void setupPreferences() {
-        mStopwatchFontPref.setTitle(getString(SettingsDAO.getStopwatchFont(mPrefs) == null
+        mStopwatchFontPref.setTitle(getString(SettingsDAO.getStopwatchFont(getPrefs()) == null
             ? R.string.custom_font_title
             : R.string.custom_font_title_variant));
         mStopwatchFontPref.setOnPreferenceClickListener(this);
+
+        mDisplayMillisecondsPref.setOnPreferenceChangeListener(this);
 
         mVolumeUpActionPref.setOnPreferenceChangeListener(this);
         mVolumeUpActionPref.setSummary(mVolumeUpActionPref.getEntry());
@@ -171,14 +178,6 @@ public class StopwatchSettingsFragment extends BaseSettingsScreenFragment
 
         mVolumeDownActionAfterLongPressPref.setOnPreferenceChangeListener(this);
         mVolumeDownActionAfterLongPressPref.setSummary(mVolumeDownActionAfterLongPressPref.getEntry());
-    }
-
-    private void nullifyAllPrefs() {
-        mStopwatchFontPref = null;
-        mVolumeUpActionPref = null;
-        mVolumeUpActionAfterLongPressPref = null;
-        mVolumeDownActionPref = null;
-        mVolumeDownActionAfterLongPressPref = null;
     }
 
 }

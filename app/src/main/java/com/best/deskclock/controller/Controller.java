@@ -9,7 +9,10 @@ package com.best.deskclock.controller;
 import static com.best.deskclock.utils.Utils.enforceMainLooper;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.SharedPreferences;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 
 import com.best.deskclock.events.EventTracker;
@@ -45,11 +48,11 @@ public final class Controller {
         return sController;
     }
 
-    public void init() {
+    public void init(@NonNull Context context, @NonNull SharedPreferences prefs) {
         mEventController = new EventController();
         mVoiceController = new VoiceController();
         if (SdkUtils.isAtLeastAndroid71()) {
-            mShortcutController = new ShortcutController();
+            mShortcutController = new ShortcutController(context, prefs);
         }
     }
 
@@ -60,7 +63,7 @@ public final class Controller {
     /**
      * @param eventTracker to be registered for tracking application events
      */
-    public void addEventTracker(EventTracker eventTracker) {
+    public void addEventTracker(@NonNull EventTracker eventTracker) {
         enforceMainLooper();
         mEventController.addEventTracker(eventTracker);
     }
@@ -81,11 +84,11 @@ public final class Controller {
     // Voice Interaction
     //
 
-    public void notifyVoiceSuccess(Activity activity, String message) {
+    public void notifyVoiceSuccess(@NonNull Activity activity, @NonNull String message) {
         mVoiceController.notifyVoiceSuccess(activity, message);
     }
 
-    public void notifyVoiceFailure(Activity activity, String message) {
+    public void notifyVoiceFailure(@NonNull Activity activity, @NonNull String message) {
         mVoiceController.notifyVoiceFailure(activity, message);
     }
 

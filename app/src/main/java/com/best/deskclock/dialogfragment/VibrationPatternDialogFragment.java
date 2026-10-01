@@ -6,16 +6,15 @@ import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreference
 import static com.best.deskclock.settings.PreferencesDefaultValues.DEFAULT_VIBRATION_PATTERN;
 
 import android.app.Dialog;
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.os.Bundle;
-import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.widget.Button;
 import android.widget.RadioButton;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.fragment.app.DialogFragment;
@@ -26,7 +25,6 @@ import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.data.Timer;
 import com.best.deskclock.databinding.VibrationPatternDialogBinding;
 import com.best.deskclock.uicomponents.CustomDialog;
-import com.best.deskclock.utils.SdkUtils;
 import com.best.deskclock.utils.ThemeUtils;
 import com.best.deskclock.utils.Utils;
 
@@ -57,7 +55,8 @@ public class VibrationPatternDialogFragment extends DialogFragment {
      *                         which will be preselected in the dialog.
      * @return A configured instance of {@link VibrationPatternDialogFragment}.
      */
-    public static VibrationPatternDialogFragment newInstance(String key, String vibrationPattern) {
+    @NonNull
+    public static VibrationPatternDialogFragment newInstance(@NonNull String key, @NonNull String vibrationPattern) {
         Bundle args = new Bundle();
         args.putString(ARG_PREF_KEY, key);
         args.putString(VIBRATION_PATTERN, vibrationPattern);
@@ -73,7 +72,8 @@ public class VibrationPatternDialogFragment extends DialogFragment {
      *
      * @param vibrationPattern The vibration pattern.
      */
-    public static VibrationPatternDialogFragment newInstance(String vibrationPattern) {
+    @NonNull
+    public static VibrationPatternDialogFragment newInstance(@NonNull String vibrationPattern) {
         final Bundle args = new Bundle();
 
         args.putString(VIBRATION_PATTERN, vibrationPattern);
@@ -90,7 +90,8 @@ public class VibrationPatternDialogFragment extends DialogFragment {
      * @param timerId          The {@link Timer} id whose vibration pattern will be edited.
      * @param vibrationPattern The vibration pattern.
      */
-    public static VibrationPatternDialogFragment newInstance(int timerId, String vibrationPattern) {
+    @NonNull
+    public static VibrationPatternDialogFragment newInstance(int timerId, @NonNull String vibrationPattern) {
         final Bundle args = new Bundle();
 
         args.putInt(ARG_TIMER_ID, timerId);
@@ -104,7 +105,7 @@ public class VibrationPatternDialogFragment extends DialogFragment {
     /**
      * Displays {@link VibrationPatternDialogFragment}.
      */
-    public static void show(FragmentManager manager, VibrationPatternDialogFragment fragment) {
+    public static void show(@NonNull FragmentManager manager, @NonNull VibrationPatternDialogFragment fragment) {
         Utils.showDialogFragment(manager, fragment, TAG);
     }
 
@@ -116,16 +117,15 @@ public class VibrationPatternDialogFragment extends DialogFragment {
 
     @NonNull
     @Override
-    public Dialog onCreateDialog(Bundle savedInstanceState) {
-        Context context = requireContext();
-        SharedPreferences prefs = getDefaultSharedPreferences(context);
+    public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
+        SharedPreferences prefs = getDefaultSharedPreferences(requireContext());
         Typeface typeface = ThemeUtils.loadFont(SettingsDAO.getGeneralFont(prefs));
 
         final Bundle args = requireArguments();
 
         mPrefKey = args.getString(ARG_PREF_KEY, null);
 
-        mVibrator = context.getSystemService(Vibrator.class);
+        mVibrator = requireContext().getApplicationContext().getSystemService(Vibrator.class);
 
         mSelectedPatternKey = args.getString(VIBRATION_PATTERN, DEFAULT_VIBRATION_PATTERN);
         if (savedInstanceState != null) {
@@ -139,7 +139,7 @@ public class VibrationPatternDialogFragment extends DialogFragment {
             binding.vibrationPatternHeartbeatButton, binding.vibrationPatternEscalatingButton, binding.vibrationPatternTickTockButton
         };
 
-        String[] values = context.getResources().getStringArray(R.array.vibration_pattern_values);
+        String[] values = getResources().getStringArray(R.array.vibration_pattern_values);
 
         for (int i = 0; i < buttons.length; i++) {
             buttons[i].setTag(values[i]);
@@ -160,7 +160,7 @@ public class VibrationPatternDialogFragment extends DialogFragment {
         });
 
         return CustomDialog.create(
-            context,
+            requireContext(),
             null,
             mPrefKey != null ? null : AppCompatResources.getDrawable(requireContext(), R.drawable.ic_earthquake),
             getString(R.string.vibration_pattern_title),
@@ -183,13 +183,7 @@ public class VibrationPatternDialogFragment extends DialogFragment {
 
                         long[] pattern = Utils.getVibrationPatternForKey(mSelectedPatternKey);
 
-                        if (SdkUtils.isAtLeastAndroid8()) {
-                            VibrationEffect effect = VibrationEffect.createWaveform(pattern, 0);
-                            mVibrator.vibrate(effect);
-                        } else {
-                            //noinspection deprecation
-                            mVibrator.vibrate(pattern, 0);
-                        }
+                        Utils.executeVibrations(mVibrator, pattern, 0);
                     }
                 });
             },
@@ -216,7 +210,7 @@ public class VibrationPatternDialogFragment extends DialogFragment {
      *
      * @param patternKey The key representing the selected vibration pattern.
      */
-    private void savePattern(String patternKey) {
+    private void savePattern(@NonNull String patternKey) {
         Bundle result = new Bundle();
         result.putString(RESULT_PATTERN_KEY, patternKey);
 

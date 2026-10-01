@@ -6,15 +6,12 @@
 
 package com.best.deskclock.settings;
 
-import static android.view.View.GONE;
 import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 import static androidx.core.util.TypedValueCompat.dpToPx;
-import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreferences;
 import static com.best.deskclock.settings.PreferencesDefaultValues.DEFAULT_BLUR_INTENSITY;
 import static com.best.deskclock.settings.PreferencesDefaultValues.DEFAULT_VIBRATION_PATTERN;
 
-import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -28,7 +25,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.util.DisplayMetrics;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,21 +33,24 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.graphics.Insets;
-import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.best.deskclock.R;
+import com.best.deskclock.base.AppExecutors;
 import com.best.deskclock.base.BaseActivity;
-import com.best.deskclock.data.DataModel;
 import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.data.Timer;
 import com.best.deskclock.databinding.ExpiredTimersActivityBinding;
 import com.best.deskclock.databinding.TimerItemBinding;
 import com.best.deskclock.databinding.TimerItemCompactBinding;
+import com.best.deskclock.timer.BaseTimerItem;
 import com.best.deskclock.timer.TimerItem;
 import com.best.deskclock.timer.TimerItemCompact;
+import com.best.deskclock.uidata.UiConfig;
 import com.best.deskclock.utils.InsetsUtils;
 import com.best.deskclock.utils.LogUtils;
 import com.best.deskclock.utils.RingtoneUtils;
@@ -63,19 +63,16 @@ public class TimerDisplayPreviewActivity extends BaseActivity {
 
     private ExpiredTimersActivityBinding mBinding;
 
-    private SharedPreferences mPrefs;
-    private Typeface mRegularTypeface;
-    private Typeface mBoldTypeface;
+    private UiConfig.CardStyle mCardStyleConfig;
+    private boolean mIsFadeTransition;
+    private String mTimerFontPath;
     private Typeface mTimerTimeTypeface;
-    private DisplayMetrics mDisplayMetrics;
     private boolean mAreTimerButtonPositionsInverted;
     private boolean mIsIndicatorStateDisplayed;
     private int mColorPaused;
     private int mColorRunning;
     private int mColorExpired;
     private int mColorMissed;
-    private boolean mIsPortrait;
-    private boolean mIsTablet;
     private int mMargin10;
 
     /**
@@ -84,42 +81,31 @@ public class TimerDisplayPreviewActivity extends BaseActivity {
     private ViewGroup mExpiredTimersScrollView;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         mBinding = ExpiredTimersActivityBinding.inflate(getLayoutInflater());
 
-        mPrefs = getDefaultSharedPreferences(this);
-        mAreTimerButtonPositionsInverted = SettingsDAO.areTimerButtonPositionsInverted(mPrefs);
-        mIsIndicatorStateDisplayed = SettingsDAO.isTimerStateIndicatorDisplayed(mPrefs);
-        mColorPaused = SettingsDAO.getPausedTimerIndicatorColor(mPrefs);
-        mColorRunning = SettingsDAO.getRunningTimerIndicatorColor(mPrefs);
-        mColorExpired = SettingsDAO.getExpiredTimerIndicatorColor(mPrefs);
-        mColorMissed = SettingsDAO.getMissedTimerIndicatorColor(mPrefs);
-        String generalFontPath = SettingsDAO.getGeneralFont(mPrefs);
-        mRegularTypeface = ThemeUtils.loadFont(generalFontPath);
-        mBoldTypeface = ThemeUtils.boldTypeface(generalFontPath);
-        mTimerTimeTypeface = ThemeUtils.loadFont(SettingsDAO.getTimerDurationFont(mPrefs));
-        mDisplayMetrics = getResources().getDisplayMetrics();
-        mIsPortrait = ThemeUtils.isPortrait();
-        mIsTablet = ThemeUtils.isTablet();
-        mMargin10 = (int) dpToPx(10, mDisplayMetrics);
+        mCardStyleConfig = getCardStyleConfig();
 
-        // To manually manage insets
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        mTimerFontPath = SettingsDAO.getTimerDurationFont(getPrefs());
+        mIsFadeTransition = SettingsDAO.isFadeTransitionsEnabled(getPrefs());
+        mAreTimerButtonPositionsInverted = SettingsDAO.areTimerButtonPositionsInverted(getPrefs());
+        mIsIndicatorStateDisplayed = SettingsDAO.isTimerStateIndicatorDisplayed(getPrefs());
+        mColorPaused = SettingsDAO.getPausedTimerIndicatorColor(getPrefs());
+        mColorRunning = SettingsDAO.getRunningTimerIndicatorColor(getPrefs());
+        mColorExpired = SettingsDAO.getExpiredTimerIndicatorColor(getPrefs());
+        mColorMissed = SettingsDAO.getMissedTimerIndicatorColor(getPrefs());
+        mMargin10 = (int) dpToPx(10, getDisplayMetrics());
 
         // Honor rotation on tablets; fix the orientation on phones.
-        if (mIsPortrait) {
+        if (isPortrait()) {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_NOSENSOR);
         }
 
         setContentView(mBinding.getRoot());
 
-        String activeAccentColor = ThemeUtils.isNight(getResources()) && !SettingsDAO.isAutoNightAccentColorEnabled(mPrefs)
-            ? SettingsDAO.getNightAccentColor(mPrefs)
-            : SettingsDAO.getAccentColor(mPrefs);
-
-        getWindow().setBackgroundDrawable(new ColorDrawable(ThemeUtils.getNightBackgroundColor(this, activeAccentColor)));
+        getWindow().setBackgroundDrawable(new ColorDrawable(ThemeUtils.getNightBackgroundColor(this, getActiveAccentColor())));
 
         if (mBinding.expiredTimersScrollVertical != null) {
             mExpiredTimersScrollView = mBinding.expiredTimersScrollVertical;
@@ -127,46 +113,12 @@ public class TimerDisplayPreviewActivity extends BaseActivity {
             mExpiredTimersScrollView = mBinding.expiredTimersScrollHorizontal;
         }
 
-        final String imagePath = SettingsDAO.getTimerBackgroundImage(mPrefs);
-
-        if (SettingsDAO.isTimerRingtoneTitleDisplayed(mPrefs)) {
+        if (SettingsDAO.isTimerRingtoneTitleDisplayed(getPrefs())) {
             displayRingtoneTitle();
             mBinding.ringtoneLayout.setVisibility(VISIBLE);
         }
 
-        if (SettingsDAO.isTimerBackgroundTransparent(mPrefs)) {
-            mBinding.timerBackgroundImage.setVisibility(GONE);
-            getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        } else {
-            // Apply a background image and a blur effect.
-            if (imagePath != null) {
-                mBinding.timerBackgroundImage.setVisibility(VISIBLE);
-
-                File imageFile = new File(imagePath);
-                if (imageFile.exists()) {
-                    Bitmap bitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
-                    if (bitmap != null) {
-                        mBinding.timerBackgroundImage.setImageBitmap(bitmap);
-
-                        float intensity = SettingsDAO.getTimerBlurIntensity(mPrefs);
-
-                        if (SdkUtils.isAtLeastAndroid12() && intensity != DEFAULT_BLUR_INTENSITY) {
-
-                            RenderEffect blur = RenderEffect.createBlurEffect(intensity, intensity, Shader.TileMode.CLAMP);
-                            mBinding.timerBackgroundImage.setRenderEffect(blur);
-                        }
-                    } else {
-                        LogUtils.e("Bitmap null for path: " + imagePath);
-                        mBinding.timerBackgroundImage.setVisibility(GONE);
-                    }
-                } else {
-                    LogUtils.e("Image file not found: " + imagePath);
-                    mBinding.timerBackgroundImage.setVisibility(GONE);
-                }
-            } else {
-                mBinding.timerBackgroundImage.setVisibility(GONE);
-            }
-        }
+        initTimerBackground();
 
         // Creating a dummy timer
         Timer fakeTimer = new Timer(
@@ -206,8 +158,6 @@ public class TimerDisplayPreviewActivity extends BaseActivity {
 
     @Override
     protected void onDestroy() {
-        mRegularTypeface = null;
-        mBoldTypeface = null;
         mTimerTimeTypeface = null;
 
         mBinding = null;
@@ -215,24 +165,86 @@ public class TimerDisplayPreviewActivity extends BaseActivity {
         super.onDestroy();
     }
 
+    @NonNull
+    @Override
+    protected UiConfig.Fonts getFontsConfig() {
+        return new UiConfig.Fonts(
+            getGeneralTypeface(),
+            getGeneralBoldTypeface(),
+            null,
+            getTimerTypeface(),
+            null,
+            null
+        );
+    }
+
+    private void initTimerBackground() {
+        final boolean isTransparent = SettingsDAO.isTimerBackgroundTransparent(getPrefs());
+        final String imagePath = SettingsDAO.getTimerBackgroundImage(getPrefs());
+
+        if (isTransparent) {
+            mBinding.timerBackgroundImage.setVisibility(View.GONE);
+            getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            return;
+        }
+
+        if (TextUtils.isEmpty(imagePath)) {
+            mBinding.timerBackgroundImage.setVisibility(View.GONE);
+            return;
+        }
+
+        final float blurIntensity = SettingsDAO.getTimerBlurIntensity(getPrefs());
+
+        mBinding.timerBackgroundImage.setVisibility(View.GONE);
+
+        AppExecutors.getDiskIO().execute(() -> {
+            File imageFile = new File(imagePath);
+            Bitmap bitmap = null;
+
+            if (imageFile.exists()) {
+                bitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
+            }
+
+            final Bitmap finalBitmap = bitmap;
+
+            AppExecutors.getMainThread().post(() -> {
+                if (isFinishing() || isDestroyed()) {
+                    return;
+                }
+
+                if (finalBitmap != null) {
+                    mBinding.timerBackgroundImage.setVisibility(View.VISIBLE);
+                    mBinding.timerBackgroundImage.setImageBitmap(finalBitmap);
+
+                    if (SdkUtils.isAtLeastAndroid12() && blurIntensity != DEFAULT_BLUR_INTENSITY) {
+                        RenderEffect blur = RenderEffect.createBlurEffect(blurIntensity, blurIntensity, Shader.TileMode.CLAMP);
+                        mBinding.timerBackgroundImage.setRenderEffect(blur);
+                    }
+                } else {
+                    LogUtils.e("Image file not found or Bitmap null for path: " + imagePath);
+                }
+            });
+        });
+    }
+
     /**
      * Display ringtone title if enabled in Timer settings.
      */
     private void displayRingtoneTitle() {
-        final boolean silent = RingtoneUtils.RINGTONE_SILENT.equals(DataModel.getDataModel().getTimerRingtoneUri());
+        final boolean silent = RingtoneUtils.RINGTONE_SILENT.equals(getDataModel().getTimerRingtoneUri());
         final Drawable iconRingtone = silent
             ? AppCompatResources.getDrawable(this, R.drawable.ic_ringtone_silent)
             : AppCompatResources.getDrawable(this, R.drawable.ic_music_note);
-        int iconRingtoneSize = (int) dpToPx(24, mDisplayMetrics);
-        final int ringtoneTitleColor = SettingsDAO.getTimerRingtoneTitleColor(mPrefs);
-        final int shadowOffset = SettingsDAO.getTimerShadowOffset(mPrefs);
+        int iconRingtoneSize = (int) dpToPx(24, getDisplayMetrics());
+        final int ringtoneTitleColor = SettingsDAO.getTimerRingtoneTitleColor(getPrefs());
+        final int shadowOffset = SettingsDAO.getTimerShadowOffset(getPrefs());
         final float shadowRadius = shadowOffset * 0.5f;
-        final int shadowColor = SettingsDAO.getTimerShadowColor(mPrefs);
+        final int shadowColor = SettingsDAO.getTimerShadowColor(getPrefs());
 
         if (iconRingtone != null) {
             iconRingtone.setTint(ringtoneTitleColor);
 
-            if (SettingsDAO.isTimerTextShadowDisplayed(mPrefs)) {
+            if (SettingsDAO.isTimerTextShadowDisplayed(getPrefs())) {
                 // Convert the drawable to a bitmap
                 Bitmap iconBitmap = Bitmap.createBitmap(iconRingtoneSize, iconRingtoneSize, Bitmap.Config.ARGB_8888);
                 Canvas iconCanvas = new Canvas(iconBitmap);
@@ -266,8 +278,8 @@ public class TimerDisplayPreviewActivity extends BaseActivity {
             }
         }
 
-        mBinding.ringtoneTitle.setText(DataModel.getDataModel().getTimerRingtoneTitle());
-        mBinding.ringtoneTitle.setTypeface(ThemeUtils.boldTypeface(SettingsDAO.getGeneralFont(mPrefs)));
+        mBinding.ringtoneTitle.setText(getDataModel().getTimerRingtoneTitle());
+        mBinding.ringtoneTitle.setTypeface(getGeneralBoldTypeface());
         mBinding.ringtoneTitle.setTextColor(ringtoneTitleColor);
         // Allow text scrolling (all other attributes are indicated in the "expired_timers_activity.xml" file)
         mBinding.ringtoneTitle.setSelected(true);
@@ -290,12 +302,14 @@ public class TimerDisplayPreviewActivity extends BaseActivity {
     /**
      * Create and add a new view that corresponds with the given {@code timer}.
      */
-    private void addTimer(Timer timer) {
+    private void addTimer(@NonNull Timer timer) {
         final int timerId = timer.getId();
-        final boolean isCompact = SettingsDAO.isCompactTimersDisplayed(mPrefs) && !SettingsDAO.isSingleTimerModeEnabled(mPrefs);
-        final boolean useCompactLayout = ThemeUtils.isPortrait() && isCompact;
+        final boolean isCompact = SettingsDAO.isCompactTimersDisplayed(getPrefs()) && !SettingsDAO.isSingleTimerModeEnabled(getPrefs());
+        final boolean useCompactLayout = isPortrait() && isCompact;
+        UiConfig.Fonts fonts = getFontsConfig();
+        Typeface timerFont = fonts.timerFont() != null ? fonts.timerFont() : fonts.bold();
 
-        final View view;
+        final BaseTimerItem timerView;
         final TextView labelView;
         final View resetButton;
         final View stopButton;
@@ -304,51 +318,37 @@ public class TimerDisplayPreviewActivity extends BaseActivity {
             TimerItemCompactBinding compactBinding = TimerItemCompactBinding.inflate(
                 getLayoutInflater(), mBinding.expiredTimersList, false);
 
-            view = compactBinding.getRoot();
-            ((TimerItemCompact) view).setButtonPosition(mAreTimerButtonPositionsInverted);
-            ((TimerItemCompact) view).setGeneralFonts(mRegularTypeface, mBoldTypeface);
-            ((TimerItemCompact) view).setTimerTimeFont(mTimerTimeTypeface);
-            ((TimerItemCompact) view).setIndicatorStateDisplay(mIsIndicatorStateDisplayed);
-            ((TimerItemCompact) view).setIndicatorColors(mColorPaused, mColorRunning, mColorExpired, mColorMissed);
-            ((TimerItemCompact) view).bindTimer(timer, false);
+            TimerItemCompact compactView = compactBinding.getRoot();
+            compactView.setButtonPosition(mAreTimerButtonPositionsInverted, isRtl());
 
+            timerView = compactView;
             labelView = compactBinding.timerLabel;
             resetButton = compactBinding.resetButton;
             stopButton = compactBinding.playPauseButton;
-
-            compactBinding.linearProgressIndicator.animate().cancel();
-            compactBinding.linearProgressIndicator.setAlpha(1f);
-
-            compactBinding.timerTimeText.animate().cancel();
-            compactBinding.timerTimeText.setAlpha(1f);
         } else {
-            TimerItemBinding normalBinding = TimerItemBinding.inflate(getLayoutInflater(), mBinding.expiredTimersList, false);
+            TimerItemBinding normalBinding = TimerItemBinding.inflate(
+                getLayoutInflater(), mBinding.expiredTimersList, false);
 
-            view = normalBinding.getRoot();
-            ((TimerItem) view).setButtonPosition(mAreTimerButtonPositionsInverted, mIsTablet, !mIsPortrait, false);
-            ((TimerItem) view).setGeneralFonts(mRegularTypeface, mBoldTypeface);
-            ((TimerItem) view).setTimerTimeFont(mTimerTimeTypeface);
-            ((TimerItem) view).setIndicatorStateDisplay(mIsIndicatorStateDisplayed);
-            ((TimerItem) view).setIndicatorColors(mColorPaused, mColorRunning, mColorExpired, mColorMissed);
-            ((TimerItem) view).bindTimer(timer, false);
+            TimerItem normalView = normalBinding.getRoot();
+            normalView.setButtonPosition(mAreTimerButtonPositionsInverted, isTablet(), !isPortrait(), false, isRtl());
 
+            timerView = normalView;
             labelView = normalBinding.timerLabel;
             resetButton = normalBinding.resetButton;
             stopButton = normalBinding.playPauseButton;
-
-            if (normalBinding.circularProgressIndicator != null) {
-                normalBinding.circularProgressIndicator.animate().cancel();
-                normalBinding.circularProgressIndicator.setAlpha(1f);
-            }
-
-            normalBinding.timerTimeText.animate().cancel();
-            normalBinding.timerTimeText.setAlpha(1f);
         }
 
-        // Store the timer id as a tag on the view so it can be located on delete.
-        view.setId(timerId);
+        timerView.checkIsLandscapePhone(isLandscape() && !isTablet());
+        timerView.setGeneralFonts(getGeneralTypeface(), getGeneralBoldTypeface());
+        timerView.setTimerTimeFont(timerFont);
+        timerView.setIndicatorStateDisplay(mIsIndicatorStateDisplayed);
+        timerView.setIndicatorColors(mColorPaused, mColorRunning, mColorExpired, mColorMissed);
+        timerView.bindTimer(timer, false);
 
-        mBinding.expiredTimersList.addView(view);
+        // Store the timer id as a tag on the view so it can be located on delete.
+        timerView.setId(timerId);
+
+        mBinding.expiredTimersList.addView(timerView);
 
         // Hide the label hint for expired timers.
         labelView.setVisibility(VISIBLE);
@@ -374,9 +374,10 @@ public class TimerDisplayPreviewActivity extends BaseActivity {
     private void setTimerBackground() {
         View child = mBinding.expiredTimersList.getChildAt(0);
 
-        child.setBackground(ThemeUtils.cardBackground(this));
+        child.setBackground(ThemeUtils.cardBackground(this, getDisplayMetrics(), mCardStyleConfig.isBackgroundDisplayed(),
+            mCardStyleConfig.isBorderDisplayed(), mCardStyleConfig.isAmoledDarkMode()));
 
-        final boolean isTabletOrPortrait = mIsTablet || mIsPortrait;
+        final boolean isTabletOrPortrait = isTablet() || isPortrait();
 
         if (isTabletOrPortrait && child.getLayoutParams() instanceof ViewGroup.MarginLayoutParams layoutParams) {
             layoutParams.leftMargin = mMargin10;
@@ -386,7 +387,20 @@ public class TimerDisplayPreviewActivity extends BaseActivity {
         }
     }
 
+    /**
+     * Lazy loading for the bold timer font.
+     *
+     * @return the bold timer font.
+     */
+    protected final Typeface getTimerTypeface() {
+        if (mTimerTimeTypeface == null) {
+            mTimerTimeTypeface = ThemeUtils.boldTypeface(mTimerFontPath);
+        }
+
+        return mTimerTimeTypeface;
+    }
+
     private void finishActivity() {
-        ThemeUtils.finishActivityWithTransition(this);
+        ThemeUtils.finishActivityWithTransition(this, mIsFadeTransition);
     }
 }

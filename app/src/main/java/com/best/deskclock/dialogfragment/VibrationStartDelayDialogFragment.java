@@ -7,7 +7,6 @@ import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreference
 import static com.best.deskclock.settings.PreferencesDefaultValues.DEFAULT_VIBRATION_START_DELAY;
 
 import android.app.Dialog;
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
@@ -18,11 +17,11 @@ import android.text.InputType;
 import android.text.TextWatcher;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.content.ContextCompat;
@@ -63,7 +62,6 @@ public class VibrationStartDelayDialogFragment extends DialogFragment {
     private Button mDefaultButton;
     private Typeface mTypeFace;
     private final TextWatcher mTextWatcher = new TextChangeListener();
-    private InputMethodManager mInput;
     private boolean isUpdatingCheckboxes = false;
 
     /**
@@ -74,7 +72,8 @@ public class VibrationStartDelayDialogFragment extends DialogFragment {
      * @param key          The shared preference key used to identify the setting.
      * @param totalSeconds The crescendo duration in seconds.
      */
-    public static VibrationStartDelayDialogFragment newInstance(String key, int totalSeconds, boolean isNone) {
+    @NonNull
+    public static VibrationStartDelayDialogFragment newInstance(@NonNull String key, int totalSeconds, boolean isNone) {
         Bundle args = new Bundle();
 
         int minutes = totalSeconds / 60;
@@ -91,7 +90,7 @@ public class VibrationStartDelayDialogFragment extends DialogFragment {
     /**
      * Displays {@link VibrationStartDelayDialogFragment}.
      */
-    public static void show(FragmentManager manager, VibrationStartDelayDialogFragment fragment) {
+    public static void show(@NonNull FragmentManager manager, @NonNull VibrationStartDelayDialogFragment fragment) {
         Utils.showDialogFragment(manager, fragment, TAG);
     }
 
@@ -108,7 +107,7 @@ public class VibrationStartDelayDialogFragment extends DialogFragment {
 
     @NonNull
     @Override
-    public Dialog onCreateDialog(Bundle savedInstanceState) {
+    public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
         SharedPreferences prefs = getDefaultSharedPreferences(requireContext());
         mTypeFace = ThemeUtils.loadFont(SettingsDAO.getGeneralFont(prefs));
 
@@ -119,8 +118,6 @@ public class VibrationStartDelayDialogFragment extends DialogFragment {
             editMinutes = savedInstanceState.getInt(ARG_EDIT_MINUTES, editMinutes);
             isNone = savedInstanceState.getBoolean(ARG_VIBRATION_DELAY_NONE, isNone);
         }
-
-        mInput = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
 
         mBinding = VibrationStartDelayDialogBinding.inflate(getLayoutInflater());
 
@@ -179,7 +176,7 @@ public class VibrationStartDelayDialogFragment extends DialogFragment {
                 mOkButton.setEnabled(!isInvalidInput(minutesText));
                 mDefaultButton.setEnabled(isNotDefaultVibrationStartDelay(minutesText));
             },
-            CustomDialog.SoftInputMode.SHOW_KEYBOARD
+            isNone ? CustomDialog.SoftInputMode.NONE : CustomDialog.SoftInputMode.SHOW_KEYBOARD
         );
     }
 
@@ -190,10 +187,10 @@ public class VibrationStartDelayDialogFragment extends DialogFragment {
         if (!mBinding.vibrationStartDelayNoneCheckbox.isChecked()) {
             mBinding.editMinutes.requestFocus();
             mBinding.editMinutes.postDelayed(() -> {
-                if (mInput != null) {
-                    mInput.showSoftInput(mBinding.editMinutes, InputMethodManager.SHOW_IMPLICIT);
+                if (getDialog() != null) {
+                    Utils.showKeyboard(getDialog().getWindow(), mBinding.editMinutes);
                 }
-            }, 200);
+            }, Utils.UI_SETTLE_DELAY_MS);
         }
     }
 
@@ -202,8 +199,6 @@ public class VibrationStartDelayDialogFragment extends DialogFragment {
         // Stop callbacks from the IME since there is no view to process them.
         mBinding.editMinutes.setOnEditorActionListener(null);
         mBinding.editMinutes.removeTextChangedListener(mTextWatcher);
-
-        mInput = null;
 
         mBinding = null;
 
@@ -248,7 +243,10 @@ public class VibrationStartDelayDialogFragment extends DialogFragment {
     private void maybeRequestMinutesFocus() {
         if (!mBinding.vibrationStartDelayNoneCheckbox.isChecked()) {
             mBinding.editMinutes.requestFocus();
-            mInput.showSoftInput(mBinding.editMinutes, InputMethodManager.SHOW_IMPLICIT);
+
+            if (getDialog() != null) {
+                Utils.showKeyboard(getDialog().getWindow(), mBinding.editMinutes);
+            }
         }
     }
 
@@ -292,7 +290,7 @@ public class VibrationStartDelayDialogFragment extends DialogFragment {
     /**
      * @return {@code true} if minutes are less than 0 or greater than 10; {@code false} otherwise.
      */
-    private boolean isInvalidInput(String minutesText) {
+    private boolean isInvalidInput(@NonNull String minutesText) {
         int minutes = 0;
 
         if (!minutesText.isEmpty()) {
@@ -311,7 +309,7 @@ public class VibrationStartDelayDialogFragment extends DialogFragment {
 
         TextView titleText = alertDialog.findViewById(R.id.dialog_title);
         if (titleText != null) {
-            titleText.setCompoundDrawablesWithIntrinsicBounds(AppCompatResources.getDrawable(
+            titleText.setCompoundDrawablesRelativeWithIntrinsicBounds(AppCompatResources.getDrawable(
                 requireContext(), R.drawable.ic_error), null, null, null);
             titleText.setCompoundDrawablePadding((int) dpToPx(18, getResources().getDisplayMetrics()));
             titleText.setText(getString(R.string.timer_time_warning_box_title));
@@ -343,7 +341,7 @@ public class VibrationStartDelayDialogFragment extends DialogFragment {
 
         TextView titleText = alertDialog.findViewById(R.id.dialog_title);
         if (titleText != null) {
-            titleText.setCompoundDrawablesWithIntrinsicBounds(null, null, null, null);
+            titleText.setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, null, null);
             titleText.setText(getString(R.string.vibration_start_delay_title));
         }
 
@@ -367,7 +365,7 @@ public class VibrationStartDelayDialogFragment extends DialogFragment {
      * @return {@code true} if the alarm vibration start delay is not the default value;
      * {@code false} otherwise.
      */
-    private boolean isNotDefaultVibrationStartDelay(String minutesText) {
+    private boolean isNotDefaultVibrationStartDelay(@NonNull String minutesText) {
         int minutes = minutesText.isEmpty() ? 0 : Integer.parseInt(minutesText);
 
         int vibrationStartDelay = minutes * 60;
@@ -383,7 +381,7 @@ public class VibrationStartDelayDialogFragment extends DialogFragment {
     private class TextChangeListener implements TextWatcher {
 
         @Override
-        public void onTextChanged(CharSequence charSequence, int start, int before, int count) {
+        public void onTextChanged(@Nullable CharSequence charSequence, int start, int before, int count) {
             if (mBinding.vibrationStartDelayNoneCheckbox.isChecked()) {
                 updateDialogForValidInput();
                 return;
@@ -400,11 +398,11 @@ public class VibrationStartDelayDialogFragment extends DialogFragment {
         }
 
         @Override
-        public void beforeTextChanged(CharSequence charSequence, int start, int count, int after) {
+        public void beforeTextChanged(@Nullable CharSequence charSequence, int start, int count, int after) {
         }
 
         @Override
-        public void afterTextChanged(Editable editable) {
+        public void afterTextChanged(@Nullable Editable editable) {
         }
     }
 
@@ -414,7 +412,7 @@ public class VibrationStartDelayDialogFragment extends DialogFragment {
     private class ImeDoneListener implements TextView.OnEditorActionListener {
 
         @Override
-        public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+        public boolean onEditorAction(@NonNull TextView v, int actionId, @Nullable KeyEvent event) {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 String inputMinutesText = Objects.requireNonNull(mBinding.editMinutes.getText()).toString();
                 if (isInvalidInput(inputMinutesText)) {

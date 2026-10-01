@@ -17,6 +17,7 @@ import android.graphics.drawable.Drawable;
 import android.text.format.DateUtils;
 import android.view.View;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
@@ -26,6 +27,7 @@ import com.best.deskclock.data.City;
 import com.best.deskclock.data.DataModel;
 import com.best.deskclock.databinding.WorldClockItemBinding;
 import com.best.deskclock.dialogfragment.LabelDialogFragment;
+import com.best.deskclock.uidata.UiConfig;
 import com.best.deskclock.utils.ClockUtils;
 import com.best.deskclock.utils.FormattedTextUtils;
 import com.best.deskclock.utils.ThemeUtils;
@@ -36,13 +38,10 @@ import java.util.TimeZone;
 public class CityViewHolder extends RecyclerView.ViewHolder {
 
     private final WorldClockItemBinding mBinding;
-    private ClockSettings mSettings;
     private final Context mContext;
     private final SelectedCitiesAdapter mAdapter;
-    private boolean mIsDigitalClock;
 
-    public CityViewHolder(WorldClockItemBinding binding, SelectedCitiesAdapter adapter, Typeface regularTypeface, Typeface boldTypeface,
-                          boolean hasBlackAccentColor) {
+    public CityViewHolder(@NonNull WorldClockItemBinding binding, @NonNull SelectedCitiesAdapter adapter) {
 
         super(binding.getRoot());
 
@@ -50,54 +49,82 @@ public class CityViewHolder extends RecyclerView.ViewHolder {
         mContext = binding.getRoot().getContext();
         mAdapter = adapter;
 
-        mBinding.worldClockCityContainer.cityName.setTypeface(boldTypeface);
+        UiConfig.Fonts fonts = mAdapter.getFonts();
+        boolean hasBlackAccentColor = mAdapter.hasBlackAccentColor();
+
+        mBinding.worldClockCityContainer.cityName.setTypeface(fonts.bold());
         // Allow text scrolling by clicking on the item (all other attributes are indicated
         // in the "world_clock_city_container.xml" file)
         mBinding.worldClockCityContainer.cityName.setSelected(true);
 
-        mBinding.worldClockCityContainer.hoursAhead.setTypeface(regularTypeface);
-        mBinding.worldClockCityContainer.cityNote.setTypeface(regularTypeface);
+        mBinding.worldClockCityContainer.hoursAhead.setTypeface(fonts.general());
+        mBinding.worldClockCityContainer.cityNote.setTypeface(fonts.general());
 
         if (hasBlackAccentColor) {
             mBinding.digitalClock.setTextColor(Color.WHITE);
         }
     }
 
-    public void applySettings(ClockSettings settings) {
-        mSettings = settings;
-        mIsDigitalClock = settings.clockStyle == DataModel.ClockStyle.DIGITAL;
+    public void applySettings() {
+        ClockSettings settings = mAdapter.getSettings();
+        UiConfig.Fonts fonts = mAdapter.getFonts();
+        UiConfig.Screen screen = mAdapter.getScreen();
 
-        if (mIsDigitalClock) {
+        boolean isDigitalClock = settings.clockStyle == DataModel.ClockStyle.DIGITAL;
+
+        if (isDigitalClock) {
             mBinding.analogClock.setVisibility(View.GONE);
 
-            mBinding.digitalClock.setBackground(ThemeUtils.pillBackgroundFromAttr(mContext, com.google.android.material.R.attr.colorSecondary));
-            mBinding.digitalClock.setTypeface(settings.digitalClockTypeface);
-            ClockUtils.setDigitalClockTimeFormat(mBinding.digitalClock, 0.3f, false, false, true, false, false);
+            mBinding.digitalClock.setBackground(
+                ThemeUtils.pillBackgroundFromAttr(mContext, screen.metrics(), com.google.android.material.R.attr.colorSecondary)
+            );
+            mBinding.digitalClock.setTypeface(fonts.clockFont());
+
+            ClockUtils.setDigitalClockTimeFormat(
+                mBinding.digitalClock, false, 0.3f, fonts.clockBoldFont(), "sans-serif", Typeface.BOLD, false);
 
             mBinding.digitalClock.setVisibility(View.VISIBLE);
         } else {
             mBinding.digitalClock.setVisibility(View.GONE);
             mBinding.analogClock.setVisibility(View.VISIBLE);
             mBinding.analogClock.enableSeconds(false);
-            mBinding.analogClock.updateClockStyle();
-        }
 
+            mBinding.analogClock.configure(
+                settings.clockStyle,
+                settings.clockDial,
+                settings.clockDialMaterial,
+                settings.clockSecondHand,
+                settings.activeAccentColor,
+                0,
+                0,
+                false
+            );
+        }
     }
 
-    public void bind(City city) {
+    public void bind(@NonNull City city) {
+        ClockSettings settings = mAdapter.getSettings();
+        boolean isDigitalClock = settings.clockStyle == DataModel.ClockStyle.DIGITAL;
         final String cityTimeZoneId = city.getTimeZone().getID();
 
         updateBackground();
 
         // Configure the digital clock or analog clock depending on the user preference.
-        if (mIsDigitalClock) {
+        if (isDigitalClock) {
             mBinding.digitalClock.setTimeZone(cityTimeZoneId);
         } else {
             mBinding.analogClock.setTimeZone(cityTimeZoneId);
         }
 
         // Bind the city name.
-        mBinding.worldClockCityContainer.cityName.setText(city.getName());
+        String cityName = city.getName();
+
+        if (settings.isCityFlagEnabled) {
+            String bidiMarker = mAdapter.getScreen().isRtl() ? "\u200F" : "\u200E";
+            cityName = bidiMarker + city.getCountryFlag() + "  " + cityName;
+        }
+
+        mBinding.worldClockCityContainer.cityName.setText(cityName);
 
         // Compute if the city week day matches the weekday of the current timezone.
         final Calendar localCal = Calendar.getInstance(TimeZone.getDefault());
@@ -126,8 +153,9 @@ public class CityViewHolder extends RecyclerView.ViewHolder {
             : R.string.world_hours_yesterday, timeString))
             : timeString);
 
-        if (mSettings.isCityNoteEnabled) {
-            String note = mAdapter.getCityNote(city.getId());
+        if (settings.isCityNoteEnabled) {
+            String note = mAdapter.getNoteProvider().getNote(city.getId());
+
             if (note != null && !note.trim().isEmpty()) {
                 mBinding.worldClockCityContainer.cityNote.setText(note.trim());
                 mBinding.worldClockCityContainer.cityNote.setVisibility(VISIBLE);
@@ -182,7 +210,8 @@ public class CityViewHolder extends RecyclerView.ViewHolder {
      * @param minutesDifferent the number of minutes the time is ahead/behind
      * @return String describing the hours/minutes ahead or behind
      */
-    public static String createHoursDifferentString(Context context, boolean displayMinutes, boolean isAhead, int hoursDifferent,
+    @NonNull
+    public static String createHoursDifferentString(@NonNull Context context, boolean displayMinutes, boolean isAhead, int hoursDifferent,
                                                     int minutesDifferent) {
 
         String timeString;

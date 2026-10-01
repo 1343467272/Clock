@@ -23,6 +23,8 @@
     <string name="label_never">Never</string>
     <!-- Label "None" (male form) -->
     <string name="label_none">None</string>
+    <!-- Label "Cities" -->
+    <string name="label_cities">Cities</string>
     <!-- Label "Indefinitely" -->
     <string name="label_indefinitely">Indefinitely</string>
     <!-- Label "Delete" -->
@@ -33,6 +35,8 @@
     <string name="label_new_image">New image</string>
     <!-- Dialog label to choose a new font. -->
     <string name="label_new_font">New font</string>
+    <!-- Label "Info" -->
+    <string name="info">Info</string>
     <!-- Label "Warning" -->
     <string name="warning">Warning</string>
     <!-- Label "Hours" -->
@@ -88,6 +92,8 @@
     <string name="pause_alarm_title">Pause alarm</string>
     <!-- Label title in the alarm editing panel when the pause is set -->
     <string name="pause_alarm_range">Paused: %1$s</string>
+    <!-- Message displayed in the alarm editing when the "Pause alarm" feature is disabled -->
+    <string name="pause_alarm_info_message">Select days of the week to access this feature.</string>
     <!-- Label shown when user is setting up non-repeating alarm for tomorrow -->
     <string name="alarm_tomorrow">Tomorrow</string>
     <!-- Label shown when user is setting up non-repeating alarm for later today -->
@@ -131,7 +137,13 @@
     <string name="alarm_flash">Flash</string>
     <!-- Setting labels on Set alarm screen: Delete alarm once dismissed on or off -->
     <string name="delete_occasional_alarm_after_use_title">Delete alarm once dismissed</string>
-    <!-- Description of the button to undo change to alarm -->
+    <!-- Message displayed in the alarm editing when the "Delete alarm once dismissed" feature is disabled -->
+    <string name="delete_occasional_alarm_after_use_info_message">Deselect the days of the week to access this feature.</string>
+    <!-- Message displayed in the alarm editing when the "Silence after" feature is disabled -->
+    <string name="auto_silence_info_message">\"Silence after\" set to \"%s\".
+        \n\nDisable the math hardness level to access this feature.
+    </string>
+    <!-- Text action displayed in the Snackbar when an alarm is deleted -->
     <string name="alarm_undo">undo</string>
     <!-- Toast content when an alarm was deleted  -->
     <string name="alarm_deleted">Alarm deleted</string>
@@ -156,15 +168,15 @@
     <!-- Alarm confirmation toast: Describes how long from now until alarm fires - Toast 2 -->
     <string name="alarm_confirmation_toast_2">Alarm set for <xliff:g example="2 days" id="DAYS">%1$s</xliff:g> from now.</string>
     <!-- Alarm confirmation toast: Describes how long from now until alarm fires - Toast 3 -->
-    <string name="alarm_confirmation_toast_3">Alarm set for <xliff:g example="2 hours" id="HOURS">%2$s</xliff:g> from now.</string>
+    <string name="alarm_confirmation_toast_3" tools:ignore="StringFormatCount">Alarm set for <xliff:g example="2 hours" id="HOURS">%2$s</xliff:g> from now.</string>
     <!-- Alarm confirmation toast: Describes how long from now until alarm fires - Toast 4 -->
     <string name="alarm_confirmation_toast_4">Alarm set for <xliff:g example="2 days" id="DAYS">%1$s</xliff:g> and <xliff:g example="2 hours" id="HOURS">%2$s</xliff:g> from now.</string>
     <!-- Alarm confirmation toast: Describes how long from now until alarm fires - Toast 5 -->
-    <string name="alarm_confirmation_toast_5">Alarm set for <xliff:g example="2 minutes" id="MINUTES">%3$s</xliff:g> from now.</string>
+    <string name="alarm_confirmation_toast_5" tools:ignore="StringFormatCount">Alarm set for <xliff:g example="2 minutes" id="MINUTES">%3$s</xliff:g> from now.</string>
     <!-- Alarm confirmation toast: Describes how long from now until alarm fires - Toast 6 -->
-    <string name="alarm_confirmation_toast_6">Alarm set for <xliff:g example="2 days" id="DAYS">%1$s</xliff:g> and <xliff:g example="2 minutes" id="MINUTES">%3$s</xliff:g> from now.</string>
+    <string name="alarm_confirmation_toast_6" tools:ignore="StringFormatCount">Alarm set for <xliff:g example="2 days" id="DAYS">%1$s</xliff:g> and <xliff:g example="2 minutes" id="MINUTES">%3$s</xliff:g> from now.</string>
     <!-- Alarm confirmation toast: Describes how long from now until alarm fires - Toast 7 -->
-    <string name="alarm_confirmation_toast_7">Alarm set for <xliff:g example="2 hours" id="HOURS">%2$s</xliff:g> and <xliff:g example="2 minutes" id="MINUTES">%3$s</xliff:g> from now.</string>
+    <string name="alarm_confirmation_toast_7" tools:ignore="StringFormatCount">Alarm set for <xliff:g example="2 hours" id="HOURS">%2$s</xliff:g> and <xliff:g example="2 minutes" id="MINUTES">%3$s</xliff:g> from now.</string>
     <!-- Alarm confirmation toast: Describes how long from now until alarm fires - Toast 8 -->
     <string name="alarm_confirmation_toast_8">Alarm set for <xliff:g example="2 days" id="DAYS">%1$s</xliff:g>, <xliff:g example="2 hours" id="HOURS">%2$s</xliff:g>, and <xliff:g example="2 minutes" id="MINUTES">%3$s</xliff:g> from now.</string>
     <!-- Alarm confirmation toast: days -->
@@ -318,15 +330,23 @@
          [CHAR LIMIT=NONE]
     -->
     <string name="alarm_is_snoozed"><xliff:g example="14:20" id="alarm_time">%s</xliff:g> alarm snoozed for 10 minutes</string>
+    <!-- Dialog title shown when math challenge must be solved before snoozing. -->
+    <string name="math_challenge_title_snooze">Solve to snooze</string>
+    <!-- Dialog title shown when math challenge must be solved before dismissing. -->
+    <string name="math_challenge_title_dismiss">Solve to dismiss</string>
+    <!-- Dialog button text to set a new problem. -->
+    <string name="math_challenge_new_problem">New problem</string>
+    <!-- Hint for alarm mission answer field. -->
+    <string name="math_challenge_answer_hint">Your answer</string>
+    <!-- Prompt for alarm math mission challenge. -->
+    <string name="math_challenge_prompt">What is %1$d + %2$d?</string>
+    <!-- Error shown when alarm mission answer is incorrect. -->
+    <string name="math_challenge_wrong_answer">Incorrect answer</string>
 
     <!-- ******************* -->
     <!-- **     CLOCK     ** -->
     <!-- ******************* -->
 
-    <!-- Describes the purpose of the button which provides a list of cities for the world clock settings -->
-    <string name="button_cities">Cities</string>
-    <!-- Label for the Cities activity displayed on-screen when that activity must be represented to the user. -->
-    <string name="cities_activity_title">Cities</string>
     <!-- Title with the clock on the main page displaying the user's regular timezone (shows when automatic_home_clock enabled) -->
     <string name="home_label">Home</string>
     <!-- Menu item on Cities screen to sort by GMT offset -->
@@ -368,12 +388,12 @@
     <string name="default_timer_ringtone_title">Timer Expired</string>
     <!-- Timer notification: how long from now until timer goes off. (Also used for timer accessibility announcements.) -->
     <string name="timer_notifications_less_min">Less than a minute remaining</string>
-    <string name="timer_notifications_hours"><xliff:g example="2 hours" id="HOURS">%1$s</xliff:g><xliff:g example="remaining" id="REMAINING"> %3$s</xliff:g></string>
-    <string name="timer_notifications_minutes"><xliff:g example="2 minutes" id="MINUTES">%2$s</xliff:g><xliff:g example="remaining" id="REMAINING"> %3$s</xliff:g></string>
+    <string name="timer_notifications_hours" tools:ignore="StringFormatCount"><xliff:g example="2 hours" id="HOURS">%1$s</xliff:g><xliff:g example="remaining" id="REMAINING"> %3$s</xliff:g></string>
+    <string name="timer_notifications_minutes" tools:ignore="StringFormatCount"><xliff:g example="2 minutes" id="MINUTES">%2$s</xliff:g><xliff:g example="remaining" id="REMAINING"> %3$s</xliff:g></string>
     <string name="timer_notifications_hours_minutes"><xliff:g example="2 hours" id="HOURS">%1$s</xliff:g><xliff:g example="2 minutes" id="MINUTES"> %2$s</xliff:g> remaining</string>
-    <string name="timer_notifications_seconds"><xliff:g example="2 seconds" id="SECONDS">%4$s</xliff:g><xliff:g example="remaining" id="REMAINING"> %3$s</xliff:g></string>
-    <string name="timer_notifications_minutes_seconds"><xliff:g example="2 minutes" id="MINUTES">%2$s</xliff:g> <xliff:g example="2 seconds" id="SECONDS"> %4$s</xliff:g><xliff:g example="remaining" id="REMAINING"> %3$s</xliff:g></string>
-    <string name="timer_notifications_hours_seconds"><xliff:g example="2 hours" id="HOURS">%1$s</xliff:g> <xliff:g example="2 seconds" id="SECONDS"> %4$s</xliff:g><xliff:g example="remaining" id="REMAINING"> %3$s</xliff:g></string>
+    <string name="timer_notifications_seconds" tools:ignore="StringFormatCount"><xliff:g example="2 seconds" id="SECONDS">%4$s</xliff:g><xliff:g example="remaining" id="REMAINING"> %3$s</xliff:g></string>
+    <string name="timer_notifications_minutes_seconds" tools:ignore="StringFormatCount"><xliff:g example="2 minutes" id="MINUTES">%2$s</xliff:g> <xliff:g example="2 seconds" id="SECONDS"> %4$s</xliff:g><xliff:g example="remaining" id="REMAINING"> %3$s</xliff:g></string>
+    <string name="timer_notifications_hours_seconds" tools:ignore="StringFormatCount"><xliff:g example="2 hours" id="HOURS">%1$s</xliff:g> <xliff:g example="2 seconds" id="SECONDS"> %4$s</xliff:g><xliff:g example="remaining" id="REMAINING"> %3$s</xliff:g></string>
     <string name="timer_notifications_hours_minutes_seconds"><xliff:g example="2 hours" id="HOURS">%1$s</xliff:g><xliff:g example="2 minutes" id="MINUTES"> %2$s</xliff:g><xliff:g example="2 seconds" id="SECONDS"> %4$s</xliff:g><xliff:g example="remaining" id="REMAINING"> %3$s</xliff:g></string>
     <!-- Timer accessibility announcements -->
     <string name="timer_accessibility_custom_time_added">%1$s minute added to timer, <xliff:g example="5 hours remaining" id="TIME">%2$s</xliff:g></string>
@@ -432,7 +452,7 @@
     <string name="timer_times_up">Time\'s up</string>
     <!-- Notification content shown when multiple timers have completed and have no more time remaining.
      Arg is the number of timers. [CHAR LIMIT=25] -->
-    <string name="timer_multi_times_up"><xliff:g example="2" id="NUM_TIMERS">%d</xliff:g> timers expired</string>
+    <string name="timer_multi_times_up" tools:ignore="PluralsCandidate"><xliff:g example="2" id="NUM_TIMERS">%d</xliff:g> timers expired</string>
     <!-- Label associated with a notification for a Timer -->
     <string name="timer_notification_label">Timer</string>
     <!-- Label associated with a notification for a missed named Timer. [CHAR LIMIT=NONE] -->
@@ -440,7 +460,7 @@
     <!-- Notification title when timer is paused. [CHAR LIMIT=25] -->
     <string name="timer_paused">Timer paused</string>
     <!-- Notification title when at least one timer, of those in use, is counting down. -->
-    <string name="timers_in_use"><xliff:g example="7" id="number">%d</xliff:g> timers</string>
+    <string name="timers_in_use" tools:ignore="PluralsCandidate"><xliff:g example="7" id="number">%d</xliff:g> timers</string>
     <!-- Describes the purpose of the notification button to pause the timer. [CHAR LIMIT=15] -->
     <string name="timer_pause">Pause</string>
     <!-- Describes the service that processes actions originating from timer notifications. -->
@@ -821,6 +841,12 @@
     <string name="settings_language_hungarian">Hungarian</string>
     <!-- Setting title for changing the language to Hebrew. -->
     <string name="settings_language_hebrew">Hebrew</string>
+    <!-- Setting title for changing the language to Swedish. -->
+    <string name="settings_language_swedish">Swedish</string>
+    <!-- Setting title for changing the language to Laotian. -->
+    <string name="settings_language_laotian">Laotian</string>
+    <!-- Setting title for changing the language to Persian. -->
+    <string name="settings_language_persian">Persian</string>
     <!-- Category title for tab settings -->
     <string name="tabs_category_title">Tabs</string>
     <!-- Setting title to choose which tabs are visible in the bottom navigation menu. -->
@@ -837,6 +863,10 @@
     <string name="settings_vibration_disabled_summary">Vibration is disabled in the device settings</string>
     <!-- Setting title to display the toolbar title. -->
     <string name="settings_toolbar_title">Display the title in the toolbar</string>
+    <!-- Setting title to customize the size of the central FAB. -->
+    <string name="central_fab_size_title">Size of the central floating action button</string>
+    <!-- Setting title to customize the size of the side FAB. -->
+    <string name="side_fab_size_title">Size of the side floating action buttons</string>
     <!-- Setting title to change the tab title visibility. -->
     <string name="settings_tab_title_visibility_title">Display the tab titles</string>
     <!-- Setting title to always display tab titles. -->
@@ -995,6 +1025,8 @@
     <!-- Setting title for changing the button action to Control volume. -->
     <string name="button_action_control_volume">Control volume</string>
     <!-- Setting title for changing the button action to Nothing. -->
+    <string name="button_action_mute">Mute</string>
+    <!-- Setting title for changing the button action to Nothing. -->
     <string name="button_action_nothing">Nothing</string>
     <!-- Setting title for the Power button setting. -->
     <string name="power_button_title">Power button</string>
@@ -1004,6 +1036,20 @@
     <string name="flip_action_title">Device flip action</string>
     <!-- Setting title for the shake action setting. -->
     <string name="shake_action_title">Device shake action</string>
+    <!-- Category title for math challenge settings -->
+    <string name="math_challenge_category_title">Math challenge</string>
+    <!-- Setting title to change the math hardness level -->
+    <string name="math_hardness_level_title">Math hardness level</string>
+    <!-- Setting title to change the math hardness level to Easy -->
+    <string name="math_hardness_level_easy">Easy</string>
+    <!-- Setting title to change the math hardness level to Normal -->
+    <string name="math_hardness_level_normal">Normal</string>
+    <!-- Setting title to change the math hardness level to Hard -->
+    <string name="math_hardness_level_hard">Hard</string>
+    <!-- Setting title to use a custom math hardness level for each alarm. -->
+    <string name="enable_per_alarm_math_hardness_level_title">Use a custom math hardness level for each alarm</string>
+    <!-- Dialog message when the "Set a math hardness level for each alarm" setting is disabled. -->
+    <string name="enable_per_alarm_math_hardness_level_dialog_message">Custom math hardness levels will be reset.%s</string>
 
     <!-- *********************************** -->
     <!-- **     ALARM DISPLAY SETTINGS    ** -->
@@ -1096,6 +1142,8 @@
     <string name="timezone_norfolk">Norfolk Island</string>
     <!-- Time zone for Macquarie Island -->
     <string name="timezone_macquarie">Macquarie Island</string>
+    <!-- Setting title to display a flag next to city names -->
+    <string name="enable_city_flag_title">Display country flags</string>
     <!-- Setting title to allow adding a note to cities -->
     <string name="enable_city_note_title">Add a personal note to the cities</string>
     <!-- Setting summary about the city note -->
@@ -1195,6 +1243,8 @@
     <string name="sw_long_press_volume_down_action_title">Volume down (after long press)</string>
     <!-- Setting title to start / pause the stopwatch. -->
     <string name="sw_start_pause_action">Start / Pause</string>
+    <!-- Setting title to display milliseconds. -->
+    <string name="sw_display_milliseconds_title">Display milliseconds</string>
 
     <!-- ********************************* -->
     <!-- **     SCREENSAVER SETTINGS    ** -->

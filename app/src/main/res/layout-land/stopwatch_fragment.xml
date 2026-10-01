@@ -15,11 +15,11 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/stopwatch_circle_layout"
         android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_marginBottom="@dimen/stopwatch_circle_land_margin_bottom"
+        android:layout_height="0dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/laps_background"
-        app:layout_goneMarginEnd="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
         tools:ignore="InconsistentLayout">
 
         <androidx.constraintlayout.widget.ConstraintLayout
@@ -29,10 +29,10 @@
             app:layout_constraintWidth_max="@dimen/stopwatch_circle_max_size"
             app:layout_constraintHeight_max="@dimen/stopwatch_circle_max_size"
             app:layout_constraintDimensionRatio="1:1"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
 
             <include
                 layout="@layout/stopwatch_time"
@@ -47,8 +47,12 @@
             <!-- Sufficient space exists to include the bounding stopwatch circle. -->
             <com.best.deskclock.uicomponents.StopwatchCircleView
                 android:id="@+id/stopwatch_circle"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
                 tools:visibility="visible" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
@@ -59,9 +63,6 @@
         android:id="@+id/laps_background"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/lap_background_margin_start"
-        android:layout_marginEnd="@dimen/lap_background_margin_end"
-        android:layout_marginBottom="@dimen/lap_background_margin_bottom"
         android:orientation="vertical"
         android:visibility="visible"
         app:layout_constrainedHeight="true"

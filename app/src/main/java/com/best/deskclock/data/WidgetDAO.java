@@ -11,11 +11,30 @@ import static com.best.deskclock.settings.PreferencesKeys.*;
 
 import android.content.SharedPreferences;
 
+import androidx.annotation.NonNull;
+
 /**
  * This class encapsulates the transfer of data between widget objects and their permanent storage
  * in {@link SharedPreferences}.
  */
 public final class WidgetDAO {
+
+    /**
+     * @param prefs               the {@link SharedPreferences} containing the user's default préférences
+     * @param widgetProviderClass indicates the type of widget being counted
+     * @param count               the number of widgets of the given type
+     * @return the delta between the new count and the old count
+     */
+    public static int updateWidgetCount(@NonNull SharedPreferences prefs, @NonNull Class<?> widgetProviderClass, int count) {
+        final String key = widgetProviderClass.getSimpleName() + WIDGET_COUNT;
+        final int oldCount = prefs.getInt(key, 0);
+        if (count == 0) {
+            prefs.edit().remove(key).apply();
+        } else {
+            prefs.edit().putInt(key, count).apply();
+        }
+        return count - oldCount;
+    }
 
     // *******************
     // ** ANALOG WIDGET **
@@ -24,7 +43,7 @@ public final class WidgetDAO {
     /**
      * @return the dial applied to the clock on the analog widget.
      */
-    public static String getAnalogWidgetClockDial(SharedPreferences prefs) {
+    public static String getAnalogWidgetClockDial(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_analog_widget.xml
         return prefs.getString(KEY_ANALOG_WIDGET_CLOCK_DIAL, DEFAULT_ANALOG_WIDGET_CLOCK_DIAL);
     }
@@ -32,7 +51,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the second hand is displayed on the analog widget; {@code false} otherwise.
      */
-    public static boolean isSecondHandDisplayedOnAnalogWidget(SharedPreferences prefs) {
+    public static boolean isSecondHandDisplayedOnAnalogWidget(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_analog_widget.xml
         return prefs.getBoolean(KEY_ANALOG_WIDGET_WITH_SECOND_HAND, DEFAULT_ANALOG_WIDGET_WITH_SECOND_HAND);
     }
@@ -40,7 +59,7 @@ public final class WidgetDAO {
     /**
      * @return the clock second hand displayed on the analog widget.
      */
-    public static String getAnalogWidgetClockSecondHand(SharedPreferences prefs) {
+    public static String getAnalogWidgetClockSecondHand(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_analog_widget.xml
         return prefs.getString(KEY_ANALOG_WIDGET_CLOCK_SECOND_HAND, DEFAULT_CLOCK_SECOND_HAND);
     }
@@ -49,7 +68,7 @@ public final class WidgetDAO {
      * @return {@code true} if the default color is applied to the dial on the analog widget;
      * {@code false} otherwise.
      */
-    public static boolean isAnalogWidgetDefaultDialColor(SharedPreferences prefs) {
+    public static boolean isAnalogWidgetDefaultDialColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_analog_widget.xml
         return prefs.getBoolean(KEY_ANALOG_WIDGET_DEFAULT_DIAL_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -57,7 +76,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the dial color on the analog widget.
      */
-    public static int getAnalogWidgetDialColor(SharedPreferences prefs) {
+    public static int getAnalogWidgetDialColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_analog_widget.xml
         return prefs.getInt(KEY_ANALOG_WIDGET_CUSTOM_DIAL_COLOR, DEFAULT_WIDGETS_CUSTOM_COLOR);
     }
@@ -66,7 +85,7 @@ public final class WidgetDAO {
      * @return {@code true} if the default color is applied to the hour hand on the analog widget;
      * {@code false} otherwise.
      */
-    public static boolean isAnalogWidgetDefaultHourHandColor(SharedPreferences prefs) {
+    public static boolean isAnalogWidgetDefaultHourHandColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_analog_widget.xml
         return prefs.getBoolean(KEY_ANALOG_WIDGET_DEFAULT_HOUR_HAND_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -74,7 +93,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the hour hand color on the analog widget.
      */
-    public static int getAnalogWidgetHourHandColor(SharedPreferences prefs) {
+    public static int getAnalogWidgetHourHandColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_analog_widget.xml
         return prefs.getInt(KEY_ANALOG_WIDGET_CUSTOM_HOUR_HAND_COLOR, DEFAULT_WIDGETS_CUSTOM_COLOR);
     }
@@ -83,7 +102,7 @@ public final class WidgetDAO {
      * @return {@code true} if the default color is applied to the minute hand on the analog widget;
      * {@code false} otherwise.
      */
-    public static boolean isAnalogWidgetDefaultMinuteHandColor(SharedPreferences prefs) {
+    public static boolean isAnalogWidgetDefaultMinuteHandColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_analog_widget.xml
         return prefs.getBoolean(KEY_ANALOG_WIDGET_DEFAULT_MINUTE_HAND_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -91,7 +110,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the minute hand color on the analog widget.
      */
-    public static int getAnalogWidgetMinuteHandColor(SharedPreferences prefs) {
+    public static int getAnalogWidgetMinuteHandColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_analog_widget.xml
         return prefs.getInt(KEY_ANALOG_WIDGET_CUSTOM_MINUTE_HAND_COLOR, DEFAULT_WIDGETS_CUSTOM_COLOR);
     }
@@ -100,7 +119,7 @@ public final class WidgetDAO {
      * @return {@code true} if the default color is applied to the second hand on the analog widget;
      * {@code false} otherwise.
      */
-    public static boolean isAnalogWidgetDefaultSecondHandColor(SharedPreferences prefs) {
+    public static boolean isAnalogWidgetDefaultSecondHandColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_analog_widget.xml
         return prefs.getBoolean(KEY_ANALOG_WIDGET_DEFAULT_SECOND_HAND_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -108,7 +127,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the second hand color on the analog widget.
      */
-    public static int getAnalogWidgetSecondHandColor(SharedPreferences prefs) {
+    public static int getAnalogWidgetSecondHandColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_analog_widget.xml
         return prefs.getInt(KEY_ANALOG_WIDGET_CUSTOM_SECOND_HAND_COLOR, DEFAULT_WIDGETS_CUSTOM_COLOR);
     }
@@ -120,7 +139,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the text is displayed in uppercase on the digital widget; {@code false} otherwise.
      */
-    public static boolean isTextUppercaseDisplayedOnDigitalWidget(SharedPreferences prefs) {
+    public static boolean isTextUppercaseDisplayedOnDigitalWidget(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_DIGITAL_WIDGET_DISPLAY_TEXT_UPPERCASE, DEFAULT_WIDGET_TEXT_UPPERCASE_DISPLAYED);
     }
@@ -128,7 +147,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the text shadow is displayed on the digital widget; {@code false} otherwise.
      */
-    public static boolean isTextShadowDisplayedOnDigitalWidget(SharedPreferences prefs) {
+    public static boolean isTextShadowDisplayedOnDigitalWidget(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_DIGITAL_WIDGET_DISPLAY_TEXT_SHADOW, DEFAULT_WIDGET_TEXT_SHADOW_DISPLAYED);
     }
@@ -137,7 +156,7 @@ public final class WidgetDAO {
      * @return {@code true} if the seconds are displayed on the digital widget;
      * {@code false} otherwise.
      */
-    public static boolean areSecondsDisplayedOnDigitalWidget(SharedPreferences prefs) {
+    public static boolean areSecondsDisplayedOnDigitalWidget(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_DIGITAL_WIDGET_SECONDS_DISPLAYED, DEFAULT_DIGITAL_WIDGET_DISPLAY_SECONDS);
     }
@@ -145,7 +164,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the AM/PM part is hidden on the digital widget; {@code false} otherwise.
      */
-    public static boolean isAmPmHiddenOnDigitalWidget(SharedPreferences prefs) {
+    public static boolean isAmPmHiddenOnDigitalWidget(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_DIGITAL_WIDGET_HIDE_AM_PM, DEFAULT_DIGITAL_WIDGET_HIDE_AM_PM);
     }
@@ -153,7 +172,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the background is displayed on the digital widget; {@code false} otherwise.
      */
-    public static boolean isBackgroundDisplayedOnDigitalWidget(SharedPreferences prefs) {
+    public static boolean isBackgroundDisplayedOnDigitalWidget(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_DIGITAL_WIDGET_DISPLAY_BACKGROUND, DEFAULT_DIGITAL_WIDGET_DISPLAY_BACKGROUND);
     }
@@ -161,7 +180,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the background corner radius is customizable for the digital widget; {@code false} otherwise.
      */
-    public static boolean isDigitalWidgetBackgroundCornerRadiusCustomizable(SharedPreferences prefs) {
+    public static boolean isDigitalWidgetBackgroundCornerRadiusCustomizable(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_DIGITAL_WIDGET_CUSTOMIZE_BACKGROUND_CORNER_RADIUS, DEFAULT_WIDGETS_CUSTOMIZE_BACKGROUND_CORNER_RADIUS);
     }
@@ -169,7 +188,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the digital widget background corner radius.
      */
-    public static int getDigitalWidgetBackgroundCornerRadius(SharedPreferences prefs) {
+    public static int getDigitalWidgetBackgroundCornerRadius(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getInt(KEY_DIGITAL_WIDGET_BACKGROUND_CORNER_RADIUS, DEFAULT_WIDGET_BACKGROUND_CORNER_RADIUS);
     }
@@ -177,7 +196,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the date is displayed on the digital widget; {@code false} otherwise.
      */
-    public static boolean isDateDisplayedOnDigitalWidget(SharedPreferences prefs) {
+    public static boolean isDateDisplayedOnDigitalWidget(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_DIGITAL_WIDGET_DISPLAY_DATE, DEFAULT_DIGITAL_WIDGET_DISPLAY_DATE);
     }
@@ -185,7 +204,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the date is displayed above the time on the digital widget; {@code false} otherwise.
      */
-    public static boolean isTopDateDisplayedOnDigitalWidget(SharedPreferences prefs) {
+    public static boolean isTopDateDisplayedOnDigitalWidget(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_DIGITAL_WIDGET_DISPLAY_TOP_DATE, DEFAULT_DIGITAL_WIDGET_DISPLAY_TOP_DATE);
     }
@@ -193,15 +212,15 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the next alarm is displayed on the digital widget; {@code false} otherwise.
      */
-    public static boolean isNextAlarmDisplayedOnDigitalWidget(SharedPreferences prefs) {
+    public static boolean isNextAlarmDisplayedOnDigitalWidget(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
-        return prefs.getBoolean(KEY_DIGITAL_WIDGET_DISPLAY_NEXT_ALARM, DEFAULT_DIGITAL_WIDGET_DISPLAY_NEXT_ALARM);
+        return prefs.getBoolean(KEY_DIGITAL_WIDGET_DISPLAY_NEXT_ALARM, DEFAULT_DISPLAY_NEXT_ALARM);
     }
 
     /**
      * @return {@code true} if the title of the next alarm is displayed on the digital widget; {@code false} otherwise.
      */
-    public static boolean isNextAlarmTitleDisplayedOnDigitalWidget(SharedPreferences prefs) {
+    public static boolean isNextAlarmTitleDisplayedOnDigitalWidget(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_DIGITAL_WIDGET_DISPLAY_NEXT_ALARM_TITLE, DEFAULT_DIGITAL_WIDGET_DISPLAY_NEXT_ALARM_TITLE);
     }
@@ -209,15 +228,23 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the cities are displayed on the digital widget; {@code false} otherwise.
      */
-    public static boolean areWorldCitiesDisplayedOnDigitalWidget(SharedPreferences prefs) {
+    public static boolean areWorldCitiesDisplayedOnDigitalWidget(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_DIGITAL_WIDGET_WORLD_CITIES_DISPLAYED, DEFAULT_DIGITAL_WIDGET_WORLD_CITIES_DISPLAYED);
     }
 
     /**
+     * @return {@code true} if a flag should be displayed next to the city name; {@code false} otherwise.
+     */
+    public static boolean isCityFlagEnabled(@NonNull SharedPreferences prefs) {
+        // Default value must match the one in res/xml/settings_customize_digital_widget.xml
+        return prefs.getBoolean(KEY_DIGITAL_WIDGET_ENABLE_CITY_FLAG, DEFAULT_ENABLE_CITY_FLAG);
+    }
+
+    /**
      * @return {@code true} if horizontal padding should be applied to the digital widget. {@code false} otherwise.
      */
-    public static boolean isDigitalWidgetHorizontalPaddingApplied(SharedPreferences prefs) {
+    public static boolean isDigitalWidgetHorizontalPaddingApplied(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_DIGITAL_WIDGET_APPLY_HORIZONTAL_PADDING, DEFAULT_WIDGETS_APPLY_HORIZONTAL_PADDING);
     }
@@ -225,7 +252,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the default color is applied to the background on the digital widget; {@code false} otherwise.
      */
-    public static boolean isDigitalWidgetDefaultBackgroundColor(SharedPreferences prefs) {
+    public static boolean isDigitalWidgetDefaultBackgroundColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_DIGITAL_WIDGET_DEFAULT_BACKGROUND_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -233,7 +260,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the background color on the digital widget.
      */
-    public static int getDigitalWidgetBackgroundColor(SharedPreferences prefs) {
+    public static int getDigitalWidgetBackgroundColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getInt(KEY_DIGITAL_WIDGET_CUSTOM_BACKGROUND_COLOR, DEFAULT_WIDGETS_BACKGROUND_COLOR);
     }
@@ -241,7 +268,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the default color is applied to the digital clock on the digital widget; {@code false} otherwise.
      */
-    public static boolean isDigitalWidgetDefaultClockColor(SharedPreferences prefs) {
+    public static boolean isDigitalWidgetDefaultClockColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_DIGITAL_WIDGET_DEFAULT_CLOCK_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -249,7 +276,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the color of the clock on the digital widget.
      */
-    public static int getDigitalWidgetCustomClockColor(SharedPreferences prefs) {
+    public static int getDigitalWidgetCustomClockColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getInt(KEY_DIGITAL_WIDGET_CUSTOM_CLOCK_COLOR, DEFAULT_WIDGETS_CUSTOM_COLOR);
     }
@@ -257,7 +284,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the default color is applied to the date on the digital widget; {@code false} otherwise.
      */
-    public static boolean isDigitalWidgetDefaultDateColor(SharedPreferences prefs) {
+    public static boolean isDigitalWidgetDefaultDateColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_DIGITAL_WIDGET_DEFAULT_DATE_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -265,7 +292,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the color of the date on the digital widget.
      */
-    public static int getDigitalWidgetCustomDateColor(SharedPreferences prefs) {
+    public static int getDigitalWidgetCustomDateColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getInt(KEY_DIGITAL_WIDGET_CUSTOM_DATE_COLOR, DEFAULT_WIDGETS_CUSTOM_COLOR);
     }
@@ -273,7 +300,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the default color is applied to the next alarm on the digital widget; {@code false} otherwise.
      */
-    public static boolean isDigitalWidgetDefaultNextAlarmColor(SharedPreferences prefs) {
+    public static boolean isDigitalWidgetDefaultNextAlarmColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_DIGITAL_WIDGET_DEFAULT_NEXT_ALARM_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -281,7 +308,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the color of the next alarm on the digital widget.
      */
-    public static int getDigitalWidgetCustomNextAlarmColor(SharedPreferences prefs) {
+    public static int getDigitalWidgetCustomNextAlarmColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getInt(KEY_DIGITAL_WIDGET_CUSTOM_NEXT_ALARM_COLOR, DEFAULT_WIDGETS_CUSTOM_COLOR);
     }
@@ -289,7 +316,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the default color is applied to the next alarm title on the digital widget; {@code false} otherwise.
      */
-    public static boolean isDigitalWidgetDefaultNextAlarmTitleColor(SharedPreferences prefs) {
+    public static boolean isDigitalWidgetDefaultNextAlarmTitleColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_DIGITAL_WIDGET_DEFAULT_NEXT_ALARM_TITLE_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -297,7 +324,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the color of the next alarm title on the digital widget.
      */
-    public static int getDigitalWidgetCustomNextAlarmTitleColor(SharedPreferences prefs) {
+    public static int getDigitalWidgetCustomNextAlarmTitleColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getInt(KEY_DIGITAL_WIDGET_CUSTOM_NEXT_ALARM_TITLE_COLOR, DEFAULT_WIDGETS_CUSTOM_COLOR);
     }
@@ -305,7 +332,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the default color is applied to the city clock on the digital widget; {@code false} otherwise.
      */
-    public static boolean isDigitalWidgetDefaultCityClockColor(SharedPreferences prefs) {
+    public static boolean isDigitalWidgetDefaultCityClockColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_DIGITAL_WIDGET_DEFAULT_CITY_CLOCK_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -313,7 +340,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the color of the city clock on the digital widget.
      */
-    public static int getDigitalWidgetCustomCityClockColor(SharedPreferences prefs) {
+    public static int getDigitalWidgetCustomCityClockColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getInt(KEY_DIGITAL_WIDGET_CUSTOM_CITY_CLOCK_COLOR, DEFAULT_WIDGETS_CUSTOM_COLOR);
     }
@@ -321,7 +348,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the default color is applied to the city name on the digital widget; {@code false} otherwise.
      */
-    public static boolean isDigitalWidgetDefaultCityNameColor(SharedPreferences prefs) {
+    public static boolean isDigitalWidgetDefaultCityNameColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_DIGITAL_WIDGET_DEFAULT_CITY_NAME_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -329,7 +356,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the color of the city name on the digital widget.
      */
-    public static int getDigitalWidgetCustomCityNameColor(SharedPreferences prefs) {
+    public static int getDigitalWidgetCustomCityNameColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getInt(KEY_DIGITAL_WIDGET_CUSTOM_CITY_NAME_COLOR, DEFAULT_WIDGETS_CUSTOM_COLOR);
     }
@@ -337,7 +364,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the default color is applied to the city note on the digital widget; {@code false} otherwise.
      */
-    public static boolean isDigitalWidgetDefaultCityNoteColor(SharedPreferences prefs) {
+    public static boolean isDigitalWidgetDefaultCityNoteColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_DIGITAL_WIDGET_DEFAULT_CITY_NOTE_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -345,7 +372,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the color of the city note on the digital widget.
      */
-    public static int getDigitalWidgetCustomCityNoteColor(SharedPreferences prefs) {
+    public static int getDigitalWidgetCustomCityNoteColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getInt(KEY_DIGITAL_WIDGET_CUSTOM_CITY_NOTE_COLOR, DEFAULT_WIDGETS_CUSTOM_COLOR);
     }
@@ -353,7 +380,7 @@ public final class WidgetDAO {
     /**
      * @return the font size applied to the clock on the digital widget.
      */
-    public static int getDigitalWidgetMaxClockFontSize(SharedPreferences prefs) {
+    public static int getDigitalWidgetMaxClockFontSize(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getInt(KEY_DIGITAL_WIDGET_MAXIMUM_CLOCK_FONT_SIZE, DEFAULT_WIDGETS_FONT_SIZE);
     }
@@ -365,7 +392,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the text is displayed in uppercase on the vertical widget; {@code false} otherwise.
      */
-    public static boolean isTextUppercaseDisplayedOnVerticalWidget(SharedPreferences prefs) {
+    public static boolean isTextUppercaseDisplayedOnVerticalWidget(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_vertical_widget.xml
         return prefs.getBoolean(KEY_VERTICAL_WIDGET_DISPLAY_TEXT_UPPERCASE, DEFAULT_WIDGET_TEXT_UPPERCASE_DISPLAYED);
     }
@@ -373,7 +400,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the text shadow is displayed on the vertical widget; {@code false} otherwise.
      */
-    public static boolean isTextShadowDisplayedOnVerticalWidget(SharedPreferences prefs) {
+    public static boolean isTextShadowDisplayedOnVerticalWidget(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_vertical_widget.xml
         return prefs.getBoolean(KEY_VERTICAL_WIDGET_DISPLAY_TEXT_SHADOW, DEFAULT_WIDGET_TEXT_SHADOW_DISPLAYED);
     }
@@ -381,7 +408,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the background is displayed on the vertical widget; {@code false} otherwise.
      */
-    public static boolean isBackgroundDisplayedOnVerticalWidget(SharedPreferences prefs) {
+    public static boolean isBackgroundDisplayedOnVerticalWidget(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_vertical_widget.xml
         return prefs.getBoolean(KEY_VERTICAL_WIDGET_DISPLAY_BACKGROUND,
             DEFAULT_DIGITAL_WIDGET_DISPLAY_BACKGROUND);
@@ -390,7 +417,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the background corner radius is customizable for the vertical widget; {@code false} otherwise.
      */
-    public static boolean isVerticalWidgetBackgroundCornerRadiusCustomizable(SharedPreferences prefs) {
+    public static boolean isVerticalWidgetBackgroundCornerRadiusCustomizable(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_VERTICAL_WIDGET_CUSTOMIZE_BACKGROUND_CORNER_RADIUS, DEFAULT_WIDGETS_CUSTOMIZE_BACKGROUND_CORNER_RADIUS);
     }
@@ -398,7 +425,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the vertical widget background corner radius.
      */
-    public static int getVerticalWidgetBackgroundCornerRadius(SharedPreferences prefs) {
+    public static int getVerticalWidgetBackgroundCornerRadius(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getInt(KEY_VERTICAL_WIDGET_BACKGROUND_CORNER_RADIUS, DEFAULT_WIDGET_BACKGROUND_CORNER_RADIUS);
     }
@@ -406,7 +433,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the date is displayed on the vertical widget; {@code false} otherwise.
      */
-    public static boolean isDateDisplayedOnVerticalWidget(SharedPreferences prefs) {
+    public static boolean isDateDisplayedOnVerticalWidget(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_vertical_widget.xml
         return prefs.getBoolean(KEY_VERTICAL_WIDGET_DISPLAY_DATE, DEFAULT_VERTICAL_WIDGET_DISPLAY_DATE);
     }
@@ -414,15 +441,15 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the next alarm is displayed on the vertical widget; {@code false} otherwise.
      */
-    public static boolean isNextAlarmDisplayedOnVerticalWidget(SharedPreferences prefs) {
+    public static boolean isNextAlarmDisplayedOnVerticalWidget(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_vertical_widget.xml
-        return prefs.getBoolean(KEY_VERTICAL_WIDGET_DISPLAY_NEXT_ALARM, DEFAULT_VERTICAL_WIDGET_DISPLAY_NEXT_ALARM);
+        return prefs.getBoolean(KEY_VERTICAL_WIDGET_DISPLAY_NEXT_ALARM, DEFAULT_DISPLAY_NEXT_ALARM);
     }
 
     /**
      * @return {@code true} if horizontal padding should be applied to the vertical widget. {@code false} otherwise.
      */
-    public static boolean isVerticalWidgetHorizontalPaddingApplied(SharedPreferences prefs) {
+    public static boolean isVerticalWidgetHorizontalPaddingApplied(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_vertical_widget.xml
         return prefs.getBoolean(KEY_VERTICAL_WIDGET_APPLY_HORIZONTAL_PADDING, DEFAULT_WIDGETS_APPLY_HORIZONTAL_PADDING);
     }
@@ -430,7 +457,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the default color is applied to the background on the vertical widget; {@code false} otherwise.
      */
-    public static boolean isVerticalWidgetDefaultBackgroundColor(SharedPreferences prefs) {
+    public static boolean isVerticalWidgetDefaultBackgroundColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_vertical_widget.xml
         return prefs.getBoolean(KEY_VERTICAL_WIDGET_DEFAULT_BACKGROUND_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -438,7 +465,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the background color on the vertical widget.
      */
-    public static int getVerticalWidgetBackgroundColor(SharedPreferences prefs) {
+    public static int getVerticalWidgetBackgroundColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_vertical_widget.xml
         return prefs.getInt(KEY_VERTICAL_WIDGET_CUSTOM_BACKGROUND_COLOR, DEFAULT_WIDGETS_BACKGROUND_COLOR);
     }
@@ -446,7 +473,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the default color is applied to the hours on the vertical widget; {@code false} otherwise.
      */
-    public static boolean isVerticalWidgetDefaultHoursColor(SharedPreferences prefs) {
+    public static boolean isVerticalWidgetDefaultHoursColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_vertical_widget.xml
         return prefs.getBoolean(KEY_VERTICAL_WIDGET_DEFAULT_HOURS_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -454,7 +481,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the color of the hours on the vertical widget.
      */
-    public static int getVerticalWidgetCustomHoursColor(SharedPreferences prefs) {
+    public static int getVerticalWidgetCustomHoursColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_vertical_widget.xml
         return prefs.getInt(KEY_VERTICAL_WIDGET_CUSTOM_HOURS_COLOR, DEFAULT_WIDGETS_CUSTOM_COLOR);
     }
@@ -462,7 +489,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the default color is applied to the minutes on the vertical widget; {@code false} otherwise.
      */
-    public static boolean isVerticalWidgetDefaultMinutesColor(SharedPreferences prefs) {
+    public static boolean isVerticalWidgetDefaultMinutesColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_vertical_widget.xml
         return prefs.getBoolean(KEY_VERTICAL_WIDGET_DEFAULT_MINUTES_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -470,7 +497,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the color of the minutes on the vertical widget.
      */
-    public static int getVerticalWidgetCustomMinutesColor(SharedPreferences prefs) {
+    public static int getVerticalWidgetCustomMinutesColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_vertical_widget.xml
         return prefs.getInt(KEY_VERTICAL_WIDGET_CUSTOM_MINUTES_COLOR, DEFAULT_WIDGETS_CUSTOM_COLOR);
     }
@@ -478,7 +505,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the default color is applied to the date on the vertical widget; {@code false} otherwise.
      */
-    public static boolean isVerticalWidgetDefaultDateColor(SharedPreferences prefs) {
+    public static boolean isVerticalWidgetDefaultDateColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_vertical_widget.xml
         return prefs.getBoolean(KEY_VERTICAL_WIDGET_DEFAULT_DATE_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -486,7 +513,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the color of the date on the vertical widget.
      */
-    public static int getVerticalWidgetCustomDateColor(SharedPreferences prefs) {
+    public static int getVerticalWidgetCustomDateColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_vertical_widget.xml
         return prefs.getInt(KEY_VERTICAL_WIDGET_CUSTOM_DATE_COLOR, DEFAULT_WIDGETS_CUSTOM_COLOR);
     }
@@ -494,7 +521,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the default color is applied to the next alarm on the vertical widget; {@code false} otherwise.
      */
-    public static boolean isVerticalWidgetDefaultNextAlarmColor(SharedPreferences prefs) {
+    public static boolean isVerticalWidgetDefaultNextAlarmColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_vertical_widget.xml
         return prefs.getBoolean(KEY_VERTICAL_WIDGET_DEFAULT_NEXT_ALARM_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -502,7 +529,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the color of the next alarm on the vertical widget.
      */
-    public static int getVerticalWidgetCustomNextAlarmColor(SharedPreferences prefs) {
+    public static int getVerticalWidgetCustomNextAlarmColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_vertical_widget.xml
         return prefs.getInt(KEY_VERTICAL_WIDGET_CUSTOM_NEXT_ALARM_COLOR, DEFAULT_WIDGETS_CUSTOM_COLOR);
     }
@@ -510,7 +537,7 @@ public final class WidgetDAO {
     /**
      * @return the font size applied to the hours on the vertical widget.
      */
-    public static int getVerticalWidgetMaxClockFontSize(SharedPreferences prefs) {
+    public static int getVerticalWidgetMaxClockFontSize(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_vertical_widget.xml
         return prefs.getInt(KEY_VERTICAL_WIDGET_MAXIMUM_CLOCK_FONT_SIZE, DEFAULT_WIDGETS_FONT_SIZE);
     }
@@ -522,7 +549,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the text is displayed in uppercase on the Next alarm widget; {@code false} otherwise.
      */
-    public static boolean isTextUppercaseDisplayedOnNextAlarmWidget(SharedPreferences prefs) {
+    public static boolean isTextUppercaseDisplayedOnNextAlarmWidget(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_next_alarm_widget.xml
         return prefs.getBoolean(KEY_NEXT_ALARM_WIDGET_DISPLAY_TEXT_UPPERCASE, DEFAULT_WIDGET_TEXT_UPPERCASE_DISPLAYED);
     }
@@ -530,7 +557,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the text shadow is displayed on the Next alarm widget; {@code false} otherwise.
      */
-    public static boolean isTextShadowDisplayedOnNextAlarmWidget(SharedPreferences prefs) {
+    public static boolean isTextShadowDisplayedOnNextAlarmWidget(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_next_alarm_widget.xml
         return prefs.getBoolean(KEY_NEXT_ALARM_WIDGET_DISPLAY_TEXT_SHADOW, DEFAULT_WIDGET_TEXT_SHADOW_DISPLAYED);
     }
@@ -538,7 +565,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the background is displayed on the Next alarm widget; {@code false} otherwise.
      */
-    public static boolean isBackgroundDisplayedOnNextAlarmWidget(SharedPreferences prefs) {
+    public static boolean isBackgroundDisplayedOnNextAlarmWidget(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_next_alarm_widget.xml
         return prefs.getBoolean(KEY_NEXT_ALARM_WIDGET_DISPLAY_BACKGROUND, DEFAULT_DIGITAL_WIDGET_DISPLAY_BACKGROUND);
     }
@@ -546,7 +573,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the background corner radius is customizable for the Next alarm widget; {@code false} otherwise.
      */
-    public static boolean isNextAlarmWidgetBackgroundCornerRadiusCustomizable(SharedPreferences prefs) {
+    public static boolean isNextAlarmWidgetBackgroundCornerRadiusCustomizable(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getBoolean(KEY_NEXT_ALARM_WIDGET_CUSTOMIZE_BACKGROUND_CORNER_RADIUS,
             DEFAULT_WIDGETS_CUSTOMIZE_BACKGROUND_CORNER_RADIUS);
@@ -555,7 +582,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the Next alarm widget background corner radius.
      */
-    public static int getNextAlarmWidgetBackgroundCornerRadius(SharedPreferences prefs) {
+    public static int getNextAlarmWidgetBackgroundCornerRadius(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_digital_widget.xml
         return prefs.getInt(KEY_NEXT_ALARM_WIDGET_BACKGROUND_CORNER_RADIUS, DEFAULT_WIDGET_BACKGROUND_CORNER_RADIUS);
     }
@@ -563,7 +590,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if horizontal padding should be applied to the Next alarm widget. {@code false} otherwise.
      */
-    public static boolean isNextAlarmWidgetHorizontalPaddingApplied(SharedPreferences prefs) {
+    public static boolean isNextAlarmWidgetHorizontalPaddingApplied(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_next_alarm_widget.xml
         return prefs.getBoolean(KEY_NEXT_ALARM_WIDGET_APPLY_HORIZONTAL_PADDING, DEFAULT_WIDGETS_APPLY_HORIZONTAL_PADDING);
     }
@@ -571,7 +598,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the default color is applied to the background on the Next alarm widget; {@code false} otherwise.
      */
-    public static boolean isNextAlarmWidgetDefaultBackgroundColor(SharedPreferences prefs) {
+    public static boolean isNextAlarmWidgetDefaultBackgroundColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_next_alarm_widget.xml
         return prefs.getBoolean(KEY_NEXT_ALARM_WIDGET_DEFAULT_BACKGROUND_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -579,7 +606,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the background color on the Next alarm widget.
      */
-    public static int getNextAlarmWidgetBackgroundColor(SharedPreferences prefs) {
+    public static int getNextAlarmWidgetBackgroundColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_next_alarm_widget.xml
         return prefs.getInt(KEY_NEXT_ALARM_WIDGET_CUSTOM_BACKGROUND_COLOR, DEFAULT_WIDGETS_BACKGROUND_COLOR);
     }
@@ -587,7 +614,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the default color is applied to the title on the Next alarm widget; {@code false} otherwise.
      */
-    public static boolean isNextAlarmWidgetDefaultTitleColor(SharedPreferences prefs) {
+    public static boolean isNextAlarmWidgetDefaultTitleColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_next_alarm_widget.xml
         return prefs.getBoolean(KEY_NEXT_ALARM_WIDGET_DEFAULT_TITLE_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -595,7 +622,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the color of the title on the Next alarm widget.
      */
-    public static int getNextAlarmWidgetCustomTitleColor(SharedPreferences prefs) {
+    public static int getNextAlarmWidgetCustomTitleColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_next_alarm_widget.xml
         return prefs.getInt(KEY_NEXT_ALARM_WIDGET_CUSTOM_TITLE_COLOR, DEFAULT_WIDGETS_CUSTOM_COLOR);
     }
@@ -603,7 +630,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the default color is applied to the alarm title on the Next alarm widget; {@code false} otherwise.
      */
-    public static boolean isNextAlarmWidgetDefaultAlarmTitleColor(SharedPreferences prefs) {
+    public static boolean isNextAlarmWidgetDefaultAlarmTitleColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_next_alarm_widget.xml
         return prefs.getBoolean(KEY_NEXT_ALARM_WIDGET_DEFAULT_ALARM_TITLE_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -611,7 +638,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the color of the alarm title on the Next alarm widget.
      */
-    public static int getNextAlarmWidgetCustomAlarmTitleColor(SharedPreferences prefs) {
+    public static int getNextAlarmWidgetCustomAlarmTitleColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_next_alarm_widget.xml
         return prefs.getInt(KEY_NEXT_ALARM_WIDGET_CUSTOM_ALARM_TITLE_COLOR, DEFAULT_WIDGETS_CUSTOM_COLOR);
     }
@@ -619,7 +646,7 @@ public final class WidgetDAO {
     /**
      * @return {@code true} if the default color is applied to the alarm on the Next alarm widget; {@code false} otherwise.
      */
-    public static boolean isNextAlarmWidgetDefaultAlarmColor(SharedPreferences prefs) {
+    public static boolean isNextAlarmWidgetDefaultAlarmColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_next_alarm_widget.xml
         return prefs.getBoolean(KEY_NEXT_ALARM_WIDGET_DEFAULT_ALARM_COLOR, DEFAULT_WIDGETS_DEFAULT_COLOR);
     }
@@ -627,7 +654,7 @@ public final class WidgetDAO {
     /**
      * @return a value indicating the color of the alarm on the Next alarm widget.
      */
-    public static int getNextAlarmWidgetCustomAlarmColor(SharedPreferences prefs) {
+    public static int getNextAlarmWidgetCustomAlarmColor(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_next_alarm_widget.xml
         return prefs.getInt(KEY_NEXT_ALARM_WIDGET_CUSTOM_ALARM_COLOR, DEFAULT_WIDGETS_CUSTOM_COLOR);
     }
@@ -635,7 +662,7 @@ public final class WidgetDAO {
     /**
      * @return the font size applied to the Next alarm widget.
      */
-    public static int getNextAlarmWidgetMaxFontSize(SharedPreferences prefs) {
+    public static int getNextAlarmWidgetMaxFontSize(@NonNull SharedPreferences prefs) {
         // Default value must match the one in res/xml/settings_customize_next_alarm_widget.xml
         return prefs.getInt(KEY_NEXT_ALARM_WIDGET_MAXIMUM_FONT_SIZE, DEFAULT_WIDGETS_FONT_SIZE);
     }

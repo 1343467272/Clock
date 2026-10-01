@@ -10,6 +10,7 @@ import static com.best.deskclock.settings.PreferencesKeys.KEY_VERTICAL_WIDGET_CU
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.preference.Preference;
 
 import com.best.deskclock.R;
@@ -28,7 +29,7 @@ public class WidgetSettingsFragment extends BaseSettingsScreenFragment implement
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         addPreferencesFromResource(R.xml.settings_widgets);
@@ -39,16 +40,6 @@ public class WidgetSettingsFragment extends BaseSettingsScreenFragment implement
         mNextAlarmWidgetCustomizationPref = findPreference(KEY_NEXT_ALARM_WIDGET_CUSTOMIZATION);
 
         setupPreferences();
-    }
-
-    @Override
-    public void onDestroy() {
-        nullifyPreferenceListeners(mAnalogWidgetCustomizationPref, mDigitalWidgetCustomizationPref, mVerticalWidgetCustomizationPref,
-            mNextAlarmWidgetCustomizationPref);
-
-        nullifyAllPrefs();
-
-        super.onDestroy();
     }
 
     @Override
@@ -74,13 +65,6 @@ public class WidgetSettingsFragment extends BaseSettingsScreenFragment implement
         mVerticalWidgetCustomizationPref.setOnPreferenceClickListener(this);
 
         mNextAlarmWidgetCustomizationPref.setOnPreferenceClickListener(this);
-    }
-
-    private void nullifyAllPrefs() {
-        mAnalogWidgetCustomizationPref = null;
-        mDigitalWidgetCustomizationPref = null;
-        mVerticalWidgetCustomizationPref = null;
-        mNextAlarmWidgetCustomizationPref = null;
     }
 
 }

@@ -263,7 +263,7 @@ public final class LanSyncSettingsFragment extends BaseSettingsScreenFragment
                     return;
                 }
                 if (port < MIN_SYNC_PORT || port > MAX_SYNC_PORT) {
-                    CustomToast.show(context, R.string.lan_sync_port_invalid);
+                    CustomToast.show(context.getApplicationContext(), getAccentStyle(), getGeneralTypeface(), R.string.lan_sync_port_invalid);
                     return;
                 }
                 SyncSettings.setPort(context, port);
@@ -359,7 +359,7 @@ public final class LanSyncSettingsFragment extends BaseSettingsScreenFragment
         if (engine != null) {
             engine.syncNow();
         }
-        CustomToast.show(requireContext(), R.string.lan_sync_now_toast);
+        CustomToast.show(requireContext().getApplicationContext(), getAccentStyle(), getGeneralTypeface(), R.string.lan_sync_now_toast);
     }
 
     private void nullifyAllPrefs() {

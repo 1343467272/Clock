@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-package com.best.deskclock.utils;
+package com.best.deskclock.settings;
 
 import static android.media.AudioManager.STREAM_ALARM;
 import static com.best.deskclock.data.CustomRingtoneDAO.NEXT_RINGTONE_ID;
@@ -14,6 +14,7 @@ import static com.best.deskclock.data.TimerDAO.STATE;
 import static com.best.deskclock.data.TimerDAO.TIMER_IDS;
 import static com.best.deskclock.data.TimerDAO.TIMER_RINGTONE;
 import static com.best.deskclock.settings.PreferencesDefaultValues.DEFAULT_BLUR_INTENSITY;
+import static com.best.deskclock.settings.PreferencesDefaultValues.DEFAULT_MATH_HARDNESS_LEVEL;
 import static com.best.deskclock.settings.PreferencesDefaultValues.DEFAULT_SPECIFIC_ALARM_BACKGROUND_IMAGE;
 import static com.best.deskclock.settings.PreferencesKeys.*;
 
@@ -27,7 +28,8 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.text.TextUtils;
-import android.text.format.DateFormat;
+
+import androidx.annotation.NonNull;
 
 import com.best.deskclock.BuildConfig;
 import com.best.deskclock.R;
@@ -37,6 +39,10 @@ import com.best.deskclock.data.Timer;
 import com.best.deskclock.data.Weekdays;
 import com.best.deskclock.provider.Alarm;
 import com.best.deskclock.provider.AlarmInstance;
+import com.best.deskclock.utils.AlarmUtils;
+import com.best.deskclock.utils.LogUtils;
+import com.best.deskclock.utils.RingtoneUtils;
+import com.best.deskclock.utils.Utils;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -49,6 +55,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
@@ -56,13 +63,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * This class lists all settings that can be backed up or restored.
  */
-public class BackupAndRestoreUtils {
+public class BackupAndRestoreManager {
 
     public static boolean isRestoringBackupOrIsResettingApp = false;
     public static boolean appNeedsRestart = false;
@@ -70,8 +78,8 @@ public class BackupAndRestoreUtils {
     /**
      * Read and export values in SharedPreferences to a file.
      */
-    public static void settingsToJsonStream(Context context, SharedPreferences prefs, Map<String, ?> settings, OutputStream out)
-        throws JSONException, IOException {
+    public static void settingsToJsonStream(@NonNull Context context, @NonNull SharedPreferences prefs, @NonNull Map<String, ?> settings,
+                                            @NonNull OutputStream out) throws JSONException, IOException {
 
         Map<String, Boolean> booleans = new HashMap<>();
         Map<String, String> strings = new HashMap<>();
@@ -141,7 +149,9 @@ public class BackupAndRestoreUtils {
         header.put("packageName", context.getPackageName());
         header.put("versionName", BuildConfig.VERSION_NAME);
         header.put("versionCode", BuildConfig.VERSION_CODE);
-        header.put("backupDate", DateFormat.format("yyyy_MM_dd_HH-mm-ss", new Date()).toString());
+
+        SimpleDateFormat jsonDateFormat = new SimpleDateFormat("yyyy_MM_dd_HH-mm-ss", Locale.US);
+        header.put("backupDate", jsonDateFormat.format(new Date()));
 
         jsonObject.put("Header", header);
 
@@ -197,6 +207,7 @@ public class BackupAndRestoreUtils {
             alarmObject.put("shiftWorkDays", alarm.shiftWorkDays);
             alarmObject.put("shiftRestDays", alarm.shiftRestDays);
             alarmObject.put("shiftStartDate", alarm.shiftStartDate);
+            alarmObject.put("mathHardnessLevel", alarm.mathHardnessLevel);
 
             if (alarm.isRepeating() || !alarm.isSpecifiedDate()) {
                 alarmsArray.put(alarmObject);
@@ -221,7 +232,8 @@ public class BackupAndRestoreUtils {
     /**
      * Helper method to convert a Map to JSONObject.
      */
-    private static JSONObject convertMapToJsonObject(Map<String, ?> map) throws JSONException {
+    @NonNull
+    private static JSONObject convertMapToJsonObject(@NonNull Map<String, ?> map) throws JSONException {
         JSONObject jsonObject = new JSONObject();
         for (Map.Entry<String, ?> entry : map.entrySet()) {
             Object value = entry.getValue();
@@ -248,7 +260,7 @@ public class BackupAndRestoreUtils {
      * Read and apply values to restore in SharedPreferences.
      */
     @SuppressLint("ApplySharedPref")
-    public static void readJson(Context context, SharedPreferences prefs, InputStream inputStream)
+    public static void readJson(@NonNull Context context, @NonNull SharedPreferences prefs, @NonNull InputStream inputStream)
         throws IOException, JSONException {
 
         SharedPreferences.Editor editor = prefs.edit();
@@ -356,7 +368,7 @@ public class BackupAndRestoreUtils {
         // Clear the alarm list before restoring to avoid adding duplicates
         final List<Alarm> alarms = Alarm.getAlarms(contentResolver, null);
         for (Alarm alarm : alarms) {
-            AlarmStateManager.deleteAllInstances(context, alarm.id);
+            AlarmStateManager.deleteAllInstances(context, prefs, alarm.id);
             Alarm.deleteAlarm(contentResolver, alarm.id);
         }
 
@@ -383,8 +395,8 @@ public class BackupAndRestoreUtils {
      * Restore alarm data.
      * If the alarm is enabled, a future instance will be scheduled.
      */
-    private static void restoreAlarm(Context context, SharedPreferences prefs, ContentResolver contentResolver,
-                                     JSONObject alarmObject, boolean hasSpecifiedDate) throws JSONException {
+    private static void restoreAlarm(@NonNull Context context, @NonNull SharedPreferences prefs, @NonNull ContentResolver contentResolver,
+                                     @NonNull JSONObject alarmObject, boolean hasSpecifiedDate) throws JSONException {
 
         AudioManager audioManager = context.getApplicationContext().getSystemService(AudioManager.class);
 
@@ -415,6 +427,7 @@ public class BackupAndRestoreUtils {
         int shiftWorkDays = alarmObject.optInt("shiftWorkDays", 0);
         int shiftRestDays = alarmObject.optInt("shiftRestDays", 0);
         long shiftStartDate = alarmObject.optLong("shiftStartDate", 0);
+        String mathHardnessLevel = alarmObject.optString("mathHardnessLevel", DEFAULT_MATH_HARDNESS_LEVEL);
 
         if (!TextUtils.isEmpty(oldBackgroundImage)) {
             String fileName = new File(oldBackgroundImage).getName();
@@ -459,22 +472,22 @@ public class BackupAndRestoreUtils {
         restoredAlarm = new Alarm(id, enabled, year, month, day, hour, minutes, vibrate, vibrationPattern, flash,
             Weekdays.fromBits(daysOfWeek), label, syncAlarmByLabel, alarmRingtone, deleteAfterUse, autoSilenceDuration, snoozeDuration,
             missedAlarmRepeatLimit, crescendoDuration, alarmVolume, manualSortOrder, pauseStartDate, pauseEndDate, newBackgroundImage,
-            blurIntensity, repeatType, shiftWorkDays, shiftRestDays, shiftStartDate);
+            blurIntensity, repeatType, shiftWorkDays, shiftRestDays, shiftStartDate, mathHardnessLevel);
 
         restoredAlarm.addAlarm(contentResolver);
 
         if (restoredAlarm.enabled) {
             AlarmInstance alarmInstance = restoredAlarm.createInstanceAfter(Calendar.getInstance());
             alarmInstance.addInstance(contentResolver);
-            AlarmStateManager.registerInstance(context, alarmInstance, false);
-            LogUtils.i("BackupAndRestoreUtils scheduled alarm instance: %s", alarmInstance);
+            AlarmStateManager.registerInstance(context, prefs, alarmInstance, false);
+            LogUtils.i("BackupAndRestoreManager scheduled alarm instance: %s", alarmInstance);
         }
     }
 
     /**
      * @return {@code true} if a key matches a ringtone key. {@code false} otherwise.
      */
-    private static boolean isRingtoneKey(String key) {
+    private static boolean isRingtoneKey(@NonNull String key) {
         return KEY_TIMER_RINGTONE.equals(key) || key.startsWith(TIMER_RINGTONE) || KEY_DEFAULT_ALARM_RINGTONE.equals(key);
     }
 
@@ -482,7 +495,7 @@ public class BackupAndRestoreUtils {
      * @return {@code true} if a ringtone is available in the device. {@code false} otherwise.
      * Useful when restoring between different devices.
      */
-    private static boolean isRingtoneAvailable(Context context, String ringtoneUriString) {
+    private static boolean isRingtoneAvailable(@NonNull Context context, @NonNull String ringtoneUriString) {
         Uri ringtoneUri = Uri.parse(ringtoneUriString);
 
         // Check if the URI is of type "content" or "file"

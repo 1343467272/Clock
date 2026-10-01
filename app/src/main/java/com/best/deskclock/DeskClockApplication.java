@@ -24,6 +24,7 @@ import android.os.Bundle;
 import android.util.Xml;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.os.LocaleListCompat;
 import androidx.preference.PreferenceManager;
@@ -53,6 +54,7 @@ import org.xmlpull.v1.XmlPullParserException;
 public class DeskClockApplication extends Application implements Application.ActivityLifecycleCallbacks {
 
     private static DeskClockApplication sInstance;
+    private DataModel mDataModel;
 
     private int mStartedActivities = 0;
     private boolean mIsChangingConfiguration = false;
@@ -63,19 +65,22 @@ public class DeskClockApplication extends Application implements Application.Act
         super.onCreate();
 
         sInstance = this;
+        mDataModel = DataModel.getDataModel();
+        Controller controller = Controller.getController();
+        SharedPreferences prefs = getDefaultSharedPreferences(this);
 
         importDeviceDefaults();
 
-        initDebugAndNightlyDefaults();
+        initDebugAndNightlyDefaults(prefs);
 
-        String theme = SettingsDAO.getTheme(getDefaultSharedPreferences(this));
+        String theme = SettingsDAO.getTheme(prefs);
         applySystemNightMode(theme);
 
-        DataModel.getDataModel().init();
-        UiDataModel.getUiDataModel().init();
-        Controller.getController().init();
-        Controller.getController().addEventTracker(new LogEventTracker());
-        Controller.getController().updateShortcuts();
+        mDataModel.init(prefs);
+        UiDataModel.getUiDataModel().init(prefs);
+        controller.init(this, prefs);
+        controller.addEventTracker(new LogEventTracker());
+        controller.updateShortcuts();
 
         // Warm the holiday cache so "workday" alarms can schedule even before the first lookup.
         HolidayDataStore.getInstance().refresh();
@@ -95,7 +100,7 @@ public class DeskClockApplication extends Application implements Application.Act
     @Override
     public void onActivityStarted(@NonNull Activity activity) {
         if (mStartedActivities == 0 && !mIsChangingConfiguration) {
-            DataModel.getDataModel().setApplicationInForeground(true);
+            mDataModel.setApplicationInForeground(true);
         }
 
         mIsChangingConfiguration = false;
@@ -108,14 +113,14 @@ public class DeskClockApplication extends Application implements Application.Act
 
         if (mStartedActivities == 0) {
             if (!activity.isChangingConfigurations()) {
-                DataModel.getDataModel().setApplicationInForeground(false);
+                mDataModel.setApplicationInForeground(false);
             } else {
                 mIsChangingConfiguration = true;
             }
         }
     }
 
-    @Override public void onActivityCreated(@NonNull Activity activity, Bundle savedInstanceState) {}
+    @Override public void onActivityCreated(@NonNull Activity activity, @Nullable Bundle savedInstanceState) {}
     @Override public void onActivityResumed(@NonNull Activity activity) {}
     @Override public void onActivityPaused(@NonNull Activity activity) {}
     @Override public void onActivitySaveInstanceState(@NonNull Activity activity, @NonNull Bundle outState) {}
@@ -185,8 +190,7 @@ public class DeskClockApplication extends Application implements Application.Act
         }
     }
 
-    private void initDebugAndNightlyDefaults() {
-        SharedPreferences prefs = getDefaultSharedPreferences(this);
+    private void initDebugAndNightlyDefaults(@NonNull SharedPreferences prefs) {
         if (!prefs.contains(KEY_ACCENT_COLOR)) {
             if (BuildConfig.IS_DEBUG_BUILD) {
                 prefs.edit().putString(KEY_ACCENT_COLOR, RED_ACCENT_COLOR).apply();
@@ -203,7 +207,7 @@ public class DeskClockApplication extends Application implements Application.Act
         }
     }
 
-    private void applySystemNightMode(String theme) {
+    private void applySystemNightMode(@NonNull String theme) {
         switch (theme) {
             case SYSTEM_THEME -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
             case LIGHT_THEME -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
@@ -235,7 +239,7 @@ public class DeskClockApplication extends Application implements Application.Act
     /**
      * Returns the default {@link SharedPreferences} instance from the underlying storage context.
      */
-    public static SharedPreferences getDefaultSharedPreferences(Context context) {
+    public static SharedPreferences getDefaultSharedPreferences(@NonNull Context context) {
         final Context appContext = context.getApplicationContext();
         final Context storageContext;
 

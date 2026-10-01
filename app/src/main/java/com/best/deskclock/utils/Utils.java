@@ -8,39 +8,40 @@ package com.best.deskclock.utils;
 
 import static android.app.PendingIntent.FLAG_IMMUTABLE;
 import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
-import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreferences;
-import static com.best.deskclock.settings.PreferencesDefaultValues.DEBUG_LANGUAGE_CODE;
-import static com.best.deskclock.settings.PreferencesDefaultValues.DEFAULT_SYSTEM_LANGUAGE_CODE;
-import static com.best.deskclock.settings.PreferencesDefaultValues.VIBRATION_PATTERN_ESCALATING;
-import static com.best.deskclock.settings.PreferencesDefaultValues.VIBRATION_PATTERN_HEARTBEAT;
-import static com.best.deskclock.settings.PreferencesDefaultValues.VIBRATION_PATTERN_SOFT;
-import static com.best.deskclock.settings.PreferencesDefaultValues.VIBRATION_PATTERN_STRONG;
-import static com.best.deskclock.settings.PreferencesDefaultValues.VIBRATION_PATTERN_TICK_TOCK;
-import static com.best.deskclock.settings.PreferencesKeys.KEY_DISPLAY_KEEP_ANDROID_OPEN_DIALOG;
+
+import static com.best.deskclock.settings.PreferencesDefaultValues.*;
 
 import android.annotation.SuppressLint;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Looper;
+import android.os.VibrationAttributes;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.text.Spanned;
 import android.text.format.DateUtils;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.Window;
 import android.widget.Button;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.content.res.AppCompatResources;
+import androidx.core.os.ConfigurationCompat;
 import androidx.core.os.LocaleListCompat;
 import androidx.core.text.HtmlCompat;
 import androidx.core.util.Function;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -49,7 +50,6 @@ import androidx.fragment.app.FragmentTransaction;
 import com.best.deskclock.BuildConfig;
 import com.best.deskclock.R;
 import com.best.deskclock.data.DataModel;
-import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.uicomponents.CustomDialog;
 
 import java.util.HashMap;
@@ -59,12 +59,29 @@ import java.util.Map;
 
 public class Utils {
 
+    /**
+     * A short delay (in milliseconds) used to let the UI settle before executing certain actions,
+     * such as showing the soft keyboard or requesting focus.
+     */
+    public static final long UI_SETTLE_DELAY_MS = 200;
+
+    /**
+     * Ensures that the current code is running on the main (UI) thread.
+     *
+     * @throws IllegalAccessError if called from a background thread.
+     */
     public static void enforceMainLooper() {
         if (Looper.getMainLooper() != Looper.myLooper()) {
             throw new IllegalAccessError("May only call from main thread.");
         }
     }
 
+    /**
+     * Ensures that the current code is running on a background thread.
+     * This is useful to prevent blocking the UI thread during heavy operations.
+     *
+     * @throws IllegalAccessError if called from the main thread.
+     */
     public static void enforceNotMainLooper() {
         if (Looper.getMainLooper() == Looper.myLooper()) {
             throw new IllegalAccessError("May not call from main thread.");
@@ -78,7 +95,7 @@ public class Utils {
      * @param intent  an Intent describing the service to be started
      * @return a PendingIntent that will start a service
      */
-    public static PendingIntent pendingServiceIntent(Context context, Intent intent) {
+    public static PendingIntent pendingServiceIntent(@NonNull Context context, @NonNull Intent intent) {
         return PendingIntent.getService(context, 0, intent, FLAG_UPDATE_CURRENT | FLAG_IMMUTABLE);
     }
 
@@ -90,7 +107,7 @@ public class Utils {
      * @param intent      an Intent describing the service to be started
      * @param requestCode a unique identifier to differentiate between multiple PendingIntents
      */
-    public static PendingIntent pendingServiceIntent(Context context, Intent intent, int requestCode) {
+    public static PendingIntent pendingServiceIntent(@NonNull Context context, @NonNull Intent intent, int requestCode) {
         return PendingIntent.getService(context, requestCode, intent, FLAG_UPDATE_CURRENT | FLAG_IMMUTABLE);
     }
 
@@ -101,7 +118,7 @@ public class Utils {
      * @param intent  an Intent describing the activity to be started
      * @return a PendingIntent that will start an activity
      */
-    public static PendingIntent pendingActivityIntent(Context context, Intent intent) {
+    public static PendingIntent pendingActivityIntent(@NonNull Context context, @NonNull Intent intent) {
         // explicitly set the flag here, as getActivity() documentation states we must do so
         return PendingIntent.getActivity(context, 0, intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             FLAG_UPDATE_CURRENT | FLAG_IMMUTABLE);
@@ -111,8 +128,9 @@ public class Utils {
      * Convenience method to stop a service.
      *
      * @param context The context required to stop the service.
+     * @param cls     The class that handles the service shutdown.
      */
-    public static void stopService(Context context, Class<?> cls) {
+    public static void stopService(@NonNull Context context, @NonNull Class<?> cls) {
         Intent serviceIntent = new Intent(context, cls);
         context.stopService(serviceIntent);
     }
@@ -128,7 +146,7 @@ public class Utils {
      * @param fragment the DialogFragment instance to show
      * @param tag      the unique tag identifying this dialog in the FragmentManager
      */
-    public static void showDialogFragment(FragmentManager manager, DialogFragment fragment, String tag) {
+    public static void showDialogFragment(@Nullable FragmentManager manager, @NonNull DialogFragment fragment, @NonNull String tag) {
         if (manager == null || manager.isDestroyed()) {
             return;
         }
@@ -146,6 +164,21 @@ public class Utils {
 
         tx.addToBackStack(null);
         fragment.show(tx, tag);
+    }
+
+    /**
+     * Displays the keyboard for a specific view.
+     *
+     * @param window The current window (can originate from an Activity or a Dialog).
+     * @param view   The view intended to receive focus and text input.
+     */
+    public static void showKeyboard(@Nullable Window window, @NonNull View view) {
+        if (window == null) {
+            return;
+        }
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, view);
+        controller.show(WindowInsetsCompat.Type.ime());
     }
 
     public static long now() {
@@ -176,21 +209,21 @@ public class Utils {
      * <p>If the user selected the system default language, the system Locale is used.
      * Otherwise, a Locale is built from the stored custom language code.</p>
      *
-     * @param context The base context used to read preferences and resources.
+     * @param context       The base context used to read resources.
+     * @param languageCode  The custom language code to set the {@link Locale}.
      * @return A new Context whose configuration applies the selected Locale.
      */
     @SuppressLint("AppBundleLocaleChanges")
-    public static Context getLocalizedContext(Context context) {
+    public static Context getLocalizedContext(@NonNull Context context, @Nullable String languageCode) {
         Locale locale = null;
 
         LocaleListCompat appLocales = AppCompatDelegate.getApplicationLocales();
 
         if (appLocales.isEmpty()) {
-            String customLanguageCode = SettingsDAO.getLanguageCode(getDefaultSharedPreferences(context));
-            if (customLanguageCode != null
-                && !DEFAULT_SYSTEM_LANGUAGE_CODE.equals(customLanguageCode)
-                && !customLanguageCode.isEmpty()) {
-                locale = Locale.forLanguageTag(customLanguageCode);
+            if (languageCode != null
+                && !DEFAULT_SYSTEM_LANGUAGE_CODE.equals(languageCode)
+                && !languageCode.isEmpty()) {
+                locale = Locale.forLanguageTag(languageCode);
             }
         } else {
             locale = appLocales.get(0);
@@ -224,15 +257,29 @@ public class Utils {
     }
 
     /**
+     * Retrieves the primary locale from the given context.
+     *
+     * @param context the context to retrieve the locale from.
+     * @return the primary locale of the context, or the system default as a fallback.
+     */
+    @NonNull
+    public static Locale getLocaleFromContext(@NonNull Context context) {
+        final Configuration config = context.getResources().getConfiguration();
+        Locale locale = ConfigurationCompat.getLocales(config).get(0);
+
+        return locale != null ? locale : Locale.getDefault();
+    }
+
+    /**
      * Applies the application's language settings during an app reset or backup restore.
      *
      * <p>If the app is being reset, it applies the default language (or a specific language for debug/nightly builds).
      * If the app is being restored, it reads the saved language from shared preferences and applies it.</p>
      *
-     * @param context        the context used to access shared preferences
-     * @param isResettingApp true if the app is resetting to default settings, false if restoring from a backup
+     * @param languageCode   The custom language code to set the {@link Locale}
+     * @param isResettingApp {code true} if the app is resetting to default settings, {@code false} if restoring from a backup
      */
-    public static void applyAppLanguage(Context context, boolean isResettingApp) {
+    public static void applyAppLanguage(@NonNull String languageCode, boolean isResettingApp) {
         if (isResettingApp) {
             if (BuildConfig.IS_DEBUG_BUILD || BuildConfig.IS_NIGHTLY_BUILD) {
                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(DEBUG_LANGUAGE_CODE));
@@ -240,13 +287,11 @@ public class Utils {
                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList());
             }
         } else {
-            SharedPreferences prefs = getDefaultSharedPreferences(context);
-            String customLanguageCode = SettingsDAO.getLanguageCode(prefs);
 
-            if (customLanguageCode.equals(DEFAULT_SYSTEM_LANGUAGE_CODE)) {
+            if (DEFAULT_SYSTEM_LANGUAGE_CODE.equals(languageCode)) {
                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList());
             } else {
-                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(customLanguageCode));
+                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(languageCode));
             }
         }
     }
@@ -258,7 +303,7 @@ public class Utils {
      * @param context the base context
      * @return a context suitable for accessing device-protected storage
      */
-    public static Context getSafeStorageContext(Context context) {
+    public static Context getSafeStorageContext(@NonNull Context context) {
         return SdkUtils.isAtLeastAndroid7()
             ? context.createDeviceProtectedStorageContext()
             : context;
@@ -267,31 +312,79 @@ public class Utils {
     /**
      * Set the vibration duration if the device is equipped with a vibrator and if vibration is enabled in the settings.
      *
-     * @param context      to define whether the device is equipped with a vibrator.
-     * @param milliseconds Hours to display (if any)
+     * @param context             to define whether the device is equipped with a vibrator.
+     * @param isVibrationsEnabled {@code true} if vibrations are enabled; {@code false} otherwise.
+     * @param milliseconds        Hours to display (if any)
      */
-    public static void setVibrationTime(Context context, long milliseconds) {
-        final boolean isVibrationsEnabled = SettingsDAO.isVibrationsEnabled(getDefaultSharedPreferences(context));
-        final Vibrator vibrator = context.getSystemService(Vibrator.class);
-        if (isVibrationsEnabled) {
-            if (SdkUtils.isAtLeastAndroid8()) {
-                vibrator.vibrate(VibrationEffect.createOneShot(milliseconds, VibrationEffect.DEFAULT_AMPLITUDE));
+    public static void setVibrationTime(@NonNull Context context, boolean isVibrationsEnabled, long milliseconds) {
+        if (!isVibrationsEnabled) {
+            return;
+        }
+
+        final Vibrator vibrator = context.getApplicationContext().getSystemService(Vibrator.class);
+
+        if (vibrator == null) {
+            return;
+        }
+
+        if (SdkUtils.isAtLeastAndroid8()) {
+            VibrationEffect effect = VibrationEffect.createOneShot(milliseconds, VibrationEffect.DEFAULT_AMPLITUDE);
+
+            if (SdkUtils.isAtLeastAndroid13()) {
+                VibrationAttributes attributes = new VibrationAttributes.Builder()
+                    .setUsage(VibrationAttributes.USAGE_ALARM)
+                    .build();
+                vibrator.vibrate(effect, attributes);
             } else {
+                AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .build();
                 //noinspection deprecation
-                vibrator.vibrate(milliseconds);
+                vibrator.vibrate(effect, audioAttributes);
             }
+        } else {
+            AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .build();
+            //noinspection deprecation
+            vibrator.vibrate(milliseconds, audioAttributes);
         }
     }
 
     /**
-     * Triggers haptic feedback if system or app settings allow it.
-     *
-     * @param view             The view from which the action is triggered.
-     * @param feedbackConstant The constant of type {@link android.view.HapticFeedbackConstants}.
+     * Helper method to ensure vibrations bypass Do Not Disturb rules.
+     * Uses USAGE_ALARM to guarantee the vibration is felt even in silent modes.
      */
-    public static void performHapticFeedback(View view, int feedbackConstant) {
-        if (view != null && SettingsDAO.isVibrationsEnabled(getDefaultSharedPreferences(view.getContext()))) {
-            view.performHapticFeedback(feedbackConstant);
+    public static void executeVibrations(@Nullable Vibrator vibrator, @NonNull long[] pattern, int repeatIndex) {
+        if (vibrator == null) {
+            return;
+        }
+
+        if (SdkUtils.isAtLeastAndroid8()) {
+            VibrationEffect effect = VibrationEffect.createWaveform(pattern, repeatIndex);
+
+            if (SdkUtils.isAtLeastAndroid13()) {
+                VibrationAttributes attributes = new VibrationAttributes.Builder()
+                    .setUsage(VibrationAttributes.USAGE_ALARM)
+                    .build();
+                vibrator.vibrate(effect, attributes);
+            } else {
+                AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .build();
+                //noinspection deprecation
+                vibrator.vibrate(effect, audioAttributes);
+            }
+        } else {
+            AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .build();
+            //noinspection deprecation
+            vibrator.vibrate(pattern, repeatIndex, audioAttributes);
         }
     }
 
@@ -302,7 +395,8 @@ public class Utils {
      * @return a long array representing the vibration pattern durations in milliseconds;
      * if the pattern key is unknown, returns a default vibration pattern
      */
-    public static long[] getVibrationPatternForKey(String patternKey) {
+    @NonNull
+    public static long[] getVibrationPatternForKey(@NonNull String patternKey) {
         return switch (patternKey) {
             case VIBRATION_PATTERN_SOFT -> new long[]{500, 200, 500};
             case VIBRATION_PATTERN_STRONG -> new long[]{500, 1000};
@@ -311,6 +405,48 @@ public class Utils {
             case VIBRATION_PATTERN_TICK_TOCK -> new long[]{300, 150, 300, 150};
             default -> new long[]{500, 500};
         };
+    }
+
+    /**
+     * Triggers haptic feedback if system or app settings allow it.
+     *
+     * @param view                The view from which the action is triggered.
+     * @param isVibrationsEnabled {@code true} if vibrations are enabled; {@code false} otherwise.
+     * @param feedbackConstant    The constant of type {@link android.view.HapticFeedbackConstants}.
+     */
+    public static void performHapticFeedback(@Nullable View view, boolean isVibrationsEnabled, int feedbackConstant) {
+        if (view != null && isVibrationsEnabled) {
+            view.performHapticFeedback(feedbackConstant);
+        }
+    }
+
+    /**
+     * Retrieves the country flag emoji for a given time zone ID.
+     *
+     * @param timeZoneId The IANA time zone identifier (e.g., "Europe/Paris", "Etc/GMT+12").
+     * @return A string containing the country flag emoji, or a globe emoji ("🌐") as a fallback
+     *         if the country cannot be determined.
+     */
+    @NonNull
+    public static String getCountryFlag(@NonNull String timeZoneId) {
+        String region = null;
+
+        if ("Etc/GMT+12".equals(timeZoneId)) {
+            // For Baker & Howland Islands
+            region = "UM";
+        } else if (SdkUtils.isAtLeastAndroid7()) {
+            // Use ICU to retrieve the country code for all other cases
+            region = android.icu.util.TimeZone.getRegion(timeZoneId);
+        }
+
+        if (region != null && region.length() == 2 && !region.equals("ZZ") && region.matches("^[A-Z]{2}$")) {
+            int firstLetter = Character.codePointAt(region, 0) - 'A' + 0x1F1E6;
+            int secondLetter = Character.codePointAt(region, 1) - 'A' + 0x1F1E6;
+            return new String(Character.toChars(firstLetter)) + new String(Character.toChars(secondLetter));
+        }
+
+        // Fallback for generic time zones (UTC, GMT) or pre-Nougat
+        return "🌐";
     }
 
     /**
@@ -323,7 +459,8 @@ public class Utils {
      * @param getter Function that returns the value for a given key.
      * @return A map of preference keys to their current values.
      */
-    public static Map<String, Object> initCachedValues(List<String> keys, Function<String, Object> getter) {
+    @NonNull
+    public static Map<String, Object> initCachedValues(@NonNull List<String> keys, @NonNull Function<String, Object> getter) {
         Map<String, Object> cached = new HashMap<>();
         for (String key : keys) {
             cached.put(key, getter.apply(key));
@@ -336,7 +473,9 @@ public class Utils {
      *
      * <p>Note: Clicking the "OK" button will no longer display this dialog box.</p>
      */
-    public static AlertDialog displayKeepAndroidOpenDialog(Context context, SharedPreferences prefs, boolean isCancelable) {
+    @NonNull
+    public static AlertDialog displayKeepAndroidOpenDialog(@NonNull Context context, boolean isCancelable, @Nullable Runnable onOkClicked) {
+
         Spanned message = HtmlCompat.fromHtml(context.getString(R.string.keep_android_open_message_italic)
                 + context.getString(R.string.keep_android_open_message), HtmlCompat.FROM_HTML_MODE_LEGACY);
 
@@ -349,8 +488,8 @@ public class Utils {
             null,
             context.getString(android.R.string.ok),
             (d, w) -> {
-                if (prefs.getBoolean(KEY_DISPLAY_KEEP_ANDROID_OPEN_DIALOG, true)) {
-                    prefs.edit().putBoolean(KEY_DISPLAY_KEEP_ANDROID_OPEN_DIALOG, false).apply();
+                if (onOkClicked != null) {
+                    onOkClicked.run();
                 }
 
                 d.dismiss();
@@ -388,8 +527,9 @@ public class Utils {
      * @param millis  the timer duration in milliseconds.
      * @return the timer's default label.
      */
+    @NonNull
     @SuppressWarnings("SizeReplaceableByIsEmpty")
-    public static String buildDefaultTimerLabel(Context context, long millis) {
+    public static String buildDefaultTimerLabel(@NonNull Context context, long millis) {
         long seconds = (millis / DateUtils.SECOND_IN_MILLIS) % 60;
         long minutes = (millis / DateUtils.MINUTE_IN_MILLIS) % 60;
         long hours = millis / DateUtils.HOUR_IN_MILLIS;
@@ -424,12 +564,71 @@ public class Utils {
     }
 
     /**
+     * Formats the auto-silence duration into a human-readable string.
+     * Handles special cases like "Never" or "End of ringtone", and formats the rest into minutes and/or seconds.
+     *
+     * @param context  The context used to retrieve string resources.
+     * @param duration The auto-silence duration in seconds, or a special constant (e.g., TIMEOUT_NEVER).
+     * @return A formatted string representing the auto-silence duration.
+     */
+    @NonNull
+    public static String formatAutoSilenceDurationText(@NonNull Context context, int duration) {
+        if (duration == TIMEOUT_NEVER) {
+            return context.getString(R.string.label_never);
+        }
+        if (duration == TIMEOUT_END_OF_RINGTONE) {
+            return context.getString(R.string.auto_silence_end_of_ringtone);
+        }
+
+        int m = duration / 60;
+        int s = duration % 60;
+        String secondsString = s + " " + context.getString(R.string.seconds_label);
+
+        if (m > 0 && s > 0) {
+            String minutesString = context.getResources().getQuantityString(R.plurals.minutes_short, m, m);
+            return String.format("%s %s", minutesString, secondsString);
+        } else if (m > 0) {
+            return context.getResources().getQuantityString(R.plurals.minutes_short, m, m);
+        } else {
+            return secondsString;
+        }
+    }
+
+    /**
+     * Formats the crescendo duration into a human-readable string.
+     * Handles the "Off" state, and formats the rest into minutes and/or seconds.
+     *
+     * @param context  The context used to retrieve string resources.
+     * @param duration The crescendo duration in seconds, or DEFAULT_VOLUME_CRESCENDO_DURATION for "Off".
+     * @return A formatted string representing the crescendo duration.
+     */
+    @NonNull
+    public static String formatCrescendoDurationText(@NonNull Context context, int duration) {
+        if (duration == DEFAULT_VOLUME_CRESCENDO_DURATION) {
+            return context.getString(R.string.label_off);
+        }
+
+        int m = duration / 60;
+        int s = duration % 60;
+        String secondsString = s + " " + context.getString(R.string.seconds_label);
+
+        if (m > 0 && s > 0) {
+            String minutesString = context.getResources().getQuantityString(R.plurals.minutes_short, m, m);
+            return String.format("%s %s", minutesString, secondsString);
+        } else if (m > 0) {
+            return context.getResources().getQuantityString(R.plurals.minutes_short, m, m);
+        } else {
+            return secondsString;
+        }
+    }
+
+    /**
      * Checks if the user is pressing inside the timer circle or the stopwatch circle.
      */
     public static final class CircleTouchListener implements View.OnTouchListener {
         @SuppressLint("ClickableViewAccessibility")
         @Override
-        public boolean onTouch(View view, MotionEvent event) {
+        public boolean onTouch(@NonNull View view, @NonNull MotionEvent event) {
             final int actionMasked = event.getActionMasked();
             if (actionMasked != MotionEvent.ACTION_DOWN) {
                 return false;

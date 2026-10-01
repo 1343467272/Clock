@@ -6,9 +6,8 @@
 
 package com.best.deskclock.utils;
 
-import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreferences;
-
 import android.content.Context;
+import android.graphics.Typeface;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
 import android.text.format.DateUtils;
@@ -16,13 +15,14 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.annotation.VisibleForTesting;
 import androidx.core.view.ViewCompat;
 
 import com.best.deskclock.R;
-import com.best.deskclock.alarms.AlarmStateManager;
 import com.best.deskclock.data.DataModel;
-import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.provider.Alarm;
 import com.best.deskclock.provider.AlarmInstance;
 import com.best.deskclock.uicomponents.toast.CustomToast;
@@ -80,11 +80,13 @@ public class AlarmUtils {
      */
     public static final String ACTION_NEXT_ALARM_CHANGED_BY_CLOCK = "com.best.deskclock.NEXT_ALARM_CHANGED_BY_CLOCK";
 
-    public static void showDismissToast(Context context, Alarm alarm, AlarmInstance instance) {
-        final Context localizedContext = Utils.getLocalizedContext(context);
-        final String time = DateFormat.getTimeFormat(context).format(instance.getAlarmTime().getTime());
+    public static void showDismissToast(@NonNull Context context, @Nullable String customLanguageCode, int accentStyle,
+                                        @Nullable Typeface font, @NonNull Alarm alarm, @NonNull AlarmInstance instance) {
+
+        final Context localizedContext = Utils.getLocalizedContext(context, customLanguageCode);
+        final String time = DateFormat.getTimeFormat(localizedContext).format(instance.getAlarmTime().getTime());
         final Calendar nextTime = alarm.getNextAlarmTime(instance.getAlarmTime());
-        final String date = getDateFormat(context, nextTime);
+        final String date = getDateFormat(localizedContext, nextTime);
 
         final String text;
         if (alarm.isDeleteAfterUse()) {
@@ -96,7 +98,7 @@ public class AlarmUtils {
         }
 
         if (DataModel.getDataModel().isApplicationInForeground()) {
-            CustomToast.showLongWithManager(context, text);
+            CustomToast.showLongWithManager(context, accentStyle, font, text);
         } else {
             Toast.makeText(context, text, Toast.LENGTH_LONG).show();
         }
@@ -108,8 +110,9 @@ public class AlarmUtils {
      * @param calendar The {@link Calendar} instance representing the date to format.
      * @return A formatted date string (e.g., "Tue, Oct 21" in en-US locale).
      */
-    private static String getDateFormat(Context context, Calendar calendar) {
-        Locale locale = Locale.getDefault();
+    @NonNull
+    private static String getDateFormat(@NonNull Context context, @NonNull Calendar calendar) {
+        Locale locale = Utils.getLocaleFromContext(context);
         final String skeleton = context.getString(R.string.full_wday_month_day_no_year);
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat(DateFormat.getBestDateTimePattern(locale, skeleton), locale);
 
@@ -123,19 +126,28 @@ public class AlarmUtils {
      * @param alarm The alarm containing the date to be formatted.
      * @return A localized string representing the alarm's date.
      */
-    public static String formatAlarmDate(Alarm alarm) {
+    @NonNull
+    public static String formatAlarmDate(@NonNull Context context, @NonNull Alarm alarm) {
         Calendar calendar = Calendar.getInstance();
         boolean isCurrentYear = alarm.year == calendar.get(Calendar.YEAR);
         calendar.set(alarm.year, alarm.month, alarm.day);
-        String pattern = DateFormat.getBestDateTimePattern(Locale.getDefault(), isCurrentYear ? "MMMMd" : "yyyyMMMMd");
-        return new SimpleDateFormat(pattern, Locale.getDefault()).format(calendar.getTime());
+
+        final Locale locale = Utils.getLocaleFromContext(context);
+        String skeleton = context.getString(isCurrentYear
+            ? R.string.full_month_day_no_year
+            : R.string.full_month_day_with_year);
+
+        String pattern = DateFormat.getBestDateTimePattern(locale, skeleton);
+
+        return new SimpleDateFormat(pattern, locale).format(calendar.getTime());
     }
 
     /**
      * @return The text of the next alarm.
      */
-    public static String getNextAlarm(Context context) {
-        AlarmInstance instance = AlarmStateManager.getNextFiringAlarm(context);
+    @Nullable
+    public static String getNextAlarm(@NonNull Context context) {
+        AlarmInstance instance = AlarmInstance.getNextFiringAlarm(context);
         if (instance != null) {
             Calendar alarmCalendar = Calendar.getInstance();
             long alarmTime = instance.getAlarmTime().getTimeInMillis();
@@ -147,23 +159,11 @@ public class AlarmUtils {
     }
 
     /**
-     * @return The text of the next alarm, written across multiple lines.
-     */
-    public static String getMultiLineNextAlarm(Context context) {
-        AlarmInstance instance = AlarmStateManager.getNextFiringAlarm(context);
-        if (instance != null) {
-            Calendar alarmCalendar = Calendar.getInstance();
-            alarmCalendar.setTimeInMillis(instance.getAlarmTime().getTimeInMillis());
-            return getMultiLineFormattedTime(context, alarmCalendar);
-        }
-        return null;
-    }
-
-    /**
      * @return The next alarm title.
      */
-    public static String getNextAlarmTitle(Context context) {
-        AlarmInstance instance = AlarmStateManager.getNextFiringAlarm(context);
+    @Nullable
+    public static String getNextAlarmTitle(@NonNull Context context) {
+        AlarmInstance instance = AlarmInstance.getNextFiringAlarm(context);
         if (instance != null) {
             return instance.mLabel.isEmpty() ? "" : instance.mLabel;
         }
@@ -172,33 +172,43 @@ public class AlarmUtils {
 
     /**
      * Clock views can call this to refresh their alarm to the next upcoming value.
+     *
+     * @param clock                    The view containing the alarm elements.
+     * @param isUppercase              {@code true} if the alarm text should be displayed in uppercase; {@code false} otherwise.
+     * @param isScreensaver            {@code true} if the calling view is the screensaver; {@code false} otherwise.
+     * @param isScreensaverDateItalic  {@code true} if the screensaver date is in italics; {@code false} otherwise.
+     * @param isScreensaverAlarmItalic {@code true} if the next alarm of the screensaver is in italics; {@code false} otherwise.
+     * @return True if an upcoming alarm is active and currently displayed; false otherwise.
      */
-    public static void refreshAlarm(View clock, boolean isScreensaver, boolean isUppercase) {
+    public static boolean refreshAlarm(@NonNull View clock, boolean isUppercase, boolean isScreensaver, boolean isScreensaverDateItalic,
+                                       boolean isScreensaverAlarmItalic) {
+
         final Context context = clock.getContext();
         final TextView nextAlarmIconView = clock.findViewById(R.id.nextAlarmIcon);
         final TextView nextAlarmView = clock.findViewById(R.id.nextAlarm);
 
         if (nextAlarmView == null) {
-            return;
+            return false;
         }
 
-        AlarmInstance instance = AlarmStateManager.getNextFiringAlarm(context);
+        AlarmInstance instance = AlarmInstance.getNextFiringAlarm(context);
         if (instance == null) {
             nextAlarmIconView.setVisibility(View.GONE);
             nextAlarmView.setVisibility(View.GONE);
-            return;
+            return false;
         }
 
         Calendar alarmCalendar = Calendar.getInstance();
         long alarmTime = instance.getAlarmTime().getTimeInMillis();
         alarmCalendar.setTimeInMillis(alarmTime);
         String alarmFormattedTime = isScreensaver
-            ? ScreensaverUtils.getScreensaverFormattedTime(context, alarmCalendar)
+            ? ScreensaverUtils.getScreensaverFormattedTime(context, alarmCalendar, isScreensaverDateItalic, isScreensaverAlarmItalic)
             : getFormattedTime(context, alarmCalendar);
 
         if (TextUtils.isEmpty(alarmFormattedTime)) {
             nextAlarmView.setVisibility(View.GONE);
             nextAlarmIconView.setVisibility(View.GONE);
+            return false;
         } else {
             String description = context.getString(R.string.next_alarm_description, alarmFormattedTime);
             nextAlarmView.setAllCaps(isUppercase);
@@ -207,28 +217,21 @@ public class AlarmUtils {
             nextAlarmView.setVisibility(View.VISIBLE);
             nextAlarmIconView.setVisibility(View.VISIBLE);
             nextAlarmIconView.setContentDescription(description);
+            return true;
         }
     }
 
     /**
      * Applies a custom bold font to the next alarm.
      */
-    public static void applyBoldNextAlarmTypeface(View clock) {
+    public static void applyBoldNextAlarmTypeface(@NonNull View clock, @NonNull Typeface boldTypeface) {
         final TextView nextAlarm = clock.findViewById(R.id.nextAlarm);
 
         if (nextAlarm == null) {
             return;
         }
 
-        nextAlarm.setTypeface(ThemeUtils.boldTypeface(
-            SettingsDAO.getGeneralFont(getDefaultSharedPreferences(clock.getContext()))));
-    }
-
-    public static String getAlarmText(Context context, AlarmInstance instance, boolean includeLabel) {
-        String alarmTimeStr = getFormattedTime(context, instance.getAlarmTime());
-        return (instance.mLabel.isEmpty() || !includeLabel)
-            ? alarmTimeStr
-            : alarmTimeStr + " - " + instance.mLabel;
+        nextAlarm.setTypeface(boldTypeface);
     }
 
     /**
@@ -243,88 +246,60 @@ public class AlarmUtils {
      * @param alarmTime the time of the next scheduled alarm
      * @return a formatted string describing when the alarm will ring
      */
-    public static String getFormattedTime(Context context, Calendar alarmTime) {
+    @NonNull
+    public static String getFormattedTime(@NonNull Context context, @NonNull Calendar alarmTime) {
         final Calendar now = Calendar.getInstance();
         final Calendar today = (Calendar) now.clone();
         final Calendar tomorrow = (Calendar) now.clone();
         tomorrow.add(Calendar.DAY_OF_YEAR, 1);
 
         final boolean is24HourFormat = DateFormat.is24HourFormat(context);
-        String skeleton = is24HourFormat ? "Hm" : "hma";
+        final Locale locale = Utils.getLocaleFromContext(context);
 
         String prefix = "";
+        String skeleton;
 
         if (isSameDayAndTimeZone(alarmTime, today)) {
             prefix = context.getString(R.string.alarm_today) + " ";
+            skeleton = context.getString(is24HourFormat ? R.string.time_24_hour : R.string.time_12_hour);
         } else if (isSameDayAndTimeZone(alarmTime, tomorrow)) {
             prefix = context.getString(R.string.alarm_tomorrow) + " ";
+            skeleton = context.getString(is24HourFormat ? R.string.time_24_hour : R.string.time_12_hour);
         } else {
             // Beyond tomorrow: show day or full date if distant
             long diffInMillis = alarmTime.getTimeInMillis() - now.getTimeInMillis();
             long diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMillis);
 
             if (diffInDays >= 6) {
-                // e.g., "Sat Oct 28 20:30"
-                skeleton = is24HourFormat ? "EEE MMM d Hm" : "EEE MMM d hma";
+                final boolean isDifferentYear = now.get(Calendar.YEAR) != alarmTime.get(Calendar.YEAR);
+                skeleton = context.getString(getFullDateSkeletonResId(is24HourFormat, isDifferentYear));
             } else {
                 // e.g., "Wed 20:30"
-                skeleton = is24HourFormat ? "EEE Hm" : "EEE hma";
+                skeleton = context.getString(is24HourFormat ? R.string.abbrev_wday_24_hour : R.string.abbrev_wday_12_hour);
             }
         }
 
-        final Locale locale = Locale.getDefault();
         String pattern = DateFormat.getBestDateTimePattern(locale, skeleton);
-        String formattedTime = prefix + DateFormat.format(pattern, alarmTime).toString();
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern, locale);
+        String formattedTime = prefix + simpleDateFormat.format(alarmTime.getTime());
 
         return FormattedTextUtils.capitalizeFirstLetter(formattedTime, locale);
     }
 
     /**
-     * @return the date and time of the next alarm formatted on two lines.
+     * Helper method to determine the correct string resource ID for a full date skeleton.
      */
-    public static String getMultiLineFormattedTime(Context context, Calendar alarmTime) {
-        final Calendar now = Calendar.getInstance();
-        final Calendar today = (Calendar) now.clone();
-        final Calendar tomorrow = (Calendar) now.clone();
-        tomorrow.add(Calendar.DAY_OF_YEAR, 1);
-
-        final boolean is24HourFormat = DateFormat.is24HourFormat(context);
-        final Locale locale = Locale.getDefault();
-
-        String timeSkeleton = is24HourFormat ? "Hm" : "hma";
-        String timePattern = DateFormat.getBestDateTimePattern(locale, timeSkeleton);
-        String timeStr = DateFormat.format(timePattern, alarmTime).toString();
-
-        String result;
-
-        if (isSameDayAndTimeZone(alarmTime, today)) {
-            // Returns:  "Today
-            //           8:30 AM"
-            result = context.getString(R.string.alarm_today) + "\n" + timeStr;
-
-        } else if (isSameDayAndTimeZone(alarmTime, tomorrow)) {
-            // Returns: "Tomorrow
-            //           8:30 AM"
-            result = context.getString(R.string.alarm_tomorrow) + "\n" + timeStr;
+    @StringRes
+    private static int getFullDateSkeletonResId(boolean is24HourFormat, boolean isDifferentYear) {
+        if (isDifferentYear) {
+            return is24HourFormat
+                ? R.string.abbrev_wday_month_day_with_year_24_hour
+                : R.string.abbrev_wday_month_day_with_year_12_hour;
         } else {
-            long diffInMillis = alarmTime.getTimeInMillis() - now.getTimeInMillis();
-            long diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMillis);
-
-            if (diffInDays >= 6) {
-                // Returns: "Sat, Oct 28
-                //             8:30 AM"
-                String datePattern = DateFormat.getBestDateTimePattern(locale, "EEE MMM d");
-                String dateStr = DateFormat.format(datePattern, alarmTime).toString();
-                result = dateStr + "\n" + timeStr;
-            } else {
-                // Returns: "Wed 8:30 AM"
-                String skeleton = is24HourFormat ? "EEE Hm" : "EEE hma";
-                String pattern = DateFormat.getBestDateTimePattern(locale, skeleton);
-                result = DateFormat.format(pattern, alarmTime).toString();
-            }
+            return is24HourFormat
+                ? R.string.abbrev_wday_month_day_no_year_24_hour
+                : R.string.abbrev_wday_month_day_no_year_12_hour;
         }
-
-        return FormattedTextUtils.capitalizeFirstLetter(result, locale);
     }
 
     /**
@@ -335,7 +310,8 @@ public class AlarmUtils {
      * @param endMillis   The end date of the pause in milliseconds (UTC).
      * @return A formatted date range string with the first letter capitalized, or an empty string if the provided dates are invalid.
      */
-    public static String formatPauseDateRange(Context context, long startMillis, long endMillis) {
+    @NonNull
+    public static String formatPauseDateRange(@NonNull Context context, long startMillis, long endMillis) {
         if (startMillis <= 0 || endMillis <= 0) {
             return "";
         }
@@ -349,10 +325,11 @@ public class AlarmUtils {
         // the very end of the day (11:59:59 p.m.).
         long adjustedEndMillis = getEndOfDayMillis(endMillis);
 
-        Formatter formatter = new Formatter(new StringBuilder(), Locale.getDefault());
+        Locale locale = Utils.getLocaleFromContext(context);
+        Formatter formatter = new Formatter(new StringBuilder(), locale);
         String dateRange = DateUtils.formatDateRange(context, formatter, startMillis, adjustedEndMillis, flags, "UTC").toString();
 
-        return FormattedTextUtils.capitalizeFirstLetter(dateRange, Locale.getDefault());
+        return FormattedTextUtils.capitalizeFirstLetter(dateRange, locale);
     }
 
     /**
@@ -384,7 +361,7 @@ public class AlarmUtils {
      * @return {@code true} if both calendars are in the same time zone and represent the same day;
      * {@code false} otherwise.
      */
-    private static boolean isSameDayAndTimeZone(Calendar cal1, Calendar cal2) {
+    public static boolean isSameDayAndTimeZone(@NonNull Calendar cal1, @NonNull Calendar cal2) {
         // Normalize both calendars to their respective time zones
         if (!cal1.getTimeZone().equals(cal2.getTimeZone())) {
             return false;
@@ -393,7 +370,8 @@ public class AlarmUtils {
         return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) && cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR);
     }
 
-    public static String getFormattedTime(Context context, long timeInMillis) {
+    @NonNull
+    public static String getFormattedTime(@NonNull Context context, long timeInMillis) {
         final Calendar c = Calendar.getInstance();
         c.setTimeInMillis(timeInMillis);
         return getFormattedTime(context, c);
@@ -403,7 +381,7 @@ public class AlarmUtils {
      * format "Alarm set for 2 days, 7 hours, and 53 minutes from now."
      */
     @VisibleForTesting
-    static String formatElapsedTimeUntilAlarm(Context context, long delta) {
+    static String formatElapsedTimeUntilAlarm(@NonNull Context context, long delta) {
         // If the alarm will ring within 60 seconds, just report "less than a minute."
         final String[] formats = context.getResources().getStringArray(R.array.alarm_set);
         if (delta < DateUtils.MINUTE_IN_MILLIS) {
@@ -438,16 +416,16 @@ public class AlarmUtils {
         return String.format(formats[index], daySeq, hourSeq, minSeq);
     }
 
-    public static void popAlarmSetToast(Context context, long alarmTime) {
+    public static void popAlarmSetToast(@NonNull Context context, int accentStyle, @Nullable Typeface font, long alarmTime) {
         final long alarmTimeDelta = alarmTime - System.currentTimeMillis();
         final String text = formatElapsedTimeUntilAlarm(context, alarmTimeDelta);
-        CustomToast.showLongWithManager(context, text);
+        CustomToast.showLongWithManager(context, accentStyle, font, text);
     }
 
-    public static void popAlarmSetSnackbar(View snackbarAnchor, long alarmTime) {
+    public static void popAlarmSetSnackbar(@NonNull View snackbarAnchor, @NonNull Typeface font,  long alarmTime) {
         final long alarmTimeDelta = alarmTime - System.currentTimeMillis();
         final String text = formatElapsedTimeUntilAlarm(snackbarAnchor.getContext(), alarmTimeDelta);
-        SnackbarManager.show(Snackbar.make(snackbarAnchor, text, Snackbar.LENGTH_SHORT));
+        SnackbarManager.show(Snackbar.make(snackbarAnchor, text, Snackbar.LENGTH_SHORT), font);
         ViewCompat.setStateDescription(snackbarAnchor, text);
     }
 

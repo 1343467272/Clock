@@ -19,23 +19,26 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.service.dreams.DreamService;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewTreeObserver.OnPreDrawListener;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.best.deskclock.R;
+import com.best.deskclock.data.DataModel;
 import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.databinding.DeskClockSaverBinding;
 import com.best.deskclock.uidata.UiDataModel;
-import com.best.deskclock.utils.AlarmUtils;
 import com.best.deskclock.utils.InsetsUtils;
 import com.best.deskclock.utils.LogUtils;
 import com.best.deskclock.utils.ScreensaverUtils;
 import com.best.deskclock.utils.SdkUtils;
 import com.best.deskclock.utils.ThemeUtils;
+import com.best.deskclock.utils.Utils;
 
 public final class Screensaver extends DreamService {
 
@@ -43,19 +46,20 @@ public final class Screensaver extends DreamService {
 
     private DeskClockSaverBinding mBinding;
 
+    private SharedPreferences mPrefs;
+    private final ScreensaverSettings mSettings = new ScreensaverSettings();
+    private UiDataModel mUiDataModel;
     private final OnPreDrawListener mStartPositionUpdater = new StartPositionUpdater();
     private MoveScreensaverRunnable mPositionUpdater;
     private PulseScreensaverBackgroundRunnable mBackgroundAnimator;
 
-    private boolean mIsScreensaverTextUppercase;
-    private String mDateFormat;
-    private String mDateFormatForAccessibility;
-
-    // Runs every midnight or when the time changes and refreshes the date.
-    private final Runnable mMidnightUpdater = new Runnable() {
-        @Override
-        public void run() {
-            ScreensaverUtils.updateScreensaverDate(mDateFormat, mDateFormatForAccessibility, mBinding.saverContainer);
+    /**
+     * Runs every midnight or when the time changes and refreshes the date.
+     */
+    private final Runnable mMidnightUpdater = () -> {
+        if (mBinding != null) {
+            ScreensaverUtils.refreshAlarmAndDate(
+                mBinding, mSettings.isUppercase, mSettings.isNextAlarmDisplayed, mSettings.isDateItalic, mSettings.isNextAlarmItalic);
         }
     };
 
@@ -64,8 +68,11 @@ public final class Screensaver extends DreamService {
      */
     private final BroadcastReceiver mAlarmChangedReceiver = new BroadcastReceiver() {
         @Override
-        public void onReceive(Context context, Intent intent) {
-            AlarmUtils.refreshAlarm(mBinding.saverContainer, true, mIsScreensaverTextUppercase);
+        public void onReceive(@NonNull Context context, @NonNull Intent intent) {
+            if (mBinding != null) {
+                ScreensaverUtils.refreshAlarmAndDate(
+                    mBinding, mSettings.isUppercase, mSettings.isNextAlarmDisplayed, mSettings.isDateItalic, mSettings.isNextAlarmItalic);
+            }
         }
     };
 
@@ -74,47 +81,65 @@ public final class Screensaver extends DreamService {
      */
     private final BroadcastReceiver mBatteryReceiver = new BroadcastReceiver() {
         @Override
-        public void onReceive(Context context, Intent intent) {
-            if (Intent.ACTION_BATTERY_CHANGED.equals(intent.getAction())) {
-                ScreensaverUtils.updateBatteryText(mBinding.saverContainer, intent);
+        public void onReceive(@NonNull Context context, @NonNull Intent intent) {
+            if (Intent.ACTION_BATTERY_CHANGED.equals(intent.getAction()) && mBinding != null) {
+                ScreensaverUtils.updateBatteryText(
+                    mBinding.saverContainer, intent, mSettings.brightnessPercentage, mSettings.batteryColor, mSettings.isBatteryItalic);
             }
         }
     };
 
     @Override
+    protected void attachBaseContext(Context newBase) {
+        String customLang = null;
+
+        if (AppCompatDelegate.getApplicationLocales().isEmpty()) {
+            SharedPreferences prefs = getDefaultSharedPreferences(newBase);
+            customLang = SettingsDAO.getLanguageCode(prefs);
+        }
+
+        super.attachBaseContext(Utils.getLocalizedContext(newBase, customLang));
+    }
+
+    @Override
     public void onCreate() {
-        LOGGER.v("Screensaver created");
         super.onCreate();
 
-        SharedPreferences prefs = getDefaultSharedPreferences(this);
-        mIsScreensaverTextUppercase = SettingsDAO.isScreensaverTextUppercaseDisplayed(prefs);
-        mDateFormat = getString(R.string.abbrev_wday_month_day_no_year);
-        mDateFormatForAccessibility = getString(R.string.full_wday_month_day_no_year);
+        LOGGER.v("Screensaver created");
+
+        mPrefs = getDefaultSharedPreferences(this);
+        mUiDataModel = UiDataModel.getUiDataModel();
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Override
     public void onAttachedToWindow() {
-        LOGGER.v("Screensaver attached to window");
         super.onAttachedToWindow();
+
+        LOGGER.v("Screensaver attached to window");
+
+        refreshSettings();
 
         mBinding = DeskClockSaverBinding.inflate(LayoutInflater.from(this));
 
+        // To manually manage insets
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+
+        // Display within the cutout area
         ThemeUtils.allowDisplayCutout(getWindow());
 
         setContentView(mBinding.getRoot());
 
         ThemeUtils.hideSystemBars(getWindow(), mBinding.saverContainer);
 
-        ScreensaverUtils.setScreensaverClockStyle(mBinding.saverContainer);
+        ScreensaverUtils.setupScreensaverView(
+            mBinding.saverContainer, mSettings, getResources().getDisplayMetrics(), ThemeUtils.isLandscape(), () -> {
+                mBackgroundAnimator = new PulseScreensaverBackgroundRunnable(mBinding.screensaverBackgroundImage, mUiDataModel);
+                mBackgroundAnimator.start();
+            }
+        );
 
-        mPositionUpdater = new MoveScreensaverRunnable(mBinding.saverContainer, mBinding.mainClock);
-
-        if (mBinding.screensaverBackgroundImage.getVisibility() == View.VISIBLE) {
-            mBackgroundAnimator = new PulseScreensaverBackgroundRunnable(mBinding.screensaverBackgroundImage);
-            mBackgroundAnimator.start();
-        }
+        mPositionUpdater = new MoveScreensaverRunnable(mBinding.saverContainer, mBinding.mainClock, mUiDataModel);
 
         applyWindowInsets();
 
@@ -130,11 +155,11 @@ public final class Screensaver extends DreamService {
             registerReceiver(mAlarmChangedReceiver, filter);
         }
 
-        ScreensaverUtils.updateScreensaverDate(mDateFormat, mDateFormatForAccessibility, mBinding.saverContainer);
-        AlarmUtils.refreshAlarm(mBinding.saverContainer, true, mIsScreensaverTextUppercase);
+        ScreensaverUtils.refreshAlarmAndDate(
+            mBinding, mSettings.isUppercase, mSettings.isNextAlarmDisplayed, mSettings.isDateItalic, mSettings.isNextAlarmItalic);
 
         startPositionUpdater();
-        UiDataModel.getUiDataModel().addMidnightCallback(mMidnightUpdater, 100);
+        mUiDataModel.addMidnightCallback(mMidnightUpdater, 100);
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
@@ -155,7 +180,8 @@ public final class Screensaver extends DreamService {
             : registerReceiver(null, new IntentFilter(ACTION_BATTERY_CHANGED));
 
         if (intent != null) {
-            ScreensaverUtils.updateBatteryText(mBinding.saverContainer, intent);
+            ScreensaverUtils.updateBatteryText(
+                mBinding.saverContainer, intent, mSettings.brightnessPercentage, mSettings.batteryColor, mSettings.isBatteryItalic);
         }
     }
 
@@ -169,7 +195,7 @@ public final class Screensaver extends DreamService {
     public void onDetachedFromWindow() {
         LOGGER.v("Screensaver detached from window");
 
-        UiDataModel.getUiDataModel().removePeriodicCallback(mMidnightUpdater);
+        mUiDataModel.removePeriodicCallback(mMidnightUpdater);
 
         stopPositionUpdater();
 
@@ -186,9 +212,10 @@ public final class Screensaver extends DreamService {
     }
 
     @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        LOGGER.v("Screensaver configuration changed");
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
+
+        LOGGER.v("Screensaver configuration changed");
 
         startPositionUpdater();
         if (mBackgroundAnimator != null) {
@@ -225,6 +252,58 @@ public final class Screensaver extends DreamService {
     private void stopPositionUpdater() {
         mBinding.saverContainer.getViewTreeObserver().removeOnPreDrawListener(mStartPositionUpdater);
         mPositionUpdater.stop();
+    }
+
+    private void refreshSettings() {
+        mSettings.backgroundImagePath = SettingsDAO.getScreensaverBackgroundImage(mPrefs);
+        mSettings.blurIntensity = SettingsDAO.getScreensaverBlurIntensity(mPrefs);
+        mSettings.clockStyle = SettingsDAO.getScreensaverClockStyle(mPrefs);
+        mSettings.areClockSecondsEnabled = SettingsDAO.areScreensaverClockSecondsDisplayed(mPrefs);
+        mSettings.brightnessPercentage = SettingsDAO.getScreensaverBrightness(mPrefs);
+        mSettings.isUppercase = SettingsDAO.isScreensaverTextUppercaseDisplayed(mPrefs);
+        mSettings.activeAccentColor = ThemeUtils.getActiveAccentColor(this,
+            SettingsDAO.isAutoNightAccentColorEnabled(mPrefs),
+            SettingsDAO.getNightAccentColor(mPrefs),
+            SettingsDAO.getAccentColor(mPrefs)
+        );
+
+        mSettings.clockDial = SettingsDAO.getScreensaverClockDial(mPrefs);
+        mSettings.clockDialMaterial = SettingsDAO.getScreensaverClockDialMaterial(mPrefs);
+        mSettings.clockSecondHand = SettingsDAO.getScreensaverClockSecondHand(mPrefs);
+        mSettings.analogClockSize = SettingsDAO.getScreensaverAnalogClockSize(mPrefs);
+
+        mSettings.isDigitalBold = SettingsDAO.isScreensaverDigitalClockInBold(mPrefs);
+        mSettings.isDigitalItalic = SettingsDAO.isScreensaverDigitalClockInItalic(mPrefs);
+        mSettings.screensaverTypeface = ScreensaverUtils.getScreensaverClockTypeface(ThemeUtils.loadFont(
+            SettingsDAO.getScreensaverDigitalClockFont(mPrefs)), mSettings.isDigitalBold, mSettings.isDigitalItalic);
+        mSettings.digitalFontSize = SettingsDAO.getScreensaverDigitalClockFontSize(mPrefs);
+
+        mSettings.isDateBold = SettingsDAO.isScreensaverDateInBold(mPrefs);
+        mSettings.isDateItalic = SettingsDAO.isScreensaverDateInItalic(mPrefs);
+
+        mSettings.isNextAlarmDisplayed = SettingsDAO.isScreensaverNextAlarmDisplayed(mPrefs);
+        mSettings.isNextAlarmBold = SettingsDAO.isScreensaverNextAlarmInBold(mPrefs);
+        mSettings.isNextAlarmItalic = SettingsDAO.isScreensaverNextAlarmInItalic(mPrefs);
+
+        mSettings.isBatteryDisplayed = SettingsDAO.isScreensaverBatteryDisplayed(mPrefs);
+        mSettings.isBatteryBold = SettingsDAO.isScreensaverBatteryInBold(mPrefs);
+        mSettings.isBatteryItalic = SettingsDAO.isScreensaverBatteryInItalic(mPrefs);
+
+        boolean isDynamicColors = SettingsDAO.areScreensaverClockDynamicColors(mPrefs);
+        boolean isMaterialAnalogClock = mSettings.clockStyle == DataModel.ClockStyle.ANALOG_MATERIAL;
+        int inversePrimaryColor = ContextCompat.getColor(this, R.color.md_theme_inversePrimary);
+
+        mSettings.clockColor = isDynamicColors
+            ? inversePrimaryColor : SettingsDAO.getScreensaverClockColorPicker(mPrefs);
+
+        mSettings.dateColor = (isDynamicColors && !isMaterialAnalogClock)
+            ? inversePrimaryColor : SettingsDAO.getScreensaverDateColorPicker(mPrefs);
+
+        mSettings.nextAlarmColor = (isDynamicColors && !isMaterialAnalogClock)
+            ? inversePrimaryColor : SettingsDAO.getScreensaverNextAlarmColorPicker(mPrefs);
+
+        mSettings.batteryColor = (isDynamicColors && !isMaterialAnalogClock)
+            ? inversePrimaryColor : SettingsDAO.getScreensaverBatteryColorPicker(mPrefs);
     }
 
     private final class StartPositionUpdater implements OnPreDrawListener {

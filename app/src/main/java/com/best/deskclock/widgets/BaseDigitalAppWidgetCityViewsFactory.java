@@ -15,10 +15,14 @@ import static java.util.Calendar.DAY_OF_WEEK;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
+import android.view.View;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService.RemoteViewsFactory;
+
+import androidx.annotation.NonNull;
 
 import com.best.deskclock.R;
 import com.best.deskclock.data.City;
@@ -26,6 +30,7 @@ import com.best.deskclock.data.DataModel;
 import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.utils.LogUtils;
 import com.best.deskclock.utils.ThemeUtils;
+import com.best.deskclock.utils.Utils;
 import com.best.deskclock.utils.WidgetUtils;
 
 import java.util.ArrayList;
@@ -95,22 +100,28 @@ public abstract class BaseDigitalAppWidgetCityViewsFactory implements RemoteView
 
     protected abstract int getCitySpacerId();
 
-    protected abstract boolean isTextUppercaseDisplayed(SharedPreferences prefs);
-    protected abstract boolean isTextShadowDisplayed(SharedPreferences prefs);
+    protected abstract boolean isTextUppercaseDisplayed(@NonNull SharedPreferences prefs);
+    protected abstract boolean isTextShadowDisplayed(@NonNull SharedPreferences prefs);
 
-    protected abstract boolean isDefaultCityClockColor(SharedPreferences prefs);
-    protected abstract int getCityClockColor(SharedPreferences prefs);
+    protected abstract boolean isDefaultCityClockColor(@NonNull SharedPreferences prefs);
+    protected abstract int getCityClockColor(@NonNull SharedPreferences prefs);
 
-    protected abstract boolean isDefaultCityNameColor(SharedPreferences prefs);
-    protected abstract int getCityNameColor(SharedPreferences prefs);
+    protected abstract boolean isCityFlagEnabled(@NonNull SharedPreferences prefs);
 
-    protected abstract boolean isDefaultCityNoteColor(SharedPreferences prefs);
-    protected abstract int getCityNoteColor(SharedPreferences prefs);
+    protected abstract boolean isDefaultCityNameColor(@NonNull SharedPreferences prefs);
+    protected abstract int getCityNameColor(@NonNull SharedPreferences prefs);
+
+    protected abstract boolean isDefaultCityNoteColor(@NonNull SharedPreferences prefs);
+    protected abstract int getCityNoteColor(@NonNull SharedPreferences prefs);
 
     private final Intent mFillInIntent = new Intent();
 
     private final Context mContext;
+    private final Context mLocalizedContext;
+    private final DataModel mDataModel;
     private final SharedPreferences mPrefs;
+    private final DisplayMetrics mDisplayMetrics;
+    private final Locale mLocale;
     private final float m12HourFontSize;
     private final float m24HourFontSize;
     private final float mCityAndDayFontSize;
@@ -121,16 +132,19 @@ public abstract class BaseDigitalAppWidgetCityViewsFactory implements RemoteView
     private boolean mShowHomeClock;
     private List<City> mCities = Collections.emptyList();
 
-    protected BaseDigitalAppWidgetCityViewsFactory(Context context, Intent intent) {
+    protected BaseDigitalAppWidgetCityViewsFactory(@NonNull Context context, @NonNull Intent intent) {
         mContext = context;
+        mDataModel = DataModel.getDataModel();
         mPrefs = getDefaultSharedPreferences(mContext);
+        mLocalizedContext = Utils.getLocalizedContext(context, SettingsDAO.getLanguageCode(mPrefs));
+        mLocale = Utils.getLocaleFromContext(mLocalizedContext);
+        mDisplayMetrics = context.getResources().getDisplayMetrics();
         mWidgetId = intent.getIntExtra(EXTRA_APPWIDGET_ID, INVALID_APPWIDGET_ID);
         final boolean isTablet = ThemeUtils.isTablet();
-        final DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
 
-        m12HourFontSize = dpToPx(isTablet ? 52 : 32, displayMetrics);
-        m24HourFontSize = dpToPx(isTablet ? 65 : 40, displayMetrics);
-        mCityAndDayFontSize = dpToPx(isTablet ? 20 : 14, displayMetrics);
+        m12HourFontSize = dpToPx(isTablet ? 52 : 32, mDisplayMetrics);
+        m24HourFontSize = dpToPx(isTablet ? 65 : 40, mDisplayMetrics);
+        mCityAndDayFontSize = dpToPx(isTablet ? 20 : 14, mDisplayMetrics);
     }
 
     @Override
@@ -189,7 +203,7 @@ public abstract class BaseDigitalAppWidgetCityViewsFactory implements RemoteView
                 getLeftCityNoteForCustomColorId(), getLeftCityNoteNoShadowForCustomColorId(),
                 isDefaultCityClockColor(mPrefs), getCityClockColor(mPrefs),
                 isDefaultCityNameColor(mPrefs), getCityNameColor(mPrefs),
-                isDefaultCityNoteColor(mPrefs), getCityNoteColor(mPrefs));
+                isDefaultCityNoteColor(mPrefs), getCityNoteColor(mPrefs), isCityFlagEnabled(mPrefs));
         } else {
             hide(rv, getLeftClockWithShadowId(), getLeftClockNoShadowId(),
                 getLeftClockForCustomColorId(), getLeftClockNoShadowForCustomColorId(),
@@ -213,7 +227,7 @@ public abstract class BaseDigitalAppWidgetCityViewsFactory implements RemoteView
                 getRightCityNoteForCustomColorId(), getRightCityNoteNoShadowForCustomColorId(),
                 isDefaultCityClockColor(mPrefs), getCityClockColor(mPrefs),
                 isDefaultCityNameColor(mPrefs), getCityNameColor(mPrefs),
-                isDefaultCityNoteColor(mPrefs), getCityNoteColor(mPrefs));
+                isDefaultCityNoteColor(mPrefs), getCityNoteColor(mPrefs), isCityFlagEnabled(mPrefs));
         } else {
             hide(rv, getRightClockWithShadowId(), getRightClockNoShadowId(),
                 getRightClockForCustomColorId(), getRightClockNoShadowForCustomColorId(),
@@ -262,17 +276,17 @@ public abstract class BaseDigitalAppWidgetCityViewsFactory implements RemoteView
     @Override
     public synchronized void onDataSetChanged() {
         // Fetch the data on the main Looper.
-        final RefreshRunnable refreshRunnable = new RefreshRunnable(mContext);
-        DataModel.getDataModel().run(refreshRunnable);
+        final RefreshRunnable refreshRunnable = new RefreshRunnable(mContext, mPrefs);
+        mDataModel.run(refreshRunnable);
 
         // Store the data in local variables.
         mHomeCity = refreshRunnable.mHomeCity;
         mCities = refreshRunnable.mCities;
         mShowHomeClock = refreshRunnable.mShowHomeClock;
-        mFontScale = WidgetUtils.getScaleRatio(mContext, null, mWidgetId, mCities.size());
+        mFontScale = WidgetUtils.getScaleRatio(mContext, mDisplayMetrics, null, mWidgetId, mCities.size());
     }
 
-    private void update(RemoteViews rv, City city, int clockWithShadowId, int clockNoShadowId,
+    private void update(@NonNull RemoteViews rv, @NonNull City city, int clockWithShadowId, int clockNoShadowId,
                         int clockForCustomColorId, int clockNoShadowForCustomColorId,
                         int nameWithShadowId, int nameNoShadowId,
                         int nameForCustomColorId, int nameNoShadowForCustomColorId,
@@ -282,11 +296,12 @@ public abstract class BaseDigitalAppWidgetCityViewsFactory implements RemoteView
                         int noteForCustomColorId, int noteNoShadowForCustomColorId,
                         boolean useDefaultClockColor, int customClockColor,
                         boolean useDefaultCityNameColor, int customCityNameColor,
-                        boolean useDefaultCityNoteColor, int customCityNoteColor) {
+                        boolean useDefaultCityNoteColor, int customCityNoteColor,
+                        boolean isCityFlagEnabled) {
 
         final boolean shadowEnabled = isTextShadowDisplayed(mPrefs);
         final boolean isTextUppercase = isTextUppercaseDisplayed(mPrefs);
-        final boolean is24HourFormat = DataModel.getDataModel().is24HourFormat();
+        final boolean is24HourFormat = mDataModel.is24HourFormat();
         final float fontSize = is24HourFormat ? m24HourFontSize : m12HourFontSize;
 
         // Selection of active and inactive IDs
@@ -323,7 +338,7 @@ public abstract class BaseDigitalAppWidgetCityViewsFactory implements RemoteView
         }
 
         // Time format
-        WidgetUtils.applyClockFormat(rv, mContext, clockId, 0.4f, false);
+        WidgetUtils.applyClockFormat(rv, clockId, 0.4f, false);
 
         rv.setTextViewTextSize(clockId, TypedValue.COMPLEX_UNIT_PX, fontSize * mFontScale);
         rv.setString(clockId, METHOD_SET_TIME_ZONE, city.getTimeZone().getID());
@@ -331,9 +346,16 @@ public abstract class BaseDigitalAppWidgetCityViewsFactory implements RemoteView
             rv.setTextColor(clockId, customClockColor);
         }
 
+        boolean isRtl = Resources.getSystem().getConfiguration().getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
+        String bidiMarker = isRtl ? "\u200F" : "\u200E";
+
         // City name
+        String cityName = city.getName();
+        if (isCityFlagEnabled) {
+            cityName = bidiMarker + city.getCountryFlag() + " " + cityName;
+        }
         rv.setTextViewTextSize(labelId, TypedValue.COMPLEX_UNIT_PX, mCityAndDayFontSize * mFontScale);
-        rv.setTextViewText(labelId, isTextUppercase ? city.getName().toUpperCase() : city.getName());
+        rv.setTextViewText(labelId, isTextUppercase ? cityName.toUpperCase(mLocale) : cityName);
         if (!useDefaultCityNameColor) {
             rv.setTextColor(labelId, customCityNameColor);
         }
@@ -345,11 +367,11 @@ public abstract class BaseDigitalAppWidgetCityViewsFactory implements RemoteView
 
         // Bind the week day display.
         if (displayDayOfWeek) {
-            final Locale locale = Locale.getDefault();
-            final String weekday = cityCal.getDisplayName(DAY_OF_WEEK, Calendar.SHORT, locale);
-            final String slashDay = mContext.getString(R.string.world_day_of_week_label, weekday);
+            String weekday = cityCal.getDisplayName(DAY_OF_WEEK, Calendar.SHORT, mLocale);
+            String slashDay = bidiMarker + mLocalizedContext.getString(R.string.world_day_of_week_label, weekday);
+
             rv.setTextViewTextSize(dayId, TypedValue.COMPLEX_UNIT_PX, mCityAndDayFontSize * mFontScale);
-            rv.setTextViewText(dayId, isTextUppercase ? slashDay.toUpperCase() : slashDay);
+            rv.setTextViewText(dayId, isTextUppercase ? slashDay.toUpperCase(mLocale) : slashDay);
             if (!useDefaultCityNameColor) {
                 rv.setTextColor(dayId, customCityNameColor);
             }
@@ -363,7 +385,7 @@ public abstract class BaseDigitalAppWidgetCityViewsFactory implements RemoteView
 
         if (displayCityNote) {
             rv.setTextViewTextSize(noteId, TypedValue.COMPLEX_UNIT_PX, mCityAndDayFontSize * mFontScale);
-            rv.setTextViewText(noteId, isTextUppercase ? cityNote.toUpperCase() : cityNote);
+            rv.setTextViewText(noteId, isTextUppercase ? cityNote.toUpperCase(mLocale) : cityNote);
             if (!useDefaultCityNoteColor) {
                 rv.setTextColor(noteId, customCityNoteColor);
             }
@@ -372,7 +394,7 @@ public abstract class BaseDigitalAppWidgetCityViewsFactory implements RemoteView
         rv.setViewVisibility(noteId, displayCityNote ? VISIBLE : GONE);
     }
 
-    private void hide(RemoteViews clock,
+    private void hide(@NonNull RemoteViews clock,
                       int clockWithShadowId, int clockNoShadowId,
                       int clockForCustomColorId, int clockNoShadowForCustomColorId,
                       int nameWithShadowId, int nameNoShadowId,
@@ -382,7 +404,7 @@ public abstract class BaseDigitalAppWidgetCityViewsFactory implements RemoteView
                       int noteWithShadowId, int noteNoShadowId,
                       int noteForCustomColorId, int noteNoShadowForCustomColorId) {
 
-        // On regroupe tous les IDs dans un tableau pour les cacher d'un seul coup
+        // Group all the IDs into an array to hide them all at once.
         int[] allIdsToHide = {
             clockWithShadowId, clockNoShadowId, clockForCustomColorId, clockNoShadowForCustomColorId,
             nameWithShadowId, nameNoShadowId, nameForCustomColorId, nameNoShadowForCustomColorId,
@@ -402,19 +424,22 @@ public abstract class BaseDigitalAppWidgetCityViewsFactory implements RemoteView
     private static final class RefreshRunnable implements Runnable {
 
         private final Context mContext;
+        private final SharedPreferences mPrefs;
         private City mHomeCity;
         private List<City> mCities;
         private boolean mShowHomeClock;
 
-        public RefreshRunnable(Context context) {
+        public RefreshRunnable(@NonNull Context context, @NonNull SharedPreferences prefs) {
             this.mContext = context;
+            this.mPrefs = prefs;
         }
 
         @Override
         public void run() {
-            mHomeCity = DataModel.getDataModel().getHomeCity();
-            mCities = new ArrayList<>(DataModel.getDataModel().getSelectedCities());
-            mShowHomeClock = SettingsDAO.getShowHomeClock(mContext, getDefaultSharedPreferences(mContext));
+            DataModel dataModel = DataModel.getDataModel();
+            mHomeCity = dataModel.getHomeCity();
+            mCities = new ArrayList<>(dataModel.getSelectedCities());
+            mShowHomeClock = SettingsDAO.getShowHomeClock(mContext, mPrefs);
         }
     }
 

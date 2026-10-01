@@ -35,6 +35,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
@@ -48,13 +49,17 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.RemoteViews;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
 import com.best.deskclock.DeskClock;
 import com.best.deskclock.R;
+import com.best.deskclock.base.AppExecutors;
 import com.best.deskclock.data.City;
 import com.best.deskclock.data.DataModel;
 import com.best.deskclock.data.SettingsDAO;
+import com.best.deskclock.data.WidgetDAO;
 import com.best.deskclock.utils.AlarmUtils;
 import com.best.deskclock.utils.ClockUtils;
 import com.best.deskclock.utils.LogUtils;
@@ -152,63 +157,77 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
 
     protected abstract int getNextAlarmTitleCustomViewId();
 
-    protected abstract boolean isTextUppercase(SharedPreferences prefs);
+    protected abstract boolean isTextUppercase(@NonNull SharedPreferences prefs);
 
-    protected abstract boolean isTextShadowDisplayed(SharedPreferences prefs);
+    protected abstract boolean isTextShadowDisplayed(@NonNull SharedPreferences prefs);
 
-    protected abstract boolean areWorldCitiesDisplayed(SharedPreferences prefs);
+    protected abstract boolean isCityFlagEnabled(@NonNull SharedPreferences prefs);
 
-    protected abstract boolean isHorizontalPaddingApplied(SharedPreferences prefs);
+    protected abstract boolean areWorldCitiesDisplayed(@NonNull SharedPreferences prefs);
 
-    protected abstract int getMaxWidgetFontSize(SharedPreferences prefs);
+    protected abstract boolean isHorizontalPaddingApplied(@NonNull SharedPreferences prefs);
+
+    protected abstract int getMaxWidgetFontSize(@NonNull SharedPreferences prefs);
 
     protected abstract float getFontScaleFactor();
 
-    protected abstract String getNextAlarmTime(Context context);
+    protected abstract String getNextAlarmTime(@NonNull Context context);
 
     protected abstract Class<?> getCityServiceClass();
 
     protected abstract int getCityLayoutId();
 
-    protected abstract boolean isDefaultCityClockColor(SharedPreferences prefs);
+    protected abstract boolean isDefaultCityClockColor(@NonNull SharedPreferences prefs);
 
-    protected abstract int getCityClockColor(SharedPreferences prefs);
+    protected abstract int getCityClockColor(@NonNull SharedPreferences prefs);
 
-    protected abstract boolean isDefaultCityNameColor(SharedPreferences prefs);
+    protected abstract boolean isDefaultCityNameColor(@NonNull SharedPreferences prefs);
 
-    protected abstract int getCityNameColor(SharedPreferences prefs);
+    protected abstract int getCityNameColor(@NonNull SharedPreferences prefs);
 
-    protected abstract boolean isDefaultCityNoteColor(SharedPreferences prefs);
+    protected abstract boolean isDefaultCityNoteColor(@NonNull SharedPreferences prefs);
 
-    protected abstract int getCityNoteColor(SharedPreferences prefs);
+    protected abstract int getCityNoteColor(@NonNull SharedPreferences prefs);
 
-    protected abstract void bindDateClickAction(RemoteViews rv, SharedPreferences prefs, PendingIntent calendarPendingIntent);
+    protected abstract void bindDateClickAction(@NonNull RemoteViews rv, @NonNull SharedPreferences prefs,
+                                                @NonNull PendingIntent calendarPendingIntent);
 
-    protected abstract void configureClock(RemoteViews rv, Context context, SharedPreferences prefs);
+    protected abstract void configureClock(@NonNull RemoteViews rv, @NonNull SharedPreferences prefs);
 
-    protected abstract void configureDate(RemoteViews rv, Context context, SharedPreferences prefs);
+    protected abstract void configureDate(@NonNull RemoteViews rv, @NonNull Context context, @NonNull SharedPreferences prefs,
+                                          @NonNull Locale locale);
 
-    protected abstract void configureNextAlarm(RemoteViews rv, Context context, SharedPreferences prefs, String nextAlarmTime);
+    protected abstract void configureNextAlarm(@NonNull RemoteViews rv, @NonNull Context context, @NonNull SharedPreferences prefs,
+                                               @NonNull String nextAlarmTime, @NonNull Locale locale);
 
-    protected abstract void configureNextAlarmTitle(RemoteViews rv, SharedPreferences prefs, String nextAlarmTime, String nextAlarmTitle);
+    protected abstract void configureNextAlarmTitle(@NonNull RemoteViews rv, @NonNull SharedPreferences prefs,
+                                                    @NonNull String nextAlarmTime, @Nullable String nextAlarmTitle, @NonNull Locale locale);
 
-    protected abstract void configureBackground(RemoteViews rv, Context context, SharedPreferences prefs, int widthPx, int heightPx);
+    protected abstract void configureBackground(@NonNull RemoteViews rv, @NonNull Context context, @NonNull SharedPreferences prefs,
+                                                @NonNull DisplayMetrics displayMetrics, int widthPx, int heightPx);
 
-    protected abstract void configureSizerClock(View sizer, SharedPreferences prefs);
+    protected abstract void configureSizerClock(@NonNull View sizer, @NonNull SharedPreferences prefs);
 
-    protected abstract void configureSizerDate(View sizer, Context context, SharedPreferences prefs);
+    protected abstract void configureSizerDate(@NonNull View sizer, @NonNull Context context, @NonNull SharedPreferences prefs,
+                                               @NonNull Locale locale);
 
-    protected abstract void configureSizerNextAlarm(View sizer, Context context, SharedPreferences prefs, String nextAlarmTime);
+    protected abstract void configureSizerNextAlarm(@NonNull View sizer, @NonNull Context context, @NonNull SharedPreferences prefs,
+                                                    @NonNull String nextAlarmTime, @NonNull Locale locale);
 
-    protected abstract void configureSizerNextAlarmTitle(View sizer, Context context, SharedPreferences prefs, String nextAlarmTime);
+    protected abstract void configureSizerNextAlarmTitle(@NonNull View sizer, @NonNull Context context, @NonNull SharedPreferences prefs,
+                                                         @NonNull String nextAlarmTime, @NonNull Locale locale);
 
-    protected abstract void configureClockForMeasurement(View sizer, DigitalWidgetSizes measuredSizes, SharedPreferences prefs);
+    protected abstract void configureClockForMeasurement(@NonNull View sizer, @NonNull DigitalWidgetSizes measuredSizes,
+                                                         @NonNull SharedPreferences prefs);
 
-    protected abstract void configureDateForMeasurement(View sizer, DigitalWidgetSizes measuredSizes, SharedPreferences prefs);
+    protected abstract void configureDateForMeasurement(@NonNull View sizer, @NonNull DigitalWidgetSizes measuredSizes,
+                                                        @NonNull SharedPreferences prefs);
 
-    protected abstract void configureNextAlarmForMeasurement(View sizer, DigitalWidgetSizes measuredSizes, SharedPreferences prefs);
+    protected abstract void configureNextAlarmForMeasurement(@NonNull View sizer, @NonNull DigitalWidgetSizes measuredSizes,
+                                                             @NonNull SharedPreferences prefs);
 
-    protected abstract void finalizeMeasurement(View sizer, DigitalWidgetSizes measuredSizes, SharedPreferences prefs);
+    protected abstract void finalizeMeasurement(@NonNull View sizer, @NonNull DigitalWidgetSizes measuredSizes,
+                                                @NonNull SharedPreferences prefs);
 
     /**
      * Rebuild and update the widget for the given instance.
@@ -230,49 +249,61 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
      * @param widgetId id of the widget instance to update
      * @param options  widget options bundle (can be {@code null}; the method will query the manager)
      */
-    protected void relayoutWidget(Context context, AppWidgetManager wm, int widgetId, Bundle options) {
-        SharedPreferences prefs = getDefaultSharedPreferences(context);
-        final List<City> cities = new ArrayList<>(DataModel.getDataModel().getSelectedCities());
-        final City home = DataModel.getDataModel().getHomeCity();
-        final boolean showHomeClock = SettingsDAO.getShowHomeClock(context, prefs);
+    protected void relayoutWidget(@NonNull Context context, @NonNull AppWidgetManager wm, int widgetId, @NonNull Bundle options) {
+        Context appContext = context.getApplicationContext();
+        SharedPreferences prefs = getDefaultSharedPreferences(appContext);
+        Context localizedContext = Utils.getLocalizedContext(appContext, SettingsDAO.getLanguageCode(prefs));
+        Locale appLocale = Utils.getLocaleFromContext(localizedContext);
+        DisplayMetrics displayMetrics = appContext.getResources().getDisplayMetrics();
+        DataModel dataModel = DataModel.getDataModel();
+        final List<City> cities = new ArrayList<>(dataModel.getSelectedCities());
+        final City home = dataModel.getHomeCity();
+        final boolean showHomeClock = SettingsDAO.getShowHomeClock(appContext, prefs);
 
         if (showHomeClock) {
             cities.add(0, home);
         }
 
-        final RemoteViews portrait = buildRemoteViewsForOrientation(context, wm, widgetId, options, true, cities);
-        final RemoteViews landscape = buildRemoteViewsForOrientation(context, wm, widgetId, options, false, cities);
+        updateDayChangeCallback(appContext);
 
-        if (SdkUtils.isAtLeastAndroid12()) {
-            if (cities.isEmpty()) {
-                final RemoteViews widget = new RemoteViews(landscape, portrait);
-                wm.updateAppWidget(widgetId, widget);
-                return;
+        AppExecutors.getDiskIO().execute(() -> {
+            final RemoteViews portrait = buildRemoteViewsForOrientation(
+                localizedContext, prefs, displayMetrics, wm, appLocale, widgetId, options, true, cities);
+            final RemoteViews landscape = buildRemoteViewsForOrientation(
+                localizedContext, prefs, displayMetrics, wm, appLocale, widgetId, options, false, cities);
+
+            if (SdkUtils.isAtLeastAndroid12()) {
+                if (cities.isEmpty()) {
+                    final RemoteViews widget = new RemoteViews(landscape, portrait);
+                    wm.updateAppWidget(widgetId, widget);
+                    return;
+                }
+
+                RemoteViews.RemoteCollectionItems items =
+                    buildRemoteCollectionItemsForCities(localizedContext, prefs, displayMetrics, appLocale, widgetId, cities);
+                portrait.setRemoteAdapter(getWorldCityListViewId(), items);
+                landscape.setRemoteAdapter(getWorldCityListViewId(), items);
             }
 
-            RemoteViews.RemoteCollectionItems items = buildRemoteCollectionItemsForCities(context, prefs, widgetId, cities);
-            portrait.setRemoteAdapter(getWorldCityListViewId(), items);
-            landscape.setRemoteAdapter(getWorldCityListViewId(), items);
-        }
+            final RemoteViews widget = new RemoteViews(landscape, portrait);
+            wm.updateAppWidget(widgetId, widget);
 
-        final RemoteViews widget = new RemoteViews(landscape, portrait);
-        wm.updateAppWidget(widgetId, widget);
-        updateDayChangeCallback(context);
-
-        if (SdkUtils.isBeforeAndroid12()) {
-            //noinspection deprecation
-            wm.notifyAppWidgetViewDataChanged(widgetId, getWorldCityListViewId());
-        }
+            if (SdkUtils.isBeforeAndroid12()) {
+                //noinspection deprecation
+                wm.notifyAppWidgetViewDataChanged(widgetId, getWorldCityListViewId());
+            }
+        });
     }
 
     /**
      * Compute optimal font and icon sizes offscreen for the given orientation.
      */
-    protected RemoteViews buildRemoteViewsForOrientation(Context context, AppWidgetManager wm, int widgetId, Bundle options,
-                                                         boolean portrait, List<City> cities) {
+    protected RemoteViews buildRemoteViewsForOrientation(@NonNull Context context, @NonNull SharedPreferences prefs,
+                                                         @NonNull DisplayMetrics displayMetrics, @NonNull AppWidgetManager wm,
+                                                         @NonNull Locale locale, int widgetId, @Nullable Bundle options, boolean portrait,
+                                                         @NonNull List<City> cities) {
 
         // Create a remote view for the digital clock.
-        SharedPreferences prefs = getDefaultSharedPreferences(context);
         RemoteViews rv = new RemoteViews(context.getPackageName(), isTextShadowDisplayed(prefs)
             ? getLayoutWithShadowId()
             : getLayoutWithoutShadowId());
@@ -300,16 +331,15 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
         }
 
         // Compute optimal font sizes and icon sizes to fit within the widget bounds.
-        final String nextAlarmTime = getNextAlarmTime(Utils.getLocalizedContext(context));
+        final String nextAlarmTime = getNextAlarmTime(context);
         final String nextAlarmTitle = AlarmUtils.getNextAlarmTitle(context);
 
-        configureClock(rv, context, prefs);
-        configureDate(rv, context, prefs);
-        configureNextAlarm(rv, context, prefs, nextAlarmTime);
-        configureNextAlarmTitle(rv, prefs, nextAlarmTime, nextAlarmTitle);
+        configureClock(rv, prefs);
+        configureDate(rv, context, prefs, locale);
+        configureNextAlarm(rv, context, prefs, nextAlarmTime, locale);
+        configureNextAlarmTitle(rv, prefs, nextAlarmTime, nextAlarmTitle, locale);
 
         // Fetch the widget size selected by the user.
-        final DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
         final float density = displayMetrics.density;
         final int minWidthPx = (int) (density * options.getInt(OPTION_APPWIDGET_MIN_WIDTH));
         final int minHeightPx = (int) (density * options.getInt(OPTION_APPWIDGET_MIN_HEIGHT));
@@ -323,21 +353,21 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
 
         // Create a size template that describes the widget bounds.
         final DigitalWidgetSizes template = new DigitalWidgetSizes(targetWidthPx, targetHeightPx, largestClockFontSizePx);
-        final DigitalWidgetSizes sizes = optimizeSizes(context, template, nextAlarmTime);
+        final DigitalWidgetSizes sizes = optimizeSizes(context, prefs, displayMetrics, template, nextAlarmTime, locale);
         if (LOGGER.isVerboseLoggable()) {
             LOGGER.v(sizes.toString());
         }
 
         // Apply the computed sizes to the remote views.
-        configureBackground(rv, context, prefs, targetWidthPx, targetHeightPx);
+        configureBackground(rv, context, prefs, displayMetrics, targetWidthPx, targetHeightPx);
         configureSizes(rv, sizes);
         configureBitmaps(rv, sizes);
-        configureWorldCityList(rv, context, prefs, wm, widgetId, sizes, cities);
+        configureWorldCityList(rv, context, prefs, displayMetrics, wm, locale, widgetId, sizes, cities);
 
         return rv;
     }
 
-    protected void configureSizes(RemoteViews rv, DigitalWidgetSizes sizes) {
+    protected void configureSizes(@NonNull RemoteViews rv, @NonNull DigitalWidgetSizes sizes) {
         safeSetTextSize(rv, getClockViewId(), sizes.mWidgetFontSizePx);
         safeSetTextSize(rv, getClockHoursViewId(), sizes.mWidgetFontSizePx);
         safeSetTextSize(rv, getClockMinutesViewId(), sizes.mWidgetFontSizePx);
@@ -357,33 +387,34 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
         safeSetTextSize(rv, getNextAlarmTitleCustomViewId(), sizes.mFontSizePx);
     }
 
-    protected void configureBitmaps(RemoteViews rv, DigitalWidgetSizes sizes) {
+    protected void configureBitmaps(@NonNull RemoteViews rv, @NonNull DigitalWidgetSizes sizes) {
         safeSetImageBitmap(rv, getNextAlarmIconId(), sizes.mIconBitmap);
         safeSetImageBitmap(rv, getNextAlarmIconCustomId(), sizes.mIconBitmap);
         safeSetImageBitmap(rv, getLabelIconViewId(), sizes.mLabelBitmap);
         safeSetImageBitmap(rv, getLabelIconCustomViewId(), sizes.mLabelBitmap);
     }
 
-    protected void safeSetTextSize(RemoteViews rv, int viewId, float sizePx) {
+    protected void safeSetTextSize(@NonNull RemoteViews rv, int viewId, float sizePx) {
         if (viewId != 0) {
             rv.setTextViewTextSize(viewId, COMPLEX_UNIT_PX, sizePx);
         }
     }
 
-    protected void safeSetImageBitmap(RemoteViews rv, int viewId, Bitmap bitmap) {
+    protected void safeSetImageBitmap(@NonNull RemoteViews rv, int viewId, Bitmap bitmap) {
         if (viewId != 0 && bitmap != null) {
             rv.setImageViewBitmap(viewId, bitmap);
         }
     }
 
-    protected void configureWorldCityList(RemoteViews rv, Context context, SharedPreferences prefs, AppWidgetManager wm, int widgetId,
-                                          DigitalWidgetSizes sizes, List<City> cities) {
+    protected void configureWorldCityList(@NonNull RemoteViews rv, @NonNull Context context, @NonNull SharedPreferences prefs,
+                                          @NonNull DisplayMetrics displayMetrics, @NonNull AppWidgetManager wm, @NonNull Locale locale,
+                                          int widgetId, @NonNull DigitalWidgetSizes sizes, @NonNull List<City> cities) {
 
         if (getCityServiceClass() == null) {
             return;
         }
 
-        final int smallestWorldCityListSizePx = (int) dpToPx(80, context.getResources().getDisplayMetrics());
+        final int smallestWorldCityListSizePx = (int) dpToPx(80, displayMetrics);
         if (!SettingsDAO.isClockTabVisible(prefs)
             || !areWorldCitiesDisplayed(prefs)
             || cities.isEmpty()
@@ -395,7 +426,8 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
         rv.setViewVisibility(getWorldCityListViewId(), VISIBLE);
 
         if (SdkUtils.isAtLeastAndroid12()) {
-            RemoteViews.RemoteCollectionItems items = buildRemoteCollectionItemsForCities(context, prefs, widgetId, cities);
+            RemoteViews.RemoteCollectionItems items =
+                buildRemoteCollectionItemsForCities(context, prefs, displayMetrics, locale, widgetId, cities);
             rv.setRemoteAdapter(getWorldCityListViewId(), items);
         } else {
             Intent intent = new Intent(context, getCityServiceClass());
@@ -416,8 +448,10 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
      * Inflate an offscreen copy of the widget views. Binary search through the range of sizes until
      * the optimal sizes that fit within the widget bounds are located.
      */
-    protected DigitalWidgetSizes optimizeSizes(Context context, DigitalWidgetSizes template, String nextAlarmTime) {
-        SharedPreferences prefs = getDefaultSharedPreferences(context);
+    protected DigitalWidgetSizes optimizeSizes(@NonNull Context context, @NonNull SharedPreferences prefs,
+                                               @NonNull DisplayMetrics displayMetrics, @NonNull DigitalWidgetSizes template,
+                                               @NonNull String nextAlarmTime, @NonNull Locale locale) {
+
         // Inflate a test layout to compute sizes at different font sizes.
         LayoutInflater inflater = LayoutInflater.from(context);
         @SuppressLint("InflateParams")
@@ -425,15 +459,13 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
             ? getSizerLayoutWithShadowId()
             : getSizerLayoutWithoutShadowId(), null);
 
-        int horizontalPadding = (int) dpToPx(isHorizontalPaddingApplied(prefs)
-            ? 20
-            : 0, context.getResources().getDisplayMetrics());
+        int horizontalPadding = (int) dpToPx(isHorizontalPaddingApplied(prefs) ? 20 : 0, displayMetrics);
         sizer.setPadding(horizontalPadding, 0, horizontalPadding, 0);
 
         configureSizerClock(sizer, prefs);
-        configureSizerDate(sizer, context, prefs);
-        configureSizerNextAlarm(sizer, context, prefs, nextAlarmTime);
-        configureSizerNextAlarmTitle(sizer, context, prefs, nextAlarmTime);
+        configureSizerDate(sizer, context, prefs, locale);
+        configureSizerNextAlarm(sizer, context, prefs, nextAlarmTime, locale);
+        configureSizerNextAlarmTitle(sizer, context, prefs, nextAlarmTime, locale);
 
         // Measure the widget at the largest possible size.
         DigitalWidgetSizes high = measure(template, template.getLargestFontSizePx(), sizer, prefs);
@@ -468,7 +500,9 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
      * the offscreen {@code sizer} view. Measure the {@code sizer} view and return the resulting
      * size measurements.
      */
-    protected DigitalWidgetSizes measure(DigitalWidgetSizes template, int widgetFontSize, View sizer, SharedPreferences prefs) {
+    protected DigitalWidgetSizes measure(@NonNull DigitalWidgetSizes template, int widgetFontSize, @NonNull View sizer,
+                                         @NonNull SharedPreferences prefs) {
+
         // Create a copy of the given template sizes.
         DigitalWidgetSizes measuredSizes = template.newSize();
 
@@ -506,14 +540,18 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
      * object returned to the system.
      *
      * @param context  context used to access resources and services
-     * @param prefs    SharedPreferences containing user preferences
+     * @param prefs    the {@link SharedPreferences} containing user preferences
      * @param widgetId id of the widget for which the collection is built
      * @param cities   list of cities to display (order and possible presence of the home city)
      * @return RemoteViews.RemoteCollectionItems ready to be passed to RemoteViews.setRemoteAdapter(...)
      */
+    @NonNull
     @RequiresApi(api = Build.VERSION_CODES.S)
-    private RemoteViews.RemoteCollectionItems buildRemoteCollectionItemsForCities(Context context, SharedPreferences prefs,
-                                                                                  int widgetId, List<City> cities) {
+    private RemoteViews.RemoteCollectionItems buildRemoteCollectionItemsForCities(@NonNull Context context,
+                                                                                  @NonNull SharedPreferences prefs,
+                                                                                  @NonNull DisplayMetrics displayMetrics,
+                                                                                  @NonNull Locale locale, int widgetId,
+                                                                                  @Nullable List<City> cities) {
 
         RemoteViews.RemoteCollectionItems.Builder builder = new RemoteViews.RemoteCollectionItems.Builder();
         if (cities == null || cities.isEmpty()) {
@@ -524,7 +562,6 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
         final boolean shadowEnabled = isTextShadowDisplayed(prefs);
         final boolean isTextUppercase = isTextUppercase(prefs);
         final boolean is24HourFormat = DateFormat.is24HourFormat(context);
-        final DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
 
         final float hour12FontSize = dpToPx(isTablet ? 52 : 32, displayMetrics);
         final float hour24FontSize = dpToPx(isTablet ? 65 : 40, displayMetrics);
@@ -540,29 +577,29 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
             final City right = (i + 1 < cities.size()) ? cities.get(i + 1) : null;
 
             RemoteViews rowRv = new RemoteViews(context.getPackageName(), getCityLayoutId());
-            final float fontScale = WidgetUtils.getScaleRatio(context, null, widgetId, cities.size());
+            final float fontScale = WidgetUtils.getScaleRatio(context, displayMetrics, null, widgetId, cities.size());
 
             if (right != null) {
                 rowRv.setViewVisibility(R.id.twoColumnContainer, View.VISIBLE);
                 rowRv.setViewVisibility(R.id.singleColumnContainer, View.GONE);
 
-                fillColumn(context, prefs, rowRv, left, i, widgetId, true, false, shadowEnabled, isTextUppercase,
-                    is24HourFormat, hour12FontSize, hour24FontSize, cityAndDayFontSize, fontScale, localCal,
+                fillColumn(context, prefs, rowRv, left, locale, localCal, i, widgetId, true, false, shadowEnabled,
+                    isTextUppercase, is24HourFormat, hour12FontSize, hour24FontSize, cityAndDayFontSize, fontScale,
                     isDefaultCityClockColor(prefs), getCityClockColor(prefs), isDefaultCityNameColor(prefs), getCityNameColor(prefs),
-                    isDefaultCityNoteColor(prefs), getCityNoteColor(prefs));
+                    isDefaultCityNoteColor(prefs), getCityNoteColor(prefs), isCityFlagEnabled(prefs));
 
-                fillColumn(context, prefs, rowRv, right, i + 1, widgetId, false, false, shadowEnabled,
-                    isTextUppercase, is24HourFormat, hour12FontSize, hour24FontSize, cityAndDayFontSize, fontScale, localCal,
+                fillColumn(context, prefs, rowRv, right, locale, localCal, i + 1, widgetId, false, false,
+                    shadowEnabled, isTextUppercase, is24HourFormat, hour12FontSize, hour24FontSize, cityAndDayFontSize, fontScale,
                     isDefaultCityClockColor(prefs), getCityClockColor(prefs), isDefaultCityNameColor(prefs), getCityNameColor(prefs),
-                    isDefaultCityNoteColor(prefs), getCityNoteColor(prefs));
+                    isDefaultCityNoteColor(prefs), getCityNoteColor(prefs), isCityFlagEnabled(prefs));
             } else {
                 rowRv.setViewVisibility(R.id.twoColumnContainer, View.GONE);
                 rowRv.setViewVisibility(R.id.singleColumnContainer, View.VISIBLE);
 
-                fillColumn(context, prefs, rowRv, left, i, widgetId, true, true, shadowEnabled, isTextUppercase,
-                    is24HourFormat, hour12FontSize, hour24FontSize, cityAndDayFontSize, fontScale, localCal,
+                fillColumn(context, prefs, rowRv, left, locale, localCal, i, widgetId, true, true, shadowEnabled,
+                    isTextUppercase, is24HourFormat, hour12FontSize, hour24FontSize, cityAndDayFontSize, fontScale,
                     isDefaultCityClockColor(prefs), getCityClockColor(prefs), isDefaultCityNameColor(prefs), getCityNameColor(prefs),
-                    isDefaultCityNoteColor(prefs), getCityNoteColor(prefs));
+                    isDefaultCityNoteColor(prefs), getCityNoteColor(prefs), isCityFlagEnabled(prefs));
             }
 
             boolean lastRow = (rowIndex == totalRows - 1);
@@ -605,11 +642,12 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
      * @param context                 context used to access resources
      * @param localCal                local Calendar used to determine whether to show the day label
      */
-    private void fillColumn(Context context, SharedPreferences prefs, RemoteViews rowRv, City city, int cityIndex, int widgetId,
-                            boolean isLeft, boolean isSingle, boolean shadowEnabled, boolean isTextUppercase, boolean is24HourFormat,
-                            float hour12FontSize, float hour24FontSize, float cityAndDayFontSize, float fontScale, Calendar localCal,
-                            boolean useDefaultClockColor, int customClockColor, boolean useDefaultCityNameColor, int customCityNameColor,
-                            boolean useDefaultCityNoteColor, int customCityNoteColor) {
+    private void fillColumn(@NonNull Context context, @NonNull SharedPreferences prefs, @NonNull RemoteViews rowRv, @Nullable City city,
+                            @NonNull Locale locale, @NonNull Calendar localCal, int cityIndex, int widgetId, boolean isLeft,
+                            boolean isSingle, boolean shadowEnabled, boolean isTextUppercase, boolean is24HourFormat, float hour12FontSize,
+                            float hour24FontSize, float cityAndDayFontSize, float fontScale, boolean useDefaultClockColor,
+                            int customClockColor, boolean useDefaultCityNameColor, int customCityNameColor, boolean useDefaultCityNoteColor,
+                            int customCityNoteColor, boolean isCityFlagEnabled) {
 
         if (city == null) {
             // Hide the corresponding container
@@ -718,7 +756,7 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
         showActiveVariant(rowRv, noteId, noteIdsGroup);
 
         // Time format
-        WidgetUtils.applyClockFormat(rowRv, context, clockId, 0.4f, false);
+        WidgetUtils.applyClockFormat(rowRv, clockId, 0.4f, false);
 
         rowRv.setString(clockId, METHOD_SET_TIME_ZONE, city.getTimeZone().getID());
         rowRv.setTextViewTextSize(clockId, TypedValue.COMPLEX_UNIT_PX, (is24HourFormat ? hour24FontSize : hour12FontSize) * fontScale);
@@ -726,9 +764,17 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
             rowRv.setTextColor(clockId, customClockColor);
         }
 
+        boolean isRtl = Resources.getSystem().getConfiguration().getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
+        String bidiMarker = isRtl ? "\u200F" : "\u200E";
+
         // City name
+        String cityName = city.getName();
+        if (isCityFlagEnabled) {
+            cityName = bidiMarker + city.getCountryFlag() + " " + cityName;
+        }
+
         rowRv.setTextViewTextSize(nameId, TypedValue.COMPLEX_UNIT_PX, cityAndDayFontSize * fontScale);
-        rowRv.setTextViewText(nameId, isTextUppercase ? city.getName().toUpperCase() : city.getName());
+        rowRv.setTextViewText(nameId, isTextUppercase ? cityName.toUpperCase(locale) : cityName);
         if (!useDefaultCityNameColor) {
             rowRv.setTextColor(nameId, customCityNameColor);
         }
@@ -737,9 +783,10 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
         Calendar cityCal = Calendar.getInstance(city.getTimeZone());
         boolean displayDay = localCal.get(Calendar.DAY_OF_WEEK) != cityCal.get(Calendar.DAY_OF_WEEK);
         if (displayDay) {
-            String weekday = cityCal.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.getDefault());
-            String slashDay = context.getString(R.string.world_day_of_week_label, weekday);
-            rowRv.setTextViewText(dayId, isTextUppercase ? slashDay.toUpperCase() : slashDay);
+            String weekday = cityCal.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, locale);
+            String slashDay = bidiMarker + context.getString(R.string.world_day_of_week_label, weekday);
+
+            rowRv.setTextViewText(dayId, isTextUppercase ? slashDay.toUpperCase(locale) : slashDay);
             rowRv.setTextViewTextSize(dayId, TypedValue.COMPLEX_UNIT_PX, cityAndDayFontSize * fontScale);
             if (!useDefaultCityNameColor) {
                 rowRv.setTextColor(dayId, customCityNameColor);
@@ -752,7 +799,7 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
         boolean displayCityNote = cityNote != null && SettingsDAO.isCityNoteEnabled(prefs);
         if (displayCityNote) {
             rowRv.setTextViewTextSize(noteId, TypedValue.COMPLEX_UNIT_PX, cityAndDayFontSize * fontScale);
-            rowRv.setTextViewText(noteId, isTextUppercase ? cityNote.toUpperCase() : cityNote);
+            rowRv.setTextViewText(noteId, isTextUppercase ? cityNote.toUpperCase(locale) : cityNote);
             if (!useDefaultCityNoteColor) {
                 rowRv.setTextColor(noteId, customCityNoteColor);
             }
@@ -780,7 +827,7 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
      * @param activeId      id of the view to activate (VISIBLE)
      * @param allVariantIds ids of all views
      */
-    private void showActiveVariant(RemoteViews rv, int activeId, int... allVariantIds) {
+    private void showActiveVariant(@NonNull RemoteViews rv, int activeId, @NonNull int... allVariantIds) {
         for (int id : allVariantIds) {
             if (id != activeId) {
                 rv.setViewVisibility(id, View.GONE);
@@ -792,7 +839,7 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
 
 
     @Override
-    public void onEnabled(Context context) {
+    public void onEnabled(@NonNull Context context) {
         super.onEnabled(context);
 
         // Schedule the day-change callback if necessary.
@@ -803,7 +850,7 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
     }
 
     @Override
-    public void onDisabled(Context context) {
+    public void onDisabled(@NonNull Context context) {
         super.onDisabled(context);
 
         // Remove any scheduled day-change callback.
@@ -811,14 +858,14 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
     }
 
     @Override
-    public void onDeleted(Context context, int[] appWidgetIds) {
+    public void onDeleted(@NonNull Context context, int[] appWidgetIds) {
         super.onDeleted(context, appWidgetIds);
 
         WidgetUtils.cancelDailyWidgetUpdate(context, DailyWidgetUpdateReceiver.class);
     }
 
     @Override
-    public void onReceive(Context context, Intent intent) {
+    public void onReceive(@NonNull Context context, @NonNull Intent intent) {
         LogUtils.i(getClass().getSimpleName() + " - onReceive: " + intent);
 
         super.onReceive(context, intent);
@@ -846,7 +893,10 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
             }
         }
 
-        WidgetUtils.updateWidgetCount(context, getClass(), widgetIds.length, R.string.category_digital_widget);
+        int widgetCount = widgetIds.length;
+        int delta = WidgetDAO.updateWidgetCount(getDefaultSharedPreferences(context), getClass(), widgetCount);
+
+        WidgetUtils.updateWidgetCount(delta, R.string.category_digital_widget);
 
         if (widgetIds.length > 0) {
             WidgetUtils.scheduleDailyWidgetUpdate(context, DailyWidgetUpdateReceiver.class);
@@ -857,7 +907,7 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
      * Called when widgets must provide remote views.
      */
     @Override
-    public void onUpdate(Context context, AppWidgetManager wm, int[] widgetIds) {
+    public void onUpdate(@NonNull Context context, @NonNull AppWidgetManager wm, int[] widgetIds) {
         super.onUpdate(context, wm, widgetIds);
 
         registerReceivers(context, this);
@@ -871,7 +921,7 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
      * Called when the app widget changes sizes.
      */
     @Override
-    public void onAppWidgetOptionsChanged(Context context, AppWidgetManager wm, int widgetId, Bundle options) {
+    public void onAppWidgetOptionsChanged(@NonNull Context context, @NonNull AppWidgetManager wm, int widgetId, @NonNull Bundle options) {
         super.onAppWidgetOptionsChanged(context, wm, widgetId, options);
 
         // Scale the fonts of the clock to fit inside the new size
@@ -879,7 +929,7 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
-    private static void registerReceivers(Context context, BroadcastReceiver receiver) {
+    private static void registerReceivers(@NonNull Context context, @NonNull BroadcastReceiver receiver) {
         if (sReceiversRegistered) return;
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ACTION_CONFIGURATION_CHANGED);
@@ -897,13 +947,13 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
      * Remove the existing day-change callback if it is not needed (no selected cities exist).
      * Add the day-change callback if it is needed (selected cities exist).
      */
-    private void updateDayChangeCallback(Context context) {
+    private void updateDayChangeCallback(@NonNull Context context) {
         if (getCityServiceClass() == null) {
             return;
         }
 
-        final DataModel dm = DataModel.getDataModel();
-        final List<City> selectedCities = dm.getSelectedCities();
+        final DataModel dataModel = DataModel.getDataModel();
+        final List<City> selectedCities = dataModel.getSelectedCities();
         final boolean showHomeClock = SettingsDAO.getShowHomeClock(context, getDefaultSharedPreferences(context));
         if (selectedCities.isEmpty() && !showHomeClock) {
             // Remove the existing day-change callback.
@@ -915,7 +965,7 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
         final Set<TimeZone> zones = new ArraySet<>(selectedCities.size() + 2);
         zones.add(TimeZone.getDefault());
         if (showHomeClock) {
-            zones.add(dm.getHomeCity().getTimeZone());
+            zones.add(dataModel.getHomeCity().getTimeZone());
         }
         for (City city : selectedCities) {
             zones.add(city.getTimeZone());
@@ -931,7 +981,7 @@ public abstract class BaseDigitalAppWidgetProvider extends AppWidgetProvider {
     /**
      * Remove the existing day-change callback.
      */
-    private void removeDayChangeCallback(Context context) {
+    private void removeDayChangeCallback(@NonNull Context context) {
         final PendingIntent pi = PendingIntent.getBroadcast(
             context, 0, DAY_CHANGE_INTENT, FLAG_NO_CREATE | PendingIntent.FLAG_IMMUTABLE);
         if (pi != null) {

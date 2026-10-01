@@ -27,6 +27,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.content.ContextCompat;
@@ -87,7 +88,8 @@ public class AutoSilenceDurationDialogFragment extends DialogFragment {
      * @param key                 The shared preference key used to identify the setting.
      * @param autoSilenceDuration The auto silence duration, in seconds for timers or in minutes for alarms.
      */
-    public static AutoSilenceDurationDialogFragment newInstance(String key, int autoSilenceDuration) {
+    @NonNull
+    public static AutoSilenceDurationDialogFragment newInstance(@NonNull String key, int autoSilenceDuration) {
         Bundle args = new Bundle();
 
         boolean isNever = autoSilenceDuration == TIMEOUT_NEVER;
@@ -119,6 +121,7 @@ public class AutoSilenceDurationDialogFragment extends DialogFragment {
      * @param timerId the {@link Timer} id whose auto silence will be edited.
      * @param autoSilenceDuration The silence duration in minutes.
      */
+    @NonNull
     public static AutoSilenceDurationDialogFragment newInstance(int timerId, int autoSilenceDuration) {
         final Bundle args = new Bundle();
 
@@ -150,6 +153,7 @@ public class AutoSilenceDurationDialogFragment extends DialogFragment {
      *
      * @param autoSilenceDuration The silence duration in minutes.
      */
+    @NonNull
     public static AutoSilenceDurationDialogFragment newInstance(int autoSilenceDuration) {
         final Bundle args = new Bundle();
 
@@ -177,7 +181,7 @@ public class AutoSilenceDurationDialogFragment extends DialogFragment {
     /**
      * Displays {@link AutoSilenceDurationDialogFragment}.
      */
-    public static void show(FragmentManager manager, AutoSilenceDurationDialogFragment fragment) {
+    public static void show(@NonNull FragmentManager manager, @NonNull AutoSilenceDurationDialogFragment fragment) {
         Utils.showDialogFragment(manager, fragment, TAG);
     }
 
@@ -200,7 +204,7 @@ public class AutoSilenceDurationDialogFragment extends DialogFragment {
 
     @NonNull
     @Override
-    public Dialog onCreateDialog(Bundle savedInstanceState) {
+    public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
         SharedPreferences prefs = getDefaultSharedPreferences(requireContext());
         mTypeFace = ThemeUtils.loadFont(SettingsDAO.getGeneralFont(prefs));
 
@@ -317,7 +321,7 @@ public class AutoSilenceDurationDialogFragment extends DialogFragment {
                 mOkButton.setEnabled(!isInvalidInput(inputMinutesText, inputSecondsText));
                 mDefaultButton.setEnabled(isNotDefaultAutoSilenceDuration(inputMinutesText, inputSecondsText));
             },
-            CustomDialog.SoftInputMode.SHOW_KEYBOARD
+            isNever || isEndOfRingtone ? CustomDialog.SoftInputMode.NONE : CustomDialog.SoftInputMode.SHOW_KEYBOARD
         );
     }
 
@@ -328,10 +332,10 @@ public class AutoSilenceDurationDialogFragment extends DialogFragment {
         if (!mBinding.endOfRingtoneCheckbox.isChecked() && !mBinding.autoSilenceNeverCheckbox.isChecked()) {
             mBinding.editMinutes.requestFocus();
             mBinding.editMinutes.postDelayed(() -> {
-                if (mInput != null) {
-                    mInput.showSoftInput(mBinding.editMinutes, InputMethodManager.SHOW_IMPLICIT);
+                if (getDialog() != null) {
+                    Utils.showKeyboard(getDialog().getWindow(), mBinding.editMinutes);
                 }
-            }, 200);
+            }, Utils.UI_SETTLE_DELAY_MS);
         }
     }
 
@@ -418,7 +422,10 @@ public class AutoSilenceDurationDialogFragment extends DialogFragment {
     private void maybeRequestMinutesFocus() {
         if (!mBinding.endOfRingtoneCheckbox.isChecked() && !mBinding.autoSilenceNeverCheckbox.isChecked()) {
             mBinding.editMinutes.requestFocus();
-            mInput.showSoftInput(mBinding.editMinutes, InputMethodManager.SHOW_IMPLICIT);
+
+            if (getDialog() != null) {
+                Utils.showKeyboard(getDialog().getWindow(), mBinding.editMinutes);
+            }
         }
     }
 
@@ -479,7 +486,7 @@ public class AutoSilenceDurationDialogFragment extends DialogFragment {
      * </ul>
      * {@code false} otherwise.
      */
-    private boolean isInvalidInput(String minutesText, String secondsText) {
+    private boolean isInvalidInput(@NonNull String minutesText, @NonNull String secondsText) {
         int minutes = 0;
         int seconds = 0;
 
@@ -503,7 +510,7 @@ public class AutoSilenceDurationDialogFragment extends DialogFragment {
 
         TextView titleText = alertDialog.findViewById(R.id.dialog_title);
         if (titleText != null) {
-            titleText.setCompoundDrawablesWithIntrinsicBounds(AppCompatResources.getDrawable(
+            titleText.setCompoundDrawablesRelativeWithIntrinsicBounds(AppCompatResources.getDrawable(
                 requireContext(), R.drawable.ic_error), null, null, null);
             if (mPrefKey != null) {
                 titleText.setCompoundDrawablePadding((int) dpToPx(18, getResources().getDisplayMetrics()));
@@ -548,9 +555,9 @@ public class AutoSilenceDurationDialogFragment extends DialogFragment {
         TextView titleText = alertDialog.findViewById(R.id.dialog_title);
         if (titleText != null) {
             if (mPrefKey != null) {
-                titleText.setCompoundDrawablesWithIntrinsicBounds(null, null, null, null);
+                titleText.setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, null, null);
             } else {
-                titleText.setCompoundDrawablesWithIntrinsicBounds(AppCompatResources.getDrawable(
+                titleText.setCompoundDrawablesRelativeWithIntrinsicBounds(AppCompatResources.getDrawable(
                     requireContext(), R.drawable.ic_ringtone_off), null, null, null);
             }
 
@@ -584,7 +591,7 @@ public class AutoSilenceDurationDialogFragment extends DialogFragment {
      * @return {@code true} if the alarm snooze duration or the timer snooze duration is not the default value;
      * {@code false} otherwise.
      */
-    private boolean isNotDefaultAutoSilenceDuration(String minutesText, String secondsText) {
+    private boolean isNotDefaultAutoSilenceDuration(@NonNull String minutesText, @NonNull String secondsText) {
         int minutes = minutesText.isEmpty() ? 0 : Integer.parseInt(minutesText);
         int seconds = secondsText.isEmpty() ? 0 : Integer.parseInt(secondsText);
 
@@ -609,7 +616,7 @@ public class AutoSilenceDurationDialogFragment extends DialogFragment {
     private class TextChangeListener implements TextWatcher {
 
         @Override
-        public void onTextChanged(CharSequence charSequence, int start, int before, int count) {
+        public void onTextChanged(@Nullable CharSequence charSequence, int start, int before, int count) {
             if (mBinding.endOfRingtoneCheckbox.isChecked() || mBinding.autoSilenceNeverCheckbox.isChecked()) {
                 updateDialogForValidInput();
                 return;
@@ -650,11 +657,11 @@ public class AutoSilenceDurationDialogFragment extends DialogFragment {
         }
 
         @Override
-        public void beforeTextChanged(CharSequence charSequence, int start, int count, int after) {
+        public void beforeTextChanged(@Nullable CharSequence charSequence, int start, int count, int after) {
         }
 
         @Override
-        public void afterTextChanged(Editable editable) {
+        public void afterTextChanged(@Nullable Editable editable) {
         }
     }
 
@@ -664,7 +671,7 @@ public class AutoSilenceDurationDialogFragment extends DialogFragment {
     private class ImeDoneListener implements TextView.OnEditorActionListener {
 
         @Override
-        public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+        public boolean onEditorAction(@NonNull TextView v, int actionId, @Nullable KeyEvent event) {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 String inputMinutesText = Objects.requireNonNull(mBinding.editMinutes.getText()).toString();
                 String inputSecondsText = Objects.requireNonNull(mBinding.editSeconds.getText()).toString();

@@ -231,7 +231,7 @@ public class BreenoProxyProvider extends ContentProvider {
             final Calendar now = Calendar.getInstance();
             final AlarmInstance instance = alarm.createInstanceAfter(now);
             instance.addInstance(cr);
-            AlarmStateManager.registerInstance(mAppContext, instance, true);
+            AlarmStateManager.registerInstance(mAppContext, getDefaultSharedPreferences(mAppContext), instance, true);
 
             Events.sendAlarmEvent(R.string.action_create, R.string.label_intent);
 
@@ -275,7 +275,7 @@ public class BreenoProxyProvider extends ContentProvider {
             final Alarm alarm = targets.get(0);
             alarm.enabled = false;
             alarm.updateAlarm(mAppContext.getContentResolver());
-            AlarmStateManager.deleteAllInstances(mAppContext, alarm.id);
+            AlarmStateManager.deleteAllInstances(mAppContext, getDefaultSharedPreferences(mAppContext), alarm.id);
             Events.sendAlarmEvent(R.string.action_disable, R.string.label_intent);
 
             out.putInt(KEY_RESULT, RESULT_SUCCESS);
@@ -293,7 +293,7 @@ public class BreenoProxyProvider extends ContentProvider {
             for (Alarm alarm : alarms) {
                 alarm.enabled = false;
                 alarm.updateAlarm(cr);
-                AlarmStateManager.deleteAllInstances(mAppContext, alarm.id);
+                AlarmStateManager.deleteAllInstances(mAppContext, getDefaultSharedPreferences(mAppContext), alarm.id);
             }
             out.putInt(KEY_RESULT, RESULT_SUCCESS);
         });
@@ -331,7 +331,7 @@ public class BreenoProxyProvider extends ContentProvider {
             }
 
             final Alarm alarm = targets.get(0);
-            AlarmStateManager.deleteAllInstances(mAppContext, alarm.id);
+            AlarmStateManager.deleteAllInstances(mAppContext, getDefaultSharedPreferences(mAppContext), alarm.id);
             Alarm.deleteAlarm(mAppContext.getContentResolver(), alarm.id);
             Events.sendAlarmEvent(R.string.action_delete, R.string.label_intent);
 
@@ -348,7 +348,7 @@ public class BreenoProxyProvider extends ContentProvider {
                 return;
             }
             for (Alarm alarm : alarms) {
-                AlarmStateManager.deleteAllInstances(mAppContext, alarm.id);
+                AlarmStateManager.deleteAllInstances(mAppContext, getDefaultSharedPreferences(mAppContext), alarm.id);
                 Alarm.deleteAlarm(cr, alarm.id);
             }
             out.putInt(KEY_RESULT, RESULT_SUCCESS);
@@ -369,11 +369,11 @@ public class BreenoProxyProvider extends ContentProvider {
             }
             alarm.enabled = true;
             alarm.updateAlarm(mAppContext.getContentResolver());
-            AlarmStateManager.deleteAllInstances(mAppContext, alarm.id);
+            AlarmStateManager.deleteAllInstances(mAppContext, getDefaultSharedPreferences(mAppContext), alarm.id);
             final Calendar now = Calendar.getInstance();
             final AlarmInstance instance = alarm.createInstanceAfter(now);
             instance.addInstance(mAppContext.getContentResolver());
-            AlarmStateManager.registerInstance(mAppContext, instance, true);
+            AlarmStateManager.registerInstance(mAppContext, getDefaultSharedPreferences(mAppContext), instance, true);
             out.putInt(KEY_RESULT, RESULT_SUCCESS);
         });
     }
@@ -385,7 +385,7 @@ public class BreenoProxyProvider extends ContentProvider {
                 mAppContext.getContentResolver(), alarmId);
             if (firing != null && (firing.mAlarmState == AlarmInstance.FIRED_STATE
                 || firing.mAlarmState == AlarmInstance.SNOOZE_STATE)) {
-                AlarmStateManager.setSnoozeState(mAppContext, firing, true);
+                AlarmStateManager.setSnoozeState(mAppContext, getDefaultSharedPreferences(mAppContext), firing, true);
                 out.putInt(KEY_RESULT, RESULT_SUCCESS);
             } else {
                 out.putInt(KEY_RESULT, RESULT_NO_ALARM_FOUND);
@@ -402,7 +402,7 @@ public class BreenoProxyProvider extends ContentProvider {
                 return;
             }
             for (AlarmInstance instance : firing) {
-                AlarmStateManager.deleteInstanceAndUpdateParent(mAppContext, instance, true);
+                AlarmStateManager.deleteInstanceAndUpdateParent(mAppContext, getDefaultSharedPreferences(mAppContext), instance, true);
             }
             out.putInt(KEY_RESULT, RESULT_SUCCESS);
         });

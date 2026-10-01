@@ -58,6 +58,8 @@ public class PreferencesKeys {
     public static final String KEY_TAB_TO_DISPLAY = "key_tab_to_display";
     public static final String KEY_VIBRATIONS = "key_vibrations";
     public static final String KEY_TOOLBAR_TITLE = "key_toolbar_title";
+    public static final String KEY_CENTRAL_FAB_SIZE = "key_central_fab_size";
+    public static final String KEY_SIDE_FAB_SIZE = "key_side_fab_size";
     public static final String KEY_TAB_TITLE_VISIBILITY = "key_tab_title_visibility";
     public static final String KEY_TAB_INDICATOR = "key_tab_indicator";
     public static final String KEY_TAB_ANIMATION = "key_tab_animation";
@@ -73,8 +75,10 @@ public class PreferencesKeys {
     public static final String KEY_DIGITAL_CLOCK_FONT_SIZE = "key_digital_clock_font_size";
     public static final String KEY_DISPLAY_CLOCK_SECONDS = "key_display_clock_seconds";
     public static final String KEY_CLOCK_SECOND_HAND = "key_clock_second_hand";
+    public static final String KEY_DISPLAY_NEXT_ALARM = "key_display_next_alarm";
     public static final String KEY_DIGITAL_CLOCK_FONT = "key_digital_clock_font";
     public static final String KEY_SORT_CITIES = "key_sort_cities";
+    public static final String KEY_ENABLE_CITY_FLAG = "key_enable_city_flag";
     public static final String KEY_ENABLE_CITY_NOTE = "key_enable_city_note";
     public static final String KEY_CITY_NOTE = "key_city_note_";
     public static final String KEY_AUTO_HOME_CLOCK = "key_automatic_home_clock";
@@ -108,6 +112,8 @@ public class PreferencesKeys {
     public static final String KEY_FLIP_ACTION = "key_flip_action";
     public static final String KEY_SHAKE_ACTION = "key_shake_action";
     public static final String KEY_SHAKE_INTENSITY = "key_shake_intensity";
+    public static final String KEY_ALARM_MATH_HARDNESS_LEVEL = "key_alarm_math_hardness_level";
+    public static final String KEY_ENABLE_PER_ALARM_MATH_HARDNESS_LEVEL = "key_enable_per_alarm_math_hardness_level";
     public static final String KEY_SORT_ALARM = "key_sort_alarm";
     public static final String KEY_DISPLAY_ENABLED_ALARMS_FIRST = "key_display_enabled_alarms_first";
     public static final String KEY_ENABLE_ALARM_FAB_LONG_PRESS = "key_enable_alarm_fab_long_press";
@@ -122,6 +128,12 @@ public class PreferencesKeys {
     public static final String KEY_TURN_ON_BACK_FLASH_FOR_TRIGGERED_ALARM = "key_turn_on_back_flash_for_triggered_alarm";
     public static final String KEY_ENABLE_DELETE_OCCASIONAL_ALARM_BY_DEFAULT = "key_enable_delete_occasional_alarm_by_default";
     public static final String KEY_DISPLAY_LOW_ALARM_VOLUME_WARNING = "key_display_low_alarm_volume_warning";
+
+    /**
+     * SharedPreferences key used to indicate whether the styled repeat day display is enabled
+     * for a specific alarm. Used to customize how repeat days are shown in the UI.
+     */
+    public static final String KEY_SHOW_STYLED_REPEAT_DAY = "show_styled_repeat_day_";
 
     // Alarm Display Customization
     public static final String KEY_ALARM_CLOCK_STYLE = "key_alarm_clock_style";
@@ -212,6 +224,7 @@ public class PreferencesKeys {
 
     // Stopwatch
     public static final String KEY_SW_FONT = "key_sw_font";
+    public static final String KEY_SW_DISPLAY_MILLISECONDS = "key_sw_display_milliseconds";
     public static final String KEY_SW_VOLUME_UP_ACTION = "key_sw_volume_up_action";
     public static final String KEY_SW_VOLUME_UP_ACTION_AFTER_LONG_PRESS = "key_sw_volume_up_action_after_long_press";
     public static final String KEY_SW_VOLUME_DOWN_ACTION = "key_sw_volume_down_action";
@@ -225,6 +238,7 @@ public class PreferencesKeys {
     public static final String KEY_SCREENSAVER_ANALOG_CLOCK_SIZE = "key_screensaver_analog_clock_size";
     public static final String KEY_DISPLAY_SCREENSAVER_CLOCK_SECONDS = "key_display_screensaver_clock_seconds";
     public static final String KEY_SCREENSAVER_CLOCK_SECOND_HAND = "key_screensaver_clock_second_hand";
+    public static final String KEY_SCREENSAVER_DISPLAY_NEXT_ALARM = "key_screensaver_display_next_alarm";
     public static final String KEY_DISPLAY_SCREENSAVER_BATTERY = "key_display_screensaver_battery";
     public static final String KEY_SCREENSAVER_CLOCK_DYNAMIC_COLORS = "key_screensaver_clock_dynamic_colors";
     public static final String KEY_SCREENSAVER_CLOCK_COLOR_PICKER = "key_screensaver_clock_color_picker";
@@ -259,6 +273,8 @@ public class PreferencesKeys {
     // ** WIDGETS **
     // **************
 
+    public static final String WIDGET_COUNT = "_widget_count";
+
     // Widget settings
     public static final String KEY_ANALOG_WIDGET_CUSTOMIZATION = "key_analog_widget_customization";
     public static final String KEY_DIGITAL_WIDGET_CUSTOMIZATION = "key_digital_widget_customization";
@@ -291,6 +307,7 @@ public class PreferencesKeys {
     public static final String KEY_DIGITAL_WIDGET_DISPLAY_NEXT_ALARM = "key_digital_widget_display_next_alarm";
     public static final String KEY_DIGITAL_WIDGET_DISPLAY_NEXT_ALARM_TITLE = "key_digital_widget_display_next_alarm_title";
     public static final String KEY_DIGITAL_WIDGET_WORLD_CITIES_DISPLAYED = "key_digital_widget_world_cities_displayed";
+    public static final String KEY_DIGITAL_WIDGET_ENABLE_CITY_FLAG = "key_digital_widget_enable_city_flag";
     public static final String KEY_DIGITAL_WIDGET_APPLY_HORIZONTAL_PADDING = "key_digital_widget_apply_horizontal_padding";
     public static final String KEY_DIGITAL_WIDGET_DEFAULT_BACKGROUND_COLOR = "key_digital_widget_default_background_color";
     public static final String KEY_DIGITAL_WIDGET_CUSTOM_BACKGROUND_COLOR = "key_digital_widget_custom_background_color";

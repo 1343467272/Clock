@@ -26,6 +26,7 @@ import android.os.Bundle;
 import android.provider.Settings;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.HapticFeedbackConstantsCompat;
@@ -55,7 +56,7 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         if (savedInstanceState == null) {
@@ -95,7 +96,7 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
         }
 
         @Override
-        public void onCreate(Bundle savedInstanceState) {
+        public void onCreate(@Nullable Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
 
             addPreferencesFromResource(R.xml.settings_permissions_management);
@@ -152,19 +153,9 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
         }
 
         @Override
-        public void onDestroy() {
-            nullifyPreferenceListeners(mIgnoreBatteryOptimizationsPref, mNotificationPermissionPref, mFullScreenNotificationPref,
-                mShowLockScreenPref, mEnableForegroundServicePref);
-
-            nullifyAllPrefs();
-
-            super.onDestroy();
-        }
-
-        @Override
-        public boolean onPreferenceChange(Preference pref, Object newValue) {
+        public boolean onPreferenceChange(@NonNull Preference pref, @NonNull Object newValue) {
             if (pref.getKey().equals(KEY_ENABLE_FOREGROUND_SERVICE)) {
-                Utils.performHapticFeedback(getView(), HapticFeedbackConstantsCompat.VIRTUAL_KEY);
+                Utils.performHapticFeedback(getView(), isVibrationsEnabled(), HapticFeedbackConstantsCompat.VIRTUAL_KEY);
 
                 if ((boolean) newValue) {
                     showForegroundServiceDialog();
@@ -222,7 +213,7 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
                 null,
                 getString(android.R.string.ok),
                 (d, w) -> {
-                    mPrefs.edit().putBoolean(KEY_ENABLE_FOREGROUND_SERVICE, true).apply();
+                    getPrefs().edit().putBoolean(KEY_ENABLE_FOREGROUND_SERVICE, true).apply();
                     mEnableForegroundServicePref.setChecked(true);
                     ContextCompat.startForegroundService(requireContext(), new Intent(requireContext(), KeepAliveService.class));
                 },
@@ -315,6 +306,7 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
             }
         }
 
+        @Nullable
         private Intent getFullScreenNotificationsIntent() {
             if (SdkUtils.isAtLeastAndroid14()) {
                 return new Intent(ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT)
@@ -349,7 +341,7 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
         /**
          * Display dialog when user wants to revoke permission.
          */
-        private void displayRevocationDialog(String prefKey, Intent intent) {
+        private void displayRevocationDialog(@NonNull String prefKey, @Nullable Intent intent) {
             mPendingRevocationPrefKey = prefKey;
 
             mActiveDialog = CustomDialog.create(
@@ -378,23 +370,15 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
          */
         private void updateEssentialPermissionsPref() {
             boolean granted = !PermissionUtils.areEssentialPermissionsNotGranted(requireContext());
-            mPrefs.edit().putBoolean(KEY_ESSENTIAL_PERMISSIONS_GRANTED, granted).apply();
+            getPrefs().edit().putBoolean(KEY_ESSENTIAL_PERMISSIONS_GRANTED, granted).apply();
         }
 
-        private void updateSinglePreference(String key) {
+        private void updateSinglePreference(@NonNull String key) {
             Preference preference = findPreference(key);
 
             if (preference instanceof PermissionsManagementPreference permissionsManagementPref) {
                 permissionsManagementPref.refreshState();
             }
-        }
-
-        private void nullifyAllPrefs() {
-            mIgnoreBatteryOptimizationsPref = null;
-            mNotificationPermissionPref = null;
-            mFullScreenNotificationPref = null;
-            mShowLockScreenPref = null;
-            mEnableForegroundServicePref = null;
         }
 
     }

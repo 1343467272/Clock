@@ -8,14 +8,19 @@ package com.best.deskclock.alarms;
 
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.graphics.Typeface;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.view.HapticFeedbackConstantsCompat;
 
 import com.best.deskclock.R;
 import com.best.deskclock.base.AppExecutors;
+import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.events.Events;
 import com.best.deskclock.provider.Alarm;
 import com.best.deskclock.provider.AlarmInstance;
@@ -36,18 +41,25 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class AlarmUpdateHandler {
 
     private final Context mAppContext;
+    private final SharedPreferences mPrefs;
+    private final Typeface mFont;
     private final ScrollHandler mScrollHandler;
     private final View mSnackbarAnchor;
+    private final boolean mIsVibrationsEnabled;
 
-    // For undo
     private Alarm mDeletedAlarm;
 
     private String mSyncToastLabel = null;
 
-    public AlarmUpdateHandler(Context context, ScrollHandler scrollHandler, ViewGroup snackbarAnchor) {
+    public AlarmUpdateHandler(@NonNull Context context, @NonNull SharedPreferences prefs, @NonNull Typeface font,
+                              @Nullable ScrollHandler scrollHandler, @Nullable ViewGroup snackbarAnchor, boolean isVibrationsEnabled) {
+
         mAppContext = context.getApplicationContext();
+        mPrefs = prefs;
+        mFont = font;
         mScrollHandler = scrollHandler;
         mSnackbarAnchor = snackbarAnchor;
+        mIsVibrationsEnabled = isVibrationsEnabled;
     }
 
     /**
@@ -55,7 +67,7 @@ public final class AlarmUpdateHandler {
      *
      * @param alarm The alarm to be added.
      */
-    public void asyncAddAlarm(final Alarm alarm) {
+    public void asyncAddAlarm(@NonNull Alarm alarm) {
         asyncAddAlarm(alarm, true, null);
     }
 
@@ -66,7 +78,7 @@ public final class AlarmUpdateHandler {
      * @param listener A callback invoked on the main thread once the alarm has been successfully saved, providing the newly created alarm
      *                 with its generated database ID. Can be null.
      */
-    public void asyncAddAlarm(final Alarm alarm, final boolean showSnackbar, final OnAlarmSavedListener listener) {
+    public void asyncAddAlarm(@Nullable Alarm alarm, boolean showSnackbar, @Nullable OnAlarmSavedListener listener) {
         AppExecutors.getDiskIO().execute(() -> {
             AlarmInstance instance = null;
             Alarm newAlarm = null;
@@ -93,9 +105,9 @@ public final class AlarmUpdateHandler {
             final Alarm finalNewAlarm = newAlarm;
 
             AppExecutors.getMainThread().post(() -> {
-                if (showSnackbar && finalInstance != null) {
+                if (showSnackbar && finalInstance != null && mSnackbarAnchor != null) {
                     LogUtils.v("Alarm created: " + finalInstance);
-                    AlarmUtils.popAlarmSetSnackbar(mSnackbarAnchor, finalInstance.getAlarmTime().getTimeInMillis());
+                    AlarmUtils.popAlarmSetSnackbar(mSnackbarAnchor, mFont, finalInstance.getAlarmTime().getTimeInMillis());
                 }
 
                 if (listener != null && finalNewAlarm != null) {
@@ -112,7 +124,7 @@ public final class AlarmUpdateHandler {
      * @param popToast    whether a toast should be displayed when done.
      * @param minorUpdate if true, don't affect any currently snoozed instances.
      */
-    public void asyncUpdateAlarm(final Alarm alarm, final boolean popToast, final boolean minorUpdate) {
+    public void asyncUpdateAlarm(@NonNull Alarm alarm, boolean popToast, boolean minorUpdate) {
         AppExecutors.getDiskIO().execute(() -> {
             ContentResolver cr = mAppContext.getContentResolver();
 
@@ -154,17 +166,20 @@ public final class AlarmUpdateHandler {
                     // the existing instance.
                     newInstance.updateInstance(cr);
                     // Update the notification for this instance.
-                    AlarmNotifications.updateNotification(mAppContext, newInstance);
+                    String languageCode = SettingsDAO.getLanguageCode(mPrefs);
+                    int globalIntentId = SettingsDAO.getGlobalIntentId(mPrefs);
+
+                    AlarmNotifications.updateNotification(mAppContext, newInstance, languageCode, globalIntentId);
 
                     if (popToast && tempTime == null) {
                         tempTime = newInstance.getAlarmTime().getTimeInMillis();
                     }
                 }
 
-                if (popToast && tempTime != null) {
+                if (popToast && tempTime != null && mSnackbarAnchor != null) {
                     final Long timeToDisplay = tempTime;
                     AppExecutors.getMainThread().post(() ->
-                        AlarmUtils.popAlarmSetSnackbar(mSnackbarAnchor, timeToDisplay)
+                        AlarmUtils.popAlarmSetSnackbar(mSnackbarAnchor, mFont, timeToDisplay)
                     );
                 }
 
@@ -172,7 +187,7 @@ public final class AlarmUpdateHandler {
             }
 
             // Otherwise, this is a major update and we're going to re-create the alarm.
-            AlarmStateManager.deleteAllInstances(mAppContext, alarm.id);
+            AlarmStateManager.deleteAllInstances(mAppContext, mPrefs, alarm.id);
 
             final AlarmInstance finalInstance = alarm.enabled ? setupAlarmInstance(alarm) : null;
             Long tempTime = null;
@@ -192,9 +207,9 @@ public final class AlarmUpdateHandler {
 
             final Long timeToDisplay = tempTime;
 
-            if (timeToDisplay != null) {
+            if (timeToDisplay != null && mSnackbarAnchor != null) {
                 AppExecutors.getMainThread().post(() ->
-                    AlarmUtils.popAlarmSetSnackbar(mSnackbarAnchor, timeToDisplay)
+                    AlarmUtils.popAlarmSetSnackbar(mSnackbarAnchor, mFont, timeToDisplay)
                 );
             }
 
@@ -206,14 +221,14 @@ public final class AlarmUpdateHandler {
      *
      * @param alarm The alarm to be deleted.
      */
-    public void asyncDeleteAlarm(final Alarm alarm) {
+    public void asyncDeleteAlarm(@Nullable Alarm alarm) {
         AppExecutors.getDiskIO().execute(() -> {
             // Activity may be closed at this point , make sure data is still valid
             if (alarm == null) {
                 // Nothing to do here, just return.
                 return;
             }
-            AlarmStateManager.deleteAllInstances(mAppContext, alarm.id);
+            AlarmStateManager.deleteAllInstances(mAppContext, mPrefs, alarm.id);
             final boolean deleted = Alarm.deleteAlarm(mAppContext.getContentResolver(), alarm.id);
 
             AppExecutors.getMainThread().post(() -> {
@@ -222,6 +237,42 @@ public final class AlarmUpdateHandler {
                     showUndoBar();
                 }
             });
+        });
+    }
+
+    /**
+     * Synchronizes the enabled state of all alarms sharing the same label and
+     * synchronization setting as the given source alarm.
+     *
+     * @param sourceAlarm the alarm whose label and sync settings define the group
+     * @param newState    the enabled state to apply to all matching alarms
+     */
+    public void asyncSyncAlarmsWithSameLabel(@NonNull Alarm sourceAlarm, boolean newState) {
+        if (sourceAlarm.label == null || sourceAlarm.label.trim().isEmpty()) {
+            // No label: nothing to synchronize
+            return;
+        }
+
+        AppExecutors.getDiskIO().execute(() -> {
+            ContentResolver cr = mAppContext.getContentResolver();
+            List<Alarm> alarms = Alarm.getAlarms(cr, null);
+
+            for (Alarm alarm : alarms) {
+                if (alarm.id != sourceAlarm.id
+                    && sourceAlarm.label.equals(alarm.label)
+                    && sourceAlarm.syncByLabel == alarm.syncByLabel) {
+
+                    if (alarm.enabled != newState) {
+                        alarm.enabled = newState;
+
+                        alarm.fixDateIfPast();
+
+                        // We reuse the existing method to update the DB and reschedule timers
+                        asyncUpdateAlarm(alarm, false, false);
+                        LogUtils.d("Sync alarm " + alarm.id + " with label " + alarm.label);
+                    }
+                }
+            }
         });
     }
 
@@ -236,7 +287,7 @@ public final class AlarmUpdateHandler {
      *
      * @param label the label of the synchronized alarm group to calculate the next upcoming time for
      */
-    public void useSyncToastForLabel(String label) {
+    public void useSyncToastForLabel(@NonNull String label) {
         mSyncToastLabel = label;
     }
 
@@ -249,16 +300,20 @@ public final class AlarmUpdateHandler {
     }
 
     private void showUndoBar() {
+        if (mSnackbarAnchor == null) {
+            return;
+        }
+
         final Alarm alarmBeingDeleted = mDeletedAlarm;
         final AtomicBoolean isUndone = new AtomicBoolean(false);
 
-        final Context localizedContext = Utils.getLocalizedContext(mAppContext);
+        final Context localizedContext = Utils.getLocalizedContext(mAppContext, SettingsDAO.getLanguageCode(mPrefs));
         final Snackbar snackbar = Snackbar.make(mSnackbarAnchor, localizedContext.getString(R.string.alarm_deleted),
             Snackbar.LENGTH_LONG).setAction(R.string.alarm_undo, v -> {
             isUndone.set(true);
 
             if (mDeletedAlarm != null) {
-                Utils.performHapticFeedback(v, HapticFeedbackConstantsCompat.VIRTUAL_KEY);
+                Utils.performHapticFeedback(v, mIsVibrationsEnabled, HapticFeedbackConstantsCompat.VIRTUAL_KEY);
 
                 final Alarm alarmToRestore = mDeletedAlarm;
 
@@ -287,15 +342,16 @@ public final class AlarmUpdateHandler {
             }
         });
 
-        SnackbarManager.show(snackbar);
+        SnackbarManager.show(snackbar, mFont);
     }
 
-    private AlarmInstance setupAlarmInstance(Alarm alarm) {
+    @NonNull
+    private AlarmInstance setupAlarmInstance(@NonNull Alarm alarm) {
         final ContentResolver cr = mAppContext.getContentResolver();
         AlarmInstance newInstance = alarm.createInstanceAfter(Calendar.getInstance());
         newInstance.addInstance(cr);
         // Register instance to state manager
-        AlarmStateManager.registerInstance(mAppContext, newInstance, true);
+        AlarmStateManager.registerInstance(mAppContext, mPrefs, newInstance, true);
         return newInstance;
     }
 
@@ -309,7 +365,7 @@ public final class AlarmUpdateHandler {
          *
          * @param savedAlarm The newly saved alarm, including its generated database ID.
          */
-        void onAlarmSaved(Alarm savedAlarm);
+        void onAlarmSaved(@NonNull Alarm savedAlarm);
     }
 
 }

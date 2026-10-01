@@ -3,7 +3,7 @@
     Copyright (C) 2016 The Android Open Source Project
     modified
     SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-only
---><resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+--><resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_label" msgid="6674495003718166674">"Relógio"</string>
     <string name="default_label" msgid="5590025289805630372">"Alarme"</string>
     <string name="alarm_vibrate" msgid="3476686921490362230">"Vibrar"</string>
@@ -37,38 +37,38 @@
     <string name="alarm_alert_predismiss_title" msgid="5723945586913705445">"Alarme próximo"</string>
     <string name="missed_alarm_has_been_deleted" msgid="5295473204045979335">"Seu alarme perdido foi excluído"</string>
     <string name="timer_notifications_less_min" msgid="5481375048976427255">"Resta menos de um minuto"</string>
-    <string name="timer_notifications_hours" msgid="1613266446037145138">"<xliff:g id="HOURS">%1$s</xliff:g><xliff:g id="REMAINING"> %3$s</xliff:g>"</string>
-    <string name="timer_notifications_minutes" msgid="8543138714519498893">"<xliff:g id="MINUTES">%2$s</xliff:g><xliff:g id="REMAINING"> %3$s</xliff:g>"</string>
+    <string name="timer_notifications_hours" msgid="1613266446037145138" tools:ignore="StringFormatCount">"<xliff:g id="HOURS">%1$s</xliff:g><xliff:g id="REMAINING"> %3$s</xliff:g>"</string>
+    <string name="timer_notifications_minutes" msgid="8543138714519498893" tools:ignore="StringFormatCount">"<xliff:g id="MINUTES">%2$s</xliff:g><xliff:g id="REMAINING"> %3$s</xliff:g>"</string>
     <string name="timer_notifications_hours_minutes" msgid="4788475350933275505">"<xliff:g id="HOURS">%1$s</xliff:g><xliff:g id="MINUTES"> %2$s</xliff:g> restante(s)"</string>
-    <string name="timer_notifications_seconds" msgid="122102514929728907">"<xliff:g id="SECONDS">%4$s</xliff:g><xliff:g id="REMAINING"> %3$s</xliff:g>"</string>
-    <string name="timer_notifications_minutes_seconds" msgid="7059651926379491350">"<xliff:g id="MINUTES">%2$s</xliff:g> <xliff:g id="SECONDS"> %4$s</xliff:g><xliff:g id="REMAINING"> %3$s</xliff:g>"</string>
-    <string name="timer_notifications_hours_seconds" msgid="8168090805113197804">"<xliff:g id="HOURS">%1$s</xliff:g> <xliff:g id="SECONDS"> %4$s</xliff:g><xliff:g id="REMAINING"> %3$s</xliff:g>"</string>
+    <string name="timer_notifications_seconds" msgid="122102514929728907" tools:ignore="StringFormatCount">"<xliff:g id="SECONDS">%4$s</xliff:g><xliff:g id="REMAINING"> %3$s</xliff:g>"</string>
+    <string name="timer_notifications_minutes_seconds" msgid="7059651926379491350" tools:ignore="StringFormatCount">"<xliff:g id="MINUTES">%2$s</xliff:g> <xliff:g id="SECONDS"> %4$s</xliff:g><xliff:g id="REMAINING"> %3$s</xliff:g>"</string>
+    <string name="timer_notifications_hours_seconds" msgid="8168090805113197804" tools:ignore="StringFormatCount">"<xliff:g id="HOURS">%1$s</xliff:g> <xliff:g id="SECONDS"> %4$s</xliff:g><xliff:g id="REMAINING"> %3$s</xliff:g>"</string>
     <string name="timer_notifications_hours_minutes_seconds" msgid="4666176878038730417">"<xliff:g id="HOURS">%1$s</xliff:g><xliff:g id="MINUTES"> %2$s</xliff:g><xliff:g id="SECONDS"> %4$s</xliff:g><xliff:g id="REMAINING"> %3$s</xliff:g>"</string>
     <string name="timer_accessibility_custom_time_added" msgid="6096646178998456004">"%1$s minuto adicionado ao timer, <xliff:g id="TIME">%2$s</xliff:g>"</string>
     <string name="timer_remaining_single" msgid="6782851171906765864">"restante"</string>
     <string name="timer_remaining_multiple" msgid="6052775962092160851">"restantes"</string>
     <string name="alarm_confirmation_toast_1">"Alarme definido para menos de um minuto a partir de agora."</string>
     <string name="alarm_confirmation_toast_2">"Alarme definido para <xliff:g id="DAYS">%1$s</xliff:g> a partir de agora."</string>
-    <string name="alarm_confirmation_toast_3">"Alarme definido para <xliff:g id="HOURS">%2$s</xliff:g> a partir de agora."</string>
+    <string name="alarm_confirmation_toast_3" tools:ignore="StringFormatCount">"Alarme definido para <xliff:g id="HOURS">%2$s</xliff:g> a partir de agora."</string>
     <string name="alarm_confirmation_toast_4">"Alarme definido para <xliff:g id="DAYS">%1$s</xliff:g> e <xliff:g id="HOURS">%2$s</xliff:g> a partir de agora."</string>
-    <string name="alarm_confirmation_toast_5">"Alarme definido para <xliff:g id="MINUTES">%3$s</xliff:g> a partir de agora."</string>
-    <string name="alarm_confirmation_toast_6">"Alarme definido para <xliff:g id="DAYS">%1$s</xliff:g> e <xliff:g id="MINUTES">%3$s</xliff:g> a partir de agora."</string>
-    <string name="alarm_confirmation_toast_7">"Alarme definido para <xliff:g id="HOURS">%2$s</xliff:g> e <xliff:g id="MINUTES">%3$s</xliff:g> a partir de agora."</string>
+    <string name="alarm_confirmation_toast_5" tools:ignore="StringFormatCount">"Alarme definido para <xliff:g id="MINUTES">%3$s</xliff:g> a partir de agora."</string>
+    <string name="alarm_confirmation_toast_6" tools:ignore="StringFormatCount">"Alarme definido para <xliff:g id="DAYS">%1$s</xliff:g> e <xliff:g id="MINUTES">%3$s</xliff:g> a partir de agora."</string>
+    <string name="alarm_confirmation_toast_7" tools:ignore="StringFormatCount">"Alarme definido para <xliff:g id="HOURS">%2$s</xliff:g> e <xliff:g id="MINUTES">%3$s</xliff:g> a partir de agora."</string>
     <string name="alarm_confirmation_toast_8">"Alarme definido para <xliff:g id="DAYS">%1$s</xliff:g>, <xliff:g id="HOURS">%2$s</xliff:g> e <xliff:g id="MINUTES">%3$s</xliff:g> a partir de agora."</string>
     <plurals name="days" formatted="false" msgid="3706846447285206235">
         <item quantity="one"><xliff:g id="NUMBER">%s</xliff:g> dia</item>
-        <item quantity="other"><xliff:g id="NUMBER">%s</xliff:g> dias</item>
         <item quantity="many"><xliff:g id="NUMBER">%s</xliff:g> dias</item>
+        <item quantity="other"><xliff:g id="NUMBER">%s</xliff:g> dias</item>
     </plurals>
     <plurals name="hours" formatted="false" msgid="3871283109767171655">
         <item quantity="one"><xliff:g id="NUMBER">%s</xliff:g> hora</item>
-        <item quantity="other"><xliff:g id="NUMBER">%s</xliff:g> horas</item>
         <item quantity="many"><xliff:g id="NUMBER">%s</xliff:g> horas</item>
+        <item quantity="other"><xliff:g id="NUMBER">%s</xliff:g> horas</item>
     </plurals>
     <plurals name="hours_short" formatted="false" msgid="3709250715691092925">
         <item quantity="one"><xliff:g id="NUMBER">%s</xliff:g> h</item>
-        <item quantity="other"><xliff:g id="NUMBER">%s</xliff:g> h</item>
         <item quantity="many"><xliff:g id="NUMBER">%s</xliff:g> h</item>
+        <item quantity="other"><xliff:g id="NUMBER">%s</xliff:g> h</item>
     </plurals>
     <plurals name="minutes" formatted="false" msgid="5484431721696058697">
         <item quantity="one"><xliff:g id="NUMBER">%s</xliff:g> minuto</item>
@@ -77,8 +77,8 @@
     </plurals>
     <plurals name="minutes_short" formatted="false" msgid="6397328304369080233">
         <item quantity="one"><xliff:g id="NUMBER">%s</xliff:g> min</item>
-        <item quantity="other"><xliff:g id="NUMBER">%s</xliff:g> min</item>
         <item quantity="many"><xliff:g id="NUMBER">%s</xliff:g> min</item>
+        <item quantity="other"><xliff:g id="NUMBER">%s</xliff:g> min</item>
     </plurals>
     <plurals name="seconds" formatted="false" msgid="670343577734266047">
         <item quantity="one"><xliff:g id="NUMBER">%s</xliff:g> segundo</item>
@@ -117,7 +117,6 @@
     <string name="menu_clock" msgid="5612760670606829805">"Relógio"</string>
     <string name="menu_stopwatch" msgid="3396117705293574701">"Cronômetro"</string>
     <string name="button_alarms" msgid="3907838219512538763">"Adicionar alarme"</string>
-    <string name="button_cities" msgid="4555761857494501363">"Cidades"</string>
     <string name="screensaver_settings_title" msgid="2930695838866189483">"Protetor de tela"</string>
     <string name="menu_item_sort_by_gmt_offset" msgid="3120860422682721706">"Classificar por horário"</string>
     <string name="menu_item_sort_by_name" msgid="1762931290495104106">"Classificar por nome"</string>
@@ -163,7 +162,7 @@
     <string name="jocular_content_message_9">"Você tem um fraco pela correria."</string>
     <string name="jocular_content_message_10">"Velocidade fotônica."</string>
     <string name="home_label" msgid="4436139365695453870">"Casa"</string>
-    <string name="cities_activity_title" msgid="8552462751129256730">"Cidades"</string>
+    <string name="label_cities" msgid="8552462751129256730">"Cidades"</string>
     <string name="clock_settings" msgid="8317286807280600391">"Relógio"</string>
     <string name="clock_style" msgid="2265011060429742344">"Estilo"</string>
     <string name="display_clock_seconds_pref" msgid="691506643469501643">Exibir horário com segundos</string>
@@ -216,8 +215,8 @@
     <string name="timer_created" msgid="4381027137335885547">"Timer criado"</string>
     <plurals name="expired_timers_dismissed" formatted="false" msgid="1294953410988488149">
         <item quantity="one"><xliff:g id="NUMBER">%d</xliff:g> timer dispensado</item>
-        <item quantity="other"><xliff:g id="NUMBER">%d</xliff:g> timers dispensados</item>
         <item quantity="many"><xliff:g id="NUMBER">%d</xliff:g> timers dispensados</item>
+        <item quantity="other"><xliff:g id="NUMBER">%d</xliff:g> timers dispensados</item>
     </plurals>
     <string name="invalid_timer_length" msgid="3104567893212932487">"Duração do timer inválida"</string>
     <string name="invalid_timer" msgid="900957020728335675">"Timer inválido selecionado"</string>

@@ -3,6 +3,7 @@
 package com.best.deskclock.base;
 
 import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreferences;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_ALARM_BACKGROUND_COLOR;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_ALARM_BLUR_INTENSITY;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_SCREENSAVER_BLUR_INTENSITY;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_TIMER_BLUR_INTENSITY;
@@ -12,7 +13,10 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.PowerManager;
+
+import androidx.annotation.NonNull;
 
 import com.best.deskclock.alarms.AlarmStateManager;
 import com.best.deskclock.data.SettingsDAO;
@@ -37,27 +41,32 @@ public class PackageReplacedReceiver extends BroadcastReceiver {
 
     @SuppressLint({"WakelockTimeout", "Wakelock"})
     @Override
-    public void onReceive(Context context, Intent intent) {
+    public void onReceive(@NonNull Context context, @NonNull Intent intent) {
         if (!Intent.ACTION_MY_PACKAGE_REPLACED.equals(intent.getAction())) {
             return;
         }
 
         LogUtils.i("MY_PACKAGE_REPLACED received");
 
+        final Context appContext = context.getApplicationContext();
+        final SharedPreferences prefs = getDefaultSharedPreferences(appContext);
         final PendingResult result = goAsync();
-        final PowerManager.WakeLock wl = AlarmAlertWakeLock.createPartialWakeLock(context);
+        final PowerManager.WakeLock wl = AlarmAlertWakeLock.createPartialWakeLock(appContext);
         wl.acquire();
 
         AppExecutors.getDiskIO().execute(() -> {
             try {
                 // Update all the alarm instances
-                AlarmStateManager.fixAlarmInstances(context);
+                AlarmStateManager.fixAlarmInstances(appContext, prefs);
 
                 // Update all the timer keys stored in SharedPreferences
-                updateTimerKeys(context);
+                updateTimerKeys(prefs);
 
                 // Update the blur setting keys stored in SharedPreferences
-                migrateBlurSettings(context);
+                migrateBlurSettings(prefs);
+
+                // Update the default alarm background color stored in SharedPreferences
+                migrateAlarmBackgroundColor(prefs);
             } finally {
                 result.finish();
                 wl.release();
@@ -67,8 +76,7 @@ public class PackageReplacedReceiver extends BroadcastReceiver {
     }
 
     @SuppressLint("ApplySharedPref")
-    private void updateTimerKeys(Context context) {
-        SharedPreferences prefs = getDefaultSharedPreferences(context);
+    private void updateTimerKeys(@NonNull SharedPreferences prefs) {
         SharedPreferences.Editor editor = prefs.edit();
         Map<String, ?> allEntries = prefs.getAll();
         boolean hasChanges = false;
@@ -108,8 +116,7 @@ public class PackageReplacedReceiver extends BroadcastReceiver {
     }
 
     @SuppressLint("ApplySharedPref")
-    private void migrateBlurSettings(Context context) {
-        SharedPreferences prefs = getDefaultSharedPreferences(context);
+    private void migrateBlurSettings(@NonNull SharedPreferences prefs) {
         SharedPreferences.Editor editor = prefs.edit();
         boolean hasChanges = false;
 
@@ -146,6 +153,24 @@ public class PackageReplacedReceiver extends BroadcastReceiver {
         if (hasChanges) {
             editor.commit();
             LogUtils.i("PackageReplacedReceiver - Blur settings migrated successfully");
+        }
+    }
+
+    @SuppressLint("ApplySharedPref")
+    private void migrateAlarmBackgroundColor(@NonNull SharedPreferences prefs) {
+        String key = KEY_ALARM_BACKGROUND_COLOR;
+
+        if (prefs.contains(key)) {
+            int savedColor = prefs.getInt(key, 0);
+            int oldDefaultColor = Color.parseColor("#FF191C1E");
+
+            if (savedColor == oldDefaultColor) {
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.remove(key);
+                editor.commit();
+
+                LogUtils.i("PackageReplacedReceiver - Alarm background color setting migrated successfully");
+            }
         }
     }
 }

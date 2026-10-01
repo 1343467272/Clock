@@ -7,7 +7,6 @@
 package com.best.deskclock.data;
 
 import static android.text.format.DateUtils.SECOND_IN_MILLIS;
-import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreferences;
 import static com.best.deskclock.data.Timer.State.EXPIRED;
 import static com.best.deskclock.data.Timer.State.MISSED;
 import static com.best.deskclock.data.Timer.State.PAUSED;
@@ -19,9 +18,11 @@ import static com.best.deskclock.settings.PreferencesDefaultValues.SORT_TIMER_BY
 import static com.best.deskclock.utils.Utils.now;
 import static com.best.deskclock.utils.Utils.wallClock;
 
-import android.content.Context;
 import android.net.Uri;
 import android.text.TextUtils;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -51,9 +52,10 @@ import java.util.concurrent.TimeUnit;
  * @param mTurnOffMedia           {@code true} to turn off media upon expiration, {@code false} otherwise.
  * @param mDeleteAfterUse         A flag indicating the timer should be deleted when it is reset.
  */
-public record Timer(int mId, State mState, long mLength, long mTotalLength, long mLastStartTime, long mLastStartWallClockTime,
-                    long mRemainingTime, String mLabel, String mButtonTime, Uri mRingtoneUri, int mAutoSilence, int mCrescendoDuration,
-                    boolean mVibrate, String mVibrationPattern, boolean mFlashOn, boolean mTurnOffMedia, boolean mDeleteAfterUse) {
+public record Timer(int mId, @NonNull State mState, long mLength, long mTotalLength, long mLastStartTime, long mLastStartWallClockTime,
+                    long mRemainingTime, @Nullable String mLabel, @NonNull  String mButtonTime, @Nullable Uri mRingtoneUri,
+                    int mAutoSilence, int mCrescendoDuration, boolean mVibrate, @NonNull String mVibrationPattern, boolean mFlashOn,
+                    boolean mTurnOffMedia, boolean mDeleteAfterUse) {
 
     /**
      * The minimum duration of a timer.
@@ -74,26 +76,29 @@ public record Timer(int mId, State mState, long mLength, long mTotalLength, long
      * <p>
      * For reset timers, sorting is based on the setting selected in timer settings.
      */
-    public static Comparator<Timer> createTimerStateComparator(final Context context) {
+    @NonNull
+    public static Comparator<Timer> createTimerStateComparator(@NonNull String timerSortingPreference) {
         return new Comparator<>() {
             private final List<State> sortingStatus = Arrays.asList(MISSED, EXPIRED, RUNNING, PAUSED, RESET);
 
             @Override
-            public int compare(Timer timer1, Timer timer2) {
+            public int compare(@NonNull Timer timer1, @NonNull Timer timer2) {
                 final int stateIndex1 = sortingStatus.indexOf(timer1.getState());
                 final int stateIndex2 = sortingStatus.indexOf(timer2.getState());
                 int sorting = Integer.compare(stateIndex1, stateIndex2);
 
                 if (sorting == 0) {
                     final State state = timer1.getState();
-                    final String timerSortingPreference = SettingsDAO.getTimerSortingPreference(getDefaultSharedPreferences(context));
 
                     if (state == RESET) {
                         switch (timerSortingPreference) {
                             case SORT_TIMER_BY_ASCENDING_DURATION -> sorting = Long.compare(-timer2.getLength(), -timer1.getLength());
                             case SORT_TIMER_BY_DESCENDING_DURATION -> sorting = Long.compare(timer2.getLength(), timer1.getLength());
-                            case SORT_TIMER_BY_NAME -> sorting = CharSequence.compare(
-                                timer1.getLabel().toLowerCase(Locale.ROOT), timer2.getLabel().toLowerCase(Locale.ROOT));
+                            case SORT_TIMER_BY_NAME -> {
+                                final String label1 = timer1.getLabel() != null ? timer1.getLabel() : "";
+                                final String label2 = timer2.getLabel() != null ? timer2.getLabel() : "";
+                                sorting = CharSequence.compare(label1.toLowerCase(Locale.ROOT), label2.toLowerCase(Locale.ROOT));
+                            }
                         }
                     } else {
                         sorting = Long.compare(timer1.getRemainingTime(), timer2.getRemainingTime());
@@ -140,7 +145,7 @@ public record Timer(int mId, State mState, long mLength, long mTotalLength, long
     /**
      * @return a copy of this timer with the given {@code label}
      */
-    Timer setLabel(String label) {
+    Timer setLabel(@Nullable String label) {
         if (TextUtils.equals(mLabel, label)) {
             return this;
         }
@@ -164,7 +169,7 @@ public record Timer(int mId, State mState, long mLength, long mTotalLength, long
     /**
      * @return a copy of this timer with the given button time
      */
-    Timer setButtonTime(String buttonTime) {
+    Timer setButtonTime(@NonNull String buttonTime) {
         if (TextUtils.equals(mButtonTime, buttonTime)) {
             return this;
         }
@@ -176,7 +181,7 @@ public record Timer(int mId, State mState, long mLength, long mTotalLength, long
     /**
      * @return a copy of this timer with the given ringtone
      */
-    Timer setRingtone(Uri ringtone) {
+    Timer setRingtone(@Nullable Uri ringtone) {
         if (Objects.equals(ringtone, mRingtoneUri)) {
             return this;
         }
@@ -224,7 +229,7 @@ public record Timer(int mId, State mState, long mLength, long mTotalLength, long
     /**
      * @return a copy of this timer with the given {@code vibrationPattern}
      */
-    Timer setVibrationPattern(String vibrationPattern) {
+    Timer setVibrationPattern(@NonNull String vibrationPattern) {
         if (TextUtils.equals(mVibrationPattern, vibrationPattern)) {
             return this;
         }
@@ -535,7 +540,7 @@ public record Timer(int mId, State mState, long mLength, long mTotalLength, long
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
@@ -584,6 +589,7 @@ public record Timer(int mId, State mState, long mLength, long mTotalLength, long
         /**
          * @return the state corresponding to the given {@code value}
          */
+        @Nullable
         public static State fromValue(int value) {
             for (State state : values()) {
                 if (state.getValue() == value) {

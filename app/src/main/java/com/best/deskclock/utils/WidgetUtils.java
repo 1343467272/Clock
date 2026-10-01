@@ -10,7 +10,6 @@ import static android.appwidget.AppWidgetManager.OPTION_APPWIDGET_HOST_CATEGORY;
 import static android.appwidget.AppWidgetProviderInfo.WIDGET_CATEGORY_KEYGUARD;
 import static android.graphics.Bitmap.Config.ARGB_8888;
 import static androidx.core.util.TypedValueCompat.dpToPx;
-import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreferences;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -19,12 +18,12 @@ import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.graphics.drawable.Icon;
 import android.os.Bundle;
 import android.text.format.DateFormat;
@@ -44,8 +43,8 @@ import com.best.deskclock.R;
 import com.best.deskclock.base.AppExecutors;
 import com.best.deskclock.data.City;
 import com.best.deskclock.data.DataModel;
-import com.best.deskclock.data.WidgetDAO;
 import com.best.deskclock.events.Events;
+import com.best.deskclock.provider.AlarmInstance;
 import com.best.deskclock.widgets.AnalogAppWidgetProvider;
 import com.best.deskclock.widgets.DigitalAppWidgetProvider;
 import com.best.deskclock.widgets.NextAlarmAppWidgetProvider;
@@ -55,6 +54,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 public class WidgetUtils {
 
@@ -97,14 +97,11 @@ public class WidgetUtils {
     }
 
     /**
-     * Suffix for a key to a preference that stores the instance count for a given widget type.
-     */
-    private static final String WIDGET_COUNT = "_widget_count";
-
-    /**
      * Calculate the scale factor of the fonts in the widget
      */
-    public static float getScaleRatio(Context context, Bundle options, int id, int cityCount) {
+    public static float getScaleRatio(@NonNull Context context, @NonNull DisplayMetrics displayMetrics, @Nullable Bundle options,
+                                      int id, int cityCount) {
+
         if (options == null) {
             AppWidgetManager widgetManager = AppWidgetManager.getInstance(context);
             if (widgetManager == null) {
@@ -120,11 +117,10 @@ public class WidgetUtils {
                 return 1f;
             }
 
-            final DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
             float density = displayMetrics.density;
             final int minDigitalWidgetWidth = (int) dpToPx(ThemeUtils.isTablet() ? 300 : 206, displayMetrics);
             float ratio = (density * minWidth) / minDigitalWidgetWidth;
-            ratio = Math.min(ratio, getHeightScaleRatio(context, options, id));
+            ratio = Math.min(ratio, getHeightScaleRatio(context, displayMetrics, options, id));
             ratio *= .83f;
 
             if (cityCount > 0) {
@@ -145,7 +141,9 @@ public class WidgetUtils {
     /**
      * Calculate the scale factor of the fonts in the list of  the widget using the widget height
      */
-    private static float getHeightScaleRatio(Context context, Bundle options, int id) {
+    private static float getHeightScaleRatio(@NonNull Context context, @NonNull DisplayMetrics displayMetrics, @Nullable Bundle options,
+                                             int id) {
+
         if (options == null) {
             AppWidgetManager widgetManager = AppWidgetManager.getInstance(context);
             if (widgetManager == null) {
@@ -161,7 +159,6 @@ public class WidgetUtils {
                 return 1f;
             }
 
-            final DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
             float density = displayMetrics.density;
             final int minDigitalWidgetHeight = (int) dpToPx(ThemeUtils.isTablet() ? 170 : 129, displayMetrics);
             float ratio = density * minHeight / minDigitalWidgetHeight;
@@ -199,7 +196,7 @@ public class WidgetUtils {
      * @param city the City object to derive the stable id from (can be null)
      * @return a long representing the stable id extracted from the city id (or 1L as fallback)
      */
-    public static long getStableIdForCity(City city) {
+    public static long getStableIdForCity(@Nullable City city) {
         if (city == null) {
             return 1L;
         }
@@ -211,28 +208,10 @@ public class WidgetUtils {
     }
 
     /**
-     * @param widgetProviderClass indicates the type of widget being counted
-     * @param count               the number of widgets of the given type
-     * @return the delta between the new count and the old count
-     */
-    public static int updateWidgetCount(SharedPreferences prefs, Class<?> widgetProviderClass, int count) {
-        final String key = widgetProviderClass.getSimpleName() + WIDGET_COUNT;
-        final int oldCount = prefs.getInt(key, 0);
-        if (count == 0) {
-            prefs.edit().remove(key).apply();
-        } else {
-            prefs.edit().putInt(key, count).apply();
-        }
-        return count - oldCount;
-    }
-
-    /**
-     * @param widgetClass     indicates the type of widget being counted
-     * @param count           the number of widgets of the given type
+     * @param delta           the difference between the new and old widget count
      * @param eventCategoryId identifies the category of event to send
      */
-    public static void updateWidgetCount(Context context, Class<?> widgetClass, int count, @StringRes int eventCategoryId) {
-        int delta = updateWidgetCount(getDefaultSharedPreferences(context), widgetClass, count);
+    public static void updateWidgetCount(int delta, @StringRes int eventCategoryId) {
         for (; delta > 0; delta--) {
             Events.sendEvent(eventCategoryId, R.string.action_create, 0);
         }
@@ -244,7 +223,7 @@ public class WidgetUtils {
     /**
      * @return {@code true} if the widget is being hosted in a container where tapping is allowed
      */
-    public static boolean isWidgetClickable(AppWidgetManager widgetManager, int widgetId) {
+    public static boolean isWidgetClickable(@NonNull AppWidgetManager widgetManager, int widgetId) {
         final Bundle wo = widgetManager.getAppWidgetOptions(widgetId);
         return wo != null && wo.getInt(OPTION_APPWIDGET_HOST_CATEGORY, -1) != WIDGET_CATEGORY_KEYGUARD;
     }
@@ -254,7 +233,8 @@ public class WidgetUtils {
      *
      * @return a Bitmap containing an image of the {@code view} at its current size
      */
-    public static Bitmap createBitmap(View view) {
+    @NonNull
+    public static Bitmap createBitmap(@NonNull View view) {
         final Bitmap bitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), ARGB_8888);
         final Canvas canvas = new Canvas(bitmap);
         view.draw(canvas);
@@ -274,6 +254,7 @@ public class WidgetUtils {
      * @param radius the corner radius in pixels to apply to all four corners
      * @return an {@link Icon} containing the rounded bitmap
      */
+    @NonNull
     public static Icon createRoundedIcon(int width, int height, int color, int radius) {
         Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
@@ -289,7 +270,7 @@ public class WidgetUtils {
     /**
      * @return the default background color for day mode.
      */
-    public static int getBackgroundColorDay(Context context) {
+    public static int getBackgroundColorDay(@NonNull Context context) {
         return SdkUtils.isAtLeastAndroid12()
             ? ContextCompat.getColor(context, android.R.color.system_accent2_50)
             : Color.TRANSPARENT;
@@ -298,7 +279,7 @@ public class WidgetUtils {
     /**
      * @return the default background color for night mode.
      */
-    public static int getBackgroundColorNight(Context context) {
+    public static int getBackgroundColorNight(@NonNull Context context) {
         return SdkUtils.isAtLeastAndroid12()
             ? ContextCompat.getColor(context, android.R.color.system_accent2_800)
             : Color.TRANSPARENT;
@@ -307,30 +288,27 @@ public class WidgetUtils {
     /**
      * @return "11:59" or "23:59" in the current locale
      */
-    public static CharSequence getLongestTimeString(TextClock clock) {
-        final SharedPreferences prefs = getDefaultSharedPreferences(clock.getContext());
-        boolean includeSeconds = WidgetDAO.areSecondsDisplayedOnDigitalWidget(prefs);
+    public static CharSequence getLongestTimeString(@NonNull TextClock clock, boolean includeSeconds, boolean isAmPmHidden) {
+        float amPmRatio = isAmPmHidden ? 0 : 0.4f;
         final CharSequence format = clock.is24HourModeEnabled()
             ? ClockUtils.get24ModeFormat(includeSeconds, false)
-            : ClockUtils.get12ModeFormat(clock.getContext(), getAmPmRatio(prefs),
-            includeSeconds, false, false, false, false);
+            : ClockUtils.get12ModeFormat(includeSeconds, amPmRatio, null, "sans-serif", Typeface.BOLD, false);
         final Calendar longestPMTime = Calendar.getInstance();
+
         longestPMTime.set(0, 0, 0, 23, 59);
+
         return DateFormat.format(format, longestPMTime);
     }
 
     /**
      * Configure the TextClock format on a RemoteViews instance.
      *
-     * @param rv          RemoteViews to update
-     * @param context     context for resources
+     * @param rv          {@link RemoteViews} to update
      * @param clockViewId the TextClock view id
      * @param amPmRatio   am/pm ratio for 12h format
      * @param showSeconds whether seconds should be shown
      */
-    public static void applyClockFormat(RemoteViews rv, Context context, int clockViewId, float amPmRatio,
-                                        boolean showSeconds) {
-
+    public static void applyClockFormat(@Nullable RemoteViews rv, int clockViewId, float amPmRatio, boolean showSeconds) {
         if (rv == null || clockViewId == 0) {
             return;
         }
@@ -339,24 +317,21 @@ public class WidgetUtils {
             rv.setCharSequence(clockViewId, METHOD_SET_FORMAT_24, ClockUtils.get24ModeFormat(showSeconds, false));
         } else {
             rv.setCharSequence(clockViewId, METHOD_SET_FORMAT_12, ClockUtils.get12ModeFormat(
-                context, amPmRatio, showSeconds, false, false, false, false)
+                showSeconds, amPmRatio, null, "sans-serif", Typeface.BOLD, false)
             );
         }
     }
 
     /**
-     * @return the ratio to use for the AM/PM part on the digital widgets.
-     */
-    public static float getAmPmRatio(SharedPreferences prefs) {
-        return WidgetDAO.isAmPmHiddenOnDigitalWidget(prefs) ? 0 : 0.4f;
-    }
-
-    /**
      * @return The locale-specific date pattern.
      */
-    public static String getDateFormat(Context context) {
-        Locale locale = Locale.getDefault();
-        final String skeleton = context.getString(R.string.abbrev_wday_month_day_no_year);
+    @NonNull
+    public static String getDateFormat(@NonNull Context context, boolean isAlarmVisible) {
+        Locale locale = Utils.getLocaleFromContext(context);
+        final String skeleton = context.getString(isAlarmVisible
+            ? R.string.abbrev_wday_month_day_no_year
+            : R.string.full_wday_month_day_no_year
+        );
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat(DateFormat.getBestDateTimePattern(locale, skeleton), locale);
         String formattedDate = simpleDateFormat.format(new Date());
 
@@ -364,9 +339,76 @@ public class WidgetUtils {
     }
 
     /**
+     * @return The text of the next alarm, written across multiple lines.
+     */
+    @Nullable
+    public static String getMultiLineNextAlarm(@NonNull Context context) {
+        AlarmInstance instance = AlarmInstance.getNextFiringAlarm(context);
+        if (instance != null) {
+            Calendar alarmCalendar = Calendar.getInstance();
+            alarmCalendar.setTimeInMillis(instance.getAlarmTime().getTimeInMillis());
+            return getMultiLineFormattedTime(context, alarmCalendar);
+        }
+        return null;
+    }
+
+    /**
+     * @return the date and time of the next alarm formatted on two lines.
+     */
+    @NonNull
+    public static String getMultiLineFormattedTime(@NonNull Context context, @NonNull Calendar alarmTime) {
+        final Calendar now = Calendar.getInstance();
+        final Calendar today = (Calendar) now.clone();
+        final Calendar tomorrow = (Calendar) now.clone();
+        tomorrow.add(Calendar.DAY_OF_YEAR, 1);
+
+        final boolean is24HourFormat = DateFormat.is24HourFormat(context);
+        final Locale locale = Utils.getLocaleFromContext(context);
+
+        String timeSkeleton = context.getString(is24HourFormat ? R.string.time_24_hour : R.string.time_12_hour);
+        String timePattern = DateFormat.getBestDateTimePattern(locale, timeSkeleton);
+        String timeStr = new SimpleDateFormat(timePattern, locale).format(alarmTime.getTime());
+
+        String result;
+
+        if (AlarmUtils.isSameDayAndTimeZone(alarmTime, today)) {
+            // Returns:  "Today
+            //           8:30 AM"
+            result = context.getString(R.string.alarm_today) + "\n" + timeStr;
+        } else if (AlarmUtils.isSameDayAndTimeZone(alarmTime, tomorrow)) {
+            // Returns: "Tomorrow
+            //           8:30 AM"
+            result = context.getString(R.string.alarm_tomorrow) + "\n" + timeStr;
+        } else {
+            long diffInMillis = alarmTime.getTimeInMillis() - now.getTimeInMillis();
+            long diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMillis);
+
+            if (diffInDays >= 6) {
+                // Returns: "Sat, Oct 28
+                //             8:30 AM"
+                boolean isDifferentYear = now.get(Calendar.YEAR) != alarmTime.get(Calendar.YEAR);
+                String dateSkeleton = context.getString(isDifferentYear
+                    ? R.string.abbrev_wday_month_day_with_year
+                    : R.string.abbrev_wday_month_day_no_year);
+
+                String datePattern = DateFormat.getBestDateTimePattern(locale, dateSkeleton);
+                String dateStr = new SimpleDateFormat(datePattern, locale).format(alarmTime.getTime());
+                result = dateStr + "\n" + timeStr;
+            } else {
+                // Returns: "Wed 8:30 AM"
+                String skeleton = context.getString(is24HourFormat ? R.string.abbrev_wday_24_hour : R.string.abbrev_wday_12_hour);
+                String pattern = DateFormat.getBestDateTimePattern(locale, skeleton);
+                result = new SimpleDateFormat(pattern, locale).format(alarmTime.getTime());
+            }
+        }
+
+        return FormattedTextUtils.capitalizeFirstLetter(result, locale);
+    }
+
+    /**
      * Schedule alarm for daily widget update at midnight.
      */
-    public static void scheduleDailyWidgetUpdate(Context context, Class<? extends BroadcastReceiver> receiverClass) {
+    public static void scheduleDailyWidgetUpdate(@NonNull Context context, @NonNull Class<? extends BroadcastReceiver> receiverClass) {
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.HOUR_OF_DAY, 0);
         calendar.set(Calendar.MINUTE, 0);
@@ -389,7 +431,7 @@ public class WidgetUtils {
     /**
      * Helper method to cancel daily widget update.
      */
-    public static void cancelDailyWidgetUpdate(Context context, Class<? extends BroadcastReceiver> receiverClass) {
+    public static void cancelDailyWidgetUpdate(@NonNull Context context, @NonNull Class<? extends BroadcastReceiver> receiverClass) {
         Intent intent = new Intent(context, receiverClass);
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intent,
@@ -409,7 +451,7 @@ public class WidgetUtils {
      * @param context The Context used to access the system service.
      * @return The AlarmManager system service instance, which can be used to set, cancel, or query alarms.
      */
-    public static AlarmManager getAlarmManager(Context context) {
+    public static AlarmManager getAlarmManager(@NonNull Context context) {
         return context.getApplicationContext().getSystemService(AlarmManager.class);
     }
 
@@ -418,7 +460,7 @@ public class WidgetUtils {
      * <p>Note: The widget provider class must declare a public static method named
      * {@code updateAppWidget(Context, AppWidgetManager, int)}.</p>
      */
-    public static void updateWidget(Context context, Class<?> widgetProviderClass) {
+    public static void updateWidget(@NonNull Context context, @NonNull Class<?> widgetProviderClass) {
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
         ComponentName widget = new ComponentName(context, widgetProviderClass);
         int[] widgetIds = appWidgetManager.getAppWidgetIds(widget);
@@ -437,7 +479,7 @@ public class WidgetUtils {
     /**
      * Helper method to update a specific widget with a 600ms delay.
      */
-    public static void scheduleWidgetUpdate(Context context, Class<?> widgetProviderClass) {
+    public static void scheduleWidgetUpdate(@NonNull Context context, @NonNull Class<?> widgetProviderClass) {
         AppExecutors.getMainThread().postDelayed(() ->
             updateWidget(context, widgetProviderClass), 600);
     }
@@ -445,7 +487,7 @@ public class WidgetUtils {
     /**
      * Helper method to update all widgets.
      */
-    public static void updateAllWidgets(Context context) {
+    public static void updateAllWidgets(@NonNull Context context) {
         Class<?>[] widgetProviders = {
             AnalogAppWidgetProvider.class,
             DigitalAppWidgetProvider.class,
@@ -461,7 +503,7 @@ public class WidgetUtils {
     /**
      * Helper method to update all digital widgets.
      */
-    public static void updateAllDigitalWidgets(Context context) {
+    public static void updateAllDigitalWidgets(@NonNull Context context) {
         Class<?>[] widgetProviders = {
             DigitalAppWidgetProvider.class,
             NextAlarmAppWidgetProvider.class,

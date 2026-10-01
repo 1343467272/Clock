@@ -13,6 +13,9 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.best.deskclock.utils.LogUtils;
 
 import java.util.Calendar;
@@ -27,14 +30,14 @@ class ClockDatabaseHelper extends SQLiteOpenHelper {
     static final String ALARMS_TABLE_NAME = "alarm_templates";
     static final String INSTANCES_TABLE_NAME = "alarm_instances";
 
-    private static final int DATABASE_VERSION = 28;
+    private static final int DATABASE_VERSION = 29;
     private static final int MINIMUM_SUPPORTED_VERSION = 15;
 
-    public ClockDatabaseHelper(Context context) {
+    public ClockDatabaseHelper(@Nullable Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
-    private static void createAlarmsTable(SQLiteDatabase db, String alarmsTableName) {
+    private static void createAlarmsTable(@NonNull SQLiteDatabase db, @NonNull String alarmsTableName) {
         db.execSQL("CREATE TABLE " + alarmsTableName + " (" +
             ClockContract.AlarmsColumns._ID + " INTEGER PRIMARY KEY," +
             ClockContract.AlarmsColumns.YEAR + " INTEGER NOT NULL, " +
@@ -61,6 +64,7 @@ class ClockDatabaseHelper extends SQLiteOpenHelper {
             ClockContract.AlarmsColumns.PAUSE_END_DATE + " INTEGER NOT NULL DEFAULT 0, " +
             ClockContract.AlarmsColumns.BACKGROUND_IMAGE + " TEXT NOT NULL, " +
             ClockContract.AlarmsColumns.BLUR_INTENSITY + " INTEGER NOT NULL DEFAULT 0, " +
+            ClockContract.AlarmsColumns.MATH_HARDNESS_LEVEL + " TEXT NOT NULL DEFAULT 'off', " +
             ClockContract.AlarmsColumns.REPEAT_TYPE + " INTEGER NOT NULL DEFAULT 0, " +
             ClockContract.AlarmsColumns.SHIFT_WORK_DAYS + " INTEGER NOT NULL DEFAULT 0, " +
             ClockContract.AlarmsColumns.SHIFT_REST_DAYS + " INTEGER NOT NULL DEFAULT 0, " +
@@ -69,7 +73,7 @@ class ClockDatabaseHelper extends SQLiteOpenHelper {
         LogUtils.i("Alarms Table created");
     }
 
-    private static void createInstanceTable(SQLiteDatabase db, String instanceTableName) {
+    private static void createInstanceTable(@NonNull SQLiteDatabase db, @NonNull String instanceTableName) {
         db.execSQL("CREATE TABLE " + instanceTableName + " (" +
             ClockContract.InstancesColumns._ID + " INTEGER PRIMARY KEY," +
             ClockContract.InstancesColumns.YEAR + " INTEGER NOT NULL, " +
@@ -98,13 +102,13 @@ class ClockDatabaseHelper extends SQLiteOpenHelper {
     }
 
     @Override
-    public void onCreate(SQLiteDatabase db) {
+    public void onCreate(@NonNull SQLiteDatabase db) {
         createAlarmsTable(db, ALARMS_TABLE_NAME);
         createInstanceTable(db, INSTANCES_TABLE_NAME);
     }
 
     @Override
-    public void onUpgrade(SQLiteDatabase db, int oldVersion, int currentVersion) {
+    public void onUpgrade(@NonNull SQLiteDatabase db, int oldVersion, int currentVersion) {
         if (oldVersion < MINIMUM_SUPPORTED_VERSION) {
             throw new IllegalStateException(
                 "Database version too old (" + oldVersion + "). Minimum supported version is " + MINIMUM_SUPPORTED_VERSION + "."
@@ -290,7 +294,7 @@ class ClockDatabaseHelper extends SQLiteOpenHelper {
             db.execSQL("ALTER TABLE " + ALARMS_TABLE_NAME + " ADD COLUMN " + ClockContract.AlarmsColumns.BLUR_INTENSITY
                 + " INTEGER NOT NULL DEFAULT 0;");
 
-            LogUtils.i("backgroundImage and blurIntensity columns added for version 26 upgrade.");
+            LogUtils.i("backgroundImage and blurIntensity columns added for version 27 upgrade.");
         }
 
         if (oldVersion < 28) {
@@ -309,9 +313,19 @@ class ClockDatabaseHelper extends SQLiteOpenHelper {
 
             LogUtils.i("repeatType, shiftWorkDays, shiftRestDays and shiftStartDate columns added for version 28 upgrade.");
         }
+
+        if (oldVersion < 29) {
+            // Add the column related to the "Solve a math problem to dismiss/snooze" feature.
+            // It is added in a dedicated block so that databases already at version 27 (upstream)
+            // or version 28 (this fork) also receive the column.
+            db.execSQL("ALTER TABLE " + ALARMS_TABLE_NAME + " ADD COLUMN " + ClockContract.AlarmsColumns.MATH_HARDNESS_LEVEL
+                + " TEXT NOT NULL DEFAULT 'off';");
+
+            LogUtils.i("mathHardnessLevel column added for version 29 upgrade.");
+        }
     }
 
-    long fixAlarmInsert(ContentValues values) {
+    long fixAlarmInsert(@Nullable ContentValues values) {
         // Why are we doing this? Is this not a programming bug if we try to
         // insert an already used id?
         final SQLiteDatabase db = getWritableDatabase();
@@ -319,7 +333,8 @@ class ClockDatabaseHelper extends SQLiteOpenHelper {
         long rowId;
         try {
             // Check if we are trying to re-use an existing id.
-            final Object value = values.get(ClockContract.AlarmsColumns._ID);
+            final ContentValues nonNullValues = values != null ? values : new ContentValues();
+            final Object value = nonNullValues.get(ClockContract.AlarmsColumns._ID);
             if (value != null) {
                 long id = (Long) value;
                 if (id > -1) {
@@ -329,13 +344,13 @@ class ClockDatabaseHelper extends SQLiteOpenHelper {
                     try (Cursor cursor = db.query(ALARMS_TABLE_NAME, columns, selection, selectionArgs, null, null, null)) {
                         if (cursor.moveToFirst()) {
                             // Record exists. Remove the id so sqlite can generate a new one.
-                            values.putNull(ClockContract.AlarmsColumns._ID);
+                            nonNullValues.putNull(ClockContract.AlarmsColumns._ID);
                         }
                     }
                 }
             }
 
-            rowId = db.insert(ALARMS_TABLE_NAME, ClockContract.AlarmsColumns.RINGTONE, values);
+            rowId = db.insert(ALARMS_TABLE_NAME, ClockContract.AlarmsColumns.RINGTONE, nonNullValues);
             db.setTransactionSuccessful();
         } finally {
             db.endTransaction();

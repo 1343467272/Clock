@@ -24,7 +24,6 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
-import android.text.format.DateFormat;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
 
@@ -32,6 +31,7 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.content.ContextCompat;
@@ -40,9 +40,8 @@ import androidx.preference.Preference;
 import com.best.deskclock.DeskClock;
 import com.best.deskclock.R;
 import com.best.deskclock.base.AppExecutors;
-import com.best.deskclock.base.KeepAliveService;
 import com.best.deskclock.base.BaseSettingsScreenFragment;
-import com.best.deskclock.data.DataModel;
+import com.best.deskclock.base.KeepAliveService;
 import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.provider.Alarm;
 import com.best.deskclock.tiles.AlarmTileService;
@@ -52,7 +51,6 @@ import com.best.deskclock.uicomponents.CollapsingToolbarBaseActivity;
 import com.best.deskclock.uicomponents.CustomDialog;
 import com.best.deskclock.uicomponents.toast.CustomToast;
 import com.best.deskclock.uidata.UiDataModel;
-import com.best.deskclock.utils.BackupAndRestoreUtils;
 import com.best.deskclock.utils.FileUtils;
 import com.best.deskclock.utils.LogUtils;
 import com.best.deskclock.utils.NotificationUtils;
@@ -69,8 +67,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -90,7 +90,7 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         mBaseBinding.appBar.addOnOffsetChangedListener((appBarLayout, verticalOffset) -> {
@@ -107,7 +107,7 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
     }
 
     @Override
-    protected void onPostCreate(Bundle savedInstanceState) {
+    protected void onPostCreate(@Nullable Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
 
         if (savedInstanceState != null && savedInstanceState.containsKey(KEY_APPBAR_EXPANDED)) {
@@ -160,16 +160,20 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
                 }
 
                 final Context appContext = requireContext().getApplicationContext();
+                final int style = getAccentStyle();
+                final Typeface font = getGeneralTypeface();
 
                 AppExecutors.getDiskIO().execute(() -> {
                     try {
                         backupPreferences(appContext, uri);
 
-                        AppExecutors.getMainThread().post(() -> CustomToast.show(appContext, R.string.toast_message_for_backup));
+                        AppExecutors.getMainThread().post(() ->
+                            CustomToast.show(appContext, style, font, R.string.toast_message_for_backup));
                     } catch (Exception e) {
                         LogUtils.e("Error during backup", e);
 
-                        AppExecutors.getMainThread().post(() -> CustomToast.show(appContext, R.string.toast_message_backup_error));
+                        AppExecutors.getMainThread().post(() ->
+                            CustomToast.show(appContext, style, font, R.string.toast_message_backup_error));
                     }
                 });
             });
@@ -190,8 +194,11 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
                 }
 
                 final Context appContext = requireContext().getApplicationContext();
+                final int style = getAccentStyle();
+                final Typeface font = getGeneralTypeface();
+                final SharedPreferences prefs = getPrefs();
 
-                BackupAndRestoreUtils.isRestoringBackupOrIsResettingApp = true;
+                BackupAndRestoreManager.isRestoringBackupOrIsResettingApp = true;
 
                 AppExecutors.getDiskIO().execute(() -> {
                     try {
@@ -202,7 +209,7 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
                         AppExecutors.getMainThread().post(() -> {
                             applySettingsAfterRestore(appContext);
 
-                            BackupAndRestoreUtils.appNeedsRestart = true;
+                            BackupAndRestoreManager.appNeedsRestart = true;
 
                             if (isAdded() && getActivity() != null && !getActivity().isFinishing()) {
                                 mRestartDialog = restartAppDialog(appContext, false);
@@ -211,7 +218,7 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
                                 // If the user has left the screen, clear the notifications and force a restart without the dialog.
                                 NotificationUtils.clearAllNotifications(appContext);
 
-                                Utils.applyAppLanguage(appContext, false);
+                                Utils.applyAppLanguage(SettingsDAO.getLanguageCode(prefs), false);
 
                                 Intent restartIntent = new Intent(appContext, DeskClock.class);
                                 restartIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -226,9 +233,9 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
                         LogUtils.e("Error reading the restore file", e);
 
                         AppExecutors.getMainThread().post(() -> {
-                            BackupAndRestoreUtils.isRestoringBackupOrIsResettingApp = false;
+                            BackupAndRestoreManager.isRestoringBackupOrIsResettingApp = false;
 
-                            CustomToast.show(appContext, R.string.toast_message_restore_error);
+                            CustomToast.show(appContext, style, font, R.string.toast_message_restore_error);
                         });
                     }
                 });
@@ -241,7 +248,7 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
         }
 
         @Override
-        public void onCreate(Bundle savedInstanceState) {
+        public void onCreate(@Nullable Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
 
             addPreferencesFromResource(R.xml.settings);
@@ -269,7 +276,7 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
             requireActivity().getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
                 @Override
                 public void handleOnBackPressed() {
-                    ThemeUtils.finishActivityWithTransition(requireActivity());
+                    ThemeUtils.finishActivityWithTransition(requireActivity(), SettingsDAO.isFadeTransitionsEnabled(getPrefs()));
                 }
             });
         }
@@ -285,7 +292,7 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
         public void onResume() {
             super.onResume();
 
-            if (BackupAndRestoreUtils.appNeedsRestart && (mRestartDialog == null || !mRestartDialog.isShowing())) {
+            if (BackupAndRestoreManager.appNeedsRestart && (mRestartDialog == null || !mRestartDialog.isShowing())) {
                 mRestartDialog = restartAppDialog(requireContext().getApplicationContext(), false);
                 mRestartDialog.show();
             } else if (mShowBackupRestoreDialog && (mActiveDialog == null || !mActiveDialog.isShowing())) {
@@ -371,10 +378,10 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
         }
 
         private void updateSettingsVisibility() {
-            mClockSettingsPref.setVisible(SettingsDAO.isClockTabVisible(mPrefs));
-            mAlarmSettingsPref.setVisible(SettingsDAO.isAlarmTabVisible(mPrefs));
-            mTimerSettingsPref.setVisible(SettingsDAO.isTimerTabVisible(mPrefs));
-            mStopwatchSettingsPref.setVisible(SettingsDAO.isStopwatchTabVisible(mPrefs));
+            mClockSettingsPref.setVisible(SettingsDAO.isClockTabVisible(getPrefs()));
+            mAlarmSettingsPref.setVisible(SettingsDAO.isAlarmTabVisible(getPrefs()));
+            mTimerSettingsPref.setVisible(SettingsDAO.isTimerTabVisible(getPrefs()));
+            mStopwatchSettingsPref.setVisible(SettingsDAO.isStopwatchTabVisible(getPrefs()));
         }
 
         private void displayWarningIfEssentialPermissionAreNotGranted() {
@@ -408,12 +415,14 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
                 null,
                 getString(R.string.backup_button_title),
                 (d, w) -> {
-                    String currentDateAndTime = DateFormat.format("yyyy_MM_dd_HH-mm-ss", new Date()).toString();
+                    SimpleDateFormat fileFormat = new SimpleDateFormat("yyyy_MM_dd_HH-mm-ss", Locale.US);
+                    String currentDateAndTime = fileFormat.format(new Date());
                     Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT)
                         .addCategory(Intent.CATEGORY_OPENABLE)
                         .putExtra(Intent.EXTRA_TITLE, requireContext().getString(R.string.app_label)
                             + "_backup_" + currentDateAndTime + ".zip")
                         .setType("application/zip");
+
                     backupToFile.launch(intent);
                 },
                 getString(R.string.restore_button_title),
@@ -421,6 +430,7 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
                     Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT)
                         .addCategory(Intent.CATEGORY_OPENABLE)
                         .setType("application/zip");
+
                     restoreFromFile.launch(intent);
                 },
                 (alertDialog -> alertDialog.setOnDismissListener(d -> mShowBackupRestoreDialog = false)),
@@ -430,27 +440,27 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
             mActiveDialog.show();
         }
 
-        private void backupPreferences(Context context, Uri uri) throws IOException, JSONException {
+        private void backupPreferences(@NonNull Context context, @NonNull Uri uri) throws IOException, JSONException {
             try (OutputStream outputStream = context.getContentResolver().openOutputStream(uri);
                  ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream)) {
                 // The JSON file that contains all the settings
                 ZipEntry jsonEntry = new ZipEntry(BACKUP_JSON_FILE_NAME);
                 zipOutputStream.putNextEntry(jsonEntry);
 
-                BackupAndRestoreUtils.settingsToJsonStream(context, mPrefs, mPrefs.getAll(), zipOutputStream);
+                BackupAndRestoreManager.settingsToJsonStream(context, getPrefs(), getPrefs().getAll(), zipOutputStream);
 
                 zipOutputStream.closeEntry();
 
                 // Other files for the general font, alarm font, alarm background image, etc
-                appendFileToZip(zipOutputStream, mPrefs.getString(KEY_GENERAL_FONT, null));
-                appendFileToZip(zipOutputStream, mPrefs.getString(KEY_ALARM_FONT, null));
-                appendFileToZip(zipOutputStream, mPrefs.getString(KEY_ALARM_BACKGROUND_IMAGE, null));
-                appendFileToZip(zipOutputStream, mPrefs.getString(KEY_TIMER_DURATION_FONT, null));
-                appendFileToZip(zipOutputStream, mPrefs.getString(KEY_TIMER_BACKGROUND_IMAGE, null));
-                appendFileToZip(zipOutputStream, mPrefs.getString(KEY_SW_FONT, null));
-                appendFileToZip(zipOutputStream, mPrefs.getString(KEY_DIGITAL_CLOCK_FONT, null));
-                appendFileToZip(zipOutputStream, mPrefs.getString(KEY_SCREENSAVER_DIGITAL_CLOCK_FONT, null));
-                appendFileToZip(zipOutputStream, mPrefs.getString(KEY_SCREENSAVER_BACKGROUND_IMAGE, null));
+                appendFileToZip(zipOutputStream, getPrefs().getString(KEY_GENERAL_FONT, null));
+                appendFileToZip(zipOutputStream, getPrefs().getString(KEY_ALARM_FONT, null));
+                appendFileToZip(zipOutputStream, getPrefs().getString(KEY_ALARM_BACKGROUND_IMAGE, null));
+                appendFileToZip(zipOutputStream, getPrefs().getString(KEY_TIMER_DURATION_FONT, null));
+                appendFileToZip(zipOutputStream, getPrefs().getString(KEY_TIMER_BACKGROUND_IMAGE, null));
+                appendFileToZip(zipOutputStream, getPrefs().getString(KEY_SW_FONT, null));
+                appendFileToZip(zipOutputStream, getPrefs().getString(KEY_DIGITAL_CLOCK_FONT, null));
+                appendFileToZip(zipOutputStream, getPrefs().getString(KEY_SCREENSAVER_DIGITAL_CLOCK_FONT, null));
+                appendFileToZip(zipOutputStream, getPrefs().getString(KEY_SCREENSAVER_BACKGROUND_IMAGE, null));
 
                 List<Alarm> alarms = Alarm.getAlarms(context.getContentResolver(), null);
                 for (Alarm alarm : alarms) {
@@ -461,7 +471,7 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
             }
         }
 
-        private void appendFileToZip(ZipOutputStream zipOutputStream, String filePath) throws IOException {
+        private void appendFileToZip(@NonNull ZipOutputStream zipOutputStream, @Nullable String filePath) throws IOException {
             if (filePath == null) {
                 return;
             }
@@ -486,8 +496,8 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
         }
 
         @SuppressLint("ApplySharedPref")
-        private void wipeCustomMediaBeforeRestore(Context context) {
-            SharedPreferences.Editor editor = mPrefs.edit();
+        private void wipeCustomMediaBeforeRestore(@NonNull Context context) {
+            SharedPreferences.Editor editor = getPrefs().edit();
             editor.remove(KEY_GENERAL_FONT);
             editor.remove(KEY_ALARM_FONT);
             editor.remove(KEY_ALARM_BACKGROUND_IMAGE);
@@ -502,7 +512,7 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
             FileUtils.wipeAllCustomFiles(context);
         }
 
-        private void restorePreferences(Context context, Uri uri) throws IOException, JSONException {
+        private void restorePreferences(@NonNull Context context, @NonNull Uri uri) throws IOException, JSONException {
             try (InputStream inputStream = context.getContentResolver().openInputStream(uri);
                  ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
 
@@ -510,7 +520,7 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
 
                 while ((zipEntry = zipInputStream.getNextEntry()) != null) {
                     if (zipEntry.getName().equals(BACKUP_JSON_FILE_NAME)) {
-                        BackupAndRestoreUtils.readJson(context, mPrefs, zipInputStream);
+                        BackupAndRestoreManager.readJson(context, getPrefs(), zipInputStream);
                     } else {
                         restoreFileFromZip(context, zipInputStream, zipEntry.getName());
                     }
@@ -520,7 +530,8 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
             }
         }
 
-        private void restoreFileFromZip(Context context, ZipInputStream zipInputStream, String fileName) throws IOException {
+        private void restoreFileFromZip(@NonNull Context context, @NonNull ZipInputStream zipInputStream, @NonNull String fileName)
+            throws IOException {
 
             final Context safeContext = Utils.getSafeStorageContext(context);
             File outputFile = new File(safeContext.getFilesDir(), fileName);
@@ -536,28 +547,28 @@ public final class SettingsActivity extends CollapsingToolbarBaseActivity {
             final String prefKey = FileUtils.getCustomFilePrefKey(fileName);
 
             if (prefKey != null) {
-                String oldFilePath = mPrefs.getString(prefKey, null);
+                String oldFilePath = getPrefs().getString(prefKey, null);
 
                 if (oldFilePath != null && !oldFilePath.equals(outputFile.getAbsolutePath())) {
                     FileUtils.clearFile(oldFilePath);
                 }
 
-                mPrefs.edit().putString(prefKey, outputFile.getAbsolutePath()).apply();
+                getPrefs().edit().putString(prefKey, outputFile.getAbsolutePath()).apply();
             }
         }
 
-        private void applySettingsAfterRestore(Context context) {
+        private void applySettingsAfterRestore(@NonNull Context context) {
             // Required to update the timer list.
-            DataModel.getDataModel().loadTimers();
+            getDataModel().loadTimers();
 
             // Required to update the tab to display.
-            final int tabToDisplay = SettingsDAO.getTabToDisplay(mPrefs);
+            final int tabToDisplay = SettingsDAO.getTabToDisplay(getPrefs());
             if (tabToDisplay != DEFAULT_TAB_TO_DISPLAY_INTEGER) {
                 UiDataModel.getUiDataModel().setSelectedTab(UiDataModel.Tab.values()[tabToDisplay]);
             }
 
             // Required to start/stop the foreground notification
-            if (SettingsDAO.isForegroundServiceEnabled(mPrefs)) {
+            if (SettingsDAO.isForegroundServiceEnabled(getPrefs())) {
                 ContextCompat.startForegroundService(context, new Intent(context, KeepAliveService.class));
             } else {
                 Utils.stopService(context, KeepAliveService.class);

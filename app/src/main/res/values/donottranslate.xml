@@ -27,8 +27,36 @@
     <string name="abbrev_wday">&#160;/ EEE</string>
     <!-- String matching the lock screen format for displaying the date. -->
     <string name="abbrev_wday_month_day_no_year">EEEMMMd</string>
+    <!-- Format to display the date (with the year) without the time. -->
+    <string name="abbrev_wday_month_day_with_year">yyyyEEEMMMd</string>
+    <!-- Format to display the date (without the year) and time in 12-hour format. -->
+    <string name="abbrev_wday_month_day_no_year_12_hour">EEE MMM d hma</string>
+    <!-- Format to display the date (without the year) and time in 24-hour format. -->
+    <string name="abbrev_wday_month_day_no_year_24_hour">EEE MMM d Hm</string>
+    <!-- Format to display the date (with the year) and time in 12-hour format. -->
+    <string name="abbrev_wday_month_day_with_year_12_hour">yyyy EEE MMM d hma</string>
+    <!-- Format to display the date (with the year) and time in 24-hour format. -->
+    <string name="abbrev_wday_month_day_with_year_24_hour">yyyy EEE MMM d Hm</string>
+    <!-- Format to display the abbreviated month and day (without the year). -->
+    <string name="abbrev_month_day_no_year">MMMd</string>
+    <!-- Format to display the day of the week and time in 12-hour format. -->
+    <string name="abbrev_wday_12_hour">EEE hma</string>
+    <!-- Format to display the day of the week and time in 24-hour format. -->
+    <string name="abbrev_wday_24_hour">EEE Hm</string>
+    <!-- Format to display only the abbreviated day of the week. -->
+    <string name="abbrev_wday_only">EEE</string>
+    <!-- Format to display the full month, day and year. -->
+    <string name="full_month_day_with_year">yyyyMMMMd</string>
+    <!-- Format to display the full month and day (without the year). -->
+    <string name="full_month_day_no_year">MMMMd</string>
     <!-- Format for describing the date, for accessibility. -->
     <string name="full_wday_month_day_no_year">EEEEMMMMd</string>
+    <!-- Format to display only the full day of the week. -->
+    <string name="full_wday_only">EEEE</string>
+    <!-- Format to display only the time in 12-hour format. -->
+    <string name="time_12_hour">hma</string>
+    <!-- Format to display only the time in 24-hour format. -->
+    <string name="time_24_hour">Hm</string>
     <!-- ⏰ (A custom font replaces the A glyph with a clock icon) -->
     <string name="clock_emoji">A</string>
     <!-- 🏷️ (A custom font replaces the B glyph with a label icon) -->
@@ -46,6 +74,7 @@
     <!-- Action names for events describe what type of manipulation was performed. -->
     <string name="action_dismiss">Dismiss</string>
     <string name="action_snooze">Snooze</string>
+    <string name="action_mute">Mute</string>
     <string name="action_create">Create</string>
     <string name="action_delete">Delete</string>
     <string name="action_duplicate">Duplicate</string>
@@ -71,6 +100,7 @@
     <string name="action_set_blur_intensity">Set Blur Intensity</string>
     <string name="action_toggle_vibrate">Toggle Vibrate</string>
     <string name="action_set_vibration_pattern">Set Vibration Pattern</string>
+    <string name="action_set_math_hardness_level">Set Math Hardness Level</string>
     <string name="action_toggle_flash">Toggle Flash</string>
     <string name="action_delete_alarm_after_use">Delete Alarm After Use</string>
     <string name="action_set_auto_silence_duration">Set Auto Silence Duration</string>
@@ -106,6 +136,11 @@
     <string name="app_label_nightly">Clock nightly</string>
     <!-- Settings title for the nightly version. -->
     <string name="setting_nightly_title">Settings nightly version</string>
+
+    <!-- Miscellaneous. -->
+    <string name="font_message_error">Error importing font</string>
+    <string name="image_message_error">Error importing image</string>
+    <string name="app_message_error">Application not found</string>
 
     <!-- ************************** -->
     <!-- **     STRING-ARRAY     ** -->
@@ -281,6 +316,7 @@
     <string-array name="volume_button_setting_entries">
         <item>@string/button_action_snooze</item>
         <item>@string/button_action_dismiss</item>
+        <item>@string/button_action_mute</item>
         <item>@string/button_action_control_volume</item>
         <item>@string/button_action_nothing</item>
     </string-array>
@@ -288,6 +324,7 @@
     <string-array name="volume_button_setting_values" translatable="false">
         <item>1</item>
         <item>2</item>
+        <item>3</item>
         <item>0</item>
         <item>-1</item>
     </string-array>
@@ -296,13 +333,30 @@
     <string-array name="action_setting_entries">
         <item>@string/button_action_snooze</item>
         <item>@string/button_action_dismiss</item>
+        <item>@string/button_action_mute</item>
         <item>@string/button_action_nothing</item>
     </string-array>
     <!-- Values for the power button and flip and shake settings. -->
     <string-array name="side_button_setting_values" translatable="false">
         <item>1</item>
         <item>2</item>
+        <item>3</item>
         <item>0</item>
+    </string-array>
+
+    <!-- Entries listed in the ListPreference when invoking the math hardness level preference. -->
+    <string-array name="math_hardness_level_entries">
+        <item>@string/label_off</item>
+        <item>@string/math_hardness_level_easy</item>
+        <item>@string/math_hardness_level_normal</item>
+        <item>@string/math_hardness_level_hard</item>
+    </string-array>
+    <!-- Values that are retrieved from the ListPreference. These must match the math_hardness_level_entries above. -->
+    <string-array name="math_hardness_level_values" translatable="false">
+        <item>off</item>
+        <item>easy</item>
+        <item>normal</item>
+        <item>hard</item>
     </string-array>
 
     <!-- Entries listed in the ListPreference when invoking the clock style preference. -->
@@ -545,6 +599,9 @@
         <item>@string/settings_language_arabic</item>
         <item>@string/settings_language_hungarian</item>
         <item>@string/settings_language_hebrew</item>
+        <item>@string/settings_language_swedish</item>
+        <item>@string/settings_language_laotian</item>
+        <item>@string/settings_language_persian</item>
     </string-array>
     <!-- Values that are retrieved from the ListPreference. These must match the language_entries above. -->
     <string-array name="language_values" translatable="false">
@@ -571,6 +628,9 @@
         <item>ar</item>
         <item>hu</item>
         <item>he</item>
+        <item>sv</item>
+        <item>lo</item>
+        <item>fa</item>
     </string-array>
 
     <!-- Entries listed in the ListPreference when invoking the city sort preference -->

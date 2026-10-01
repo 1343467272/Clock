@@ -33,6 +33,7 @@ import java.util.Map;
 public final class FragmentTabPagerAdapter extends PagerAdapter {
 
     private final DeskClock mDeskClock;
+    private final UiDataModel mUiDataModel;
 
     /**
      * The manager into which fragments are added.
@@ -54,24 +55,26 @@ public final class FragmentTabPagerAdapter extends PagerAdapter {
      */
     private Fragment mCurrentPrimaryItem;
 
-    public FragmentTabPagerAdapter(DeskClock deskClock) {
+    public FragmentTabPagerAdapter(@NonNull DeskClock deskClock, @NonNull UiDataModel uiDataModel) {
         mDeskClock = deskClock;
+        mUiDataModel = uiDataModel;
         mFragmentCache = new ArrayMap<>(getCount());
         mFragmentManager = deskClock.getSupportFragmentManager();
     }
 
     @Override
     public int getCount() {
-        return UiDataModel.getUiDataModel().getTabCount();
+        return mUiDataModel.getTabCount();
     }
 
     /**
      * @param position the left-to-right index of the fragment to be returned
      * @return the fragment displayed at the given {@code position}
      */
+    @NonNull
     public DeskClockFragment getDeskClockFragment(int position) {
         // Fetch the tab the UiDataModel reports for the position.
-        final UiDataModel.Tab tab = UiDataModel.getUiDataModel().getTabAt(position);
+        final UiDataModel.Tab tab = mUiDataModel.getTabAt(position);
 
         // First check the local cache for the fragment.
         DeskClockFragment fragment = mFragmentCache.get(tab);
@@ -99,7 +102,7 @@ public final class FragmentTabPagerAdapter extends PagerAdapter {
     }
 
     @Override
-    public void startUpdate(ViewGroup container) {
+    public void startUpdate(@NonNull ViewGroup container) {
         if (container.getId() == View.NO_ID) {
             throw new IllegalStateException("ViewPager with adapter " + this + " has no id");
         }
@@ -113,7 +116,7 @@ public final class FragmentTabPagerAdapter extends PagerAdapter {
         }
 
         // Use the fragment located in the fragment manager if one exists.
-        final UiDataModel.Tab tab = UiDataModel.getUiDataModel().getTabAt(position);
+        final UiDataModel.Tab tab = mUiDataModel.getTabAt(position);
         Fragment fragment = mFragmentManager.findFragmentByTag(tab.name());
         if (fragment != null) {
             mCurrentTransaction.attach(fragment);
