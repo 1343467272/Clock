@@ -6,7 +6,9 @@
 
 package com.best.deskclock.alarms;
 
+import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreferences;
 import static com.best.deskclock.settings.PreferencesDefaultValues.ALARM_SNOOZE_DURATION_DISABLED;
+import static com.best.deskclock.settings.PreferencesDefaultValues.DEFAULT_MATH_HARDNESS_LEVEL;
 import static com.best.deskclock.utils.NotificationUtils.ALARM_MISSED_NOTIFICATION_CHANNEL_ID;
 import static com.best.deskclock.utils.NotificationUtils.ALARM_SNOOZE_NOTIFICATION_CHANNEL_ID;
 import static com.best.deskclock.utils.NotificationUtils.ALARM_UPCOMING_NOTIFICATION_CHANNEL_ID;
@@ -20,6 +22,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.service.notification.StatusBarNotification;
@@ -33,6 +36,7 @@ import androidx.core.content.ContextCompat;
 
 import com.best.deskclock.DeskClock;
 import com.best.deskclock.R;
+import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.provider.Alarm;
 import com.best.deskclock.provider.AlarmInstance;
 import com.best.deskclock.utils.AlarmUtils;
@@ -86,6 +90,9 @@ public final class AlarmNotifications {
      * {link com.best.deskclock.data.NotificationModel}
      */
     private static final int ALARM_FIRING_NOTIFICATION_ID = Integer.MAX_VALUE - 7;
+
+    private static final String ACTION_MISSION_SNOOZE = "com.best.deskclock.action.MISSION_SNOOZE";
+    private static final String ACTION_MISSION_DISMISS = "com.best.deskclock.action.MISSION_DISMISS";
 
     private static boolean isGroupSummary(@NonNull Notification notification) {
         return (notification.flags & Notification.FLAG_GROUP_SUMMARY) == Notification.FLAG_GROUP_SUMMARY;
@@ -428,6 +435,12 @@ public final class AlarmNotifications {
             return;
         }
 
+        final SharedPreferences prefs = getDefaultSharedPreferences(context);
+        final String mathHardnessLevel = SettingsDAO.isPerAlarmMathHardnessLevelDisabled(prefs)
+            ? SettingsDAO.getAlarmMathHardnessLevel(prefs)
+            : alarm.mathHardnessLevel;
+        final boolean hasMathMission = !mathHardnessLevel.equals(DEFAULT_MATH_HARDNESS_LEVEL);
+
         String dismissActionTitle = localizedContext.getString(alarm.isDeleteAfterUse()
             ? R.string.alarm_alert_dismiss_and_delete_text
             : R.string.alarm_alert_dismiss_text);
@@ -443,6 +456,14 @@ public final class AlarmNotifications {
         dismissIntent.putExtra(AlarmStateManager.FROM_NOTIFICATION_EXTRA, true);
         PendingIntent dismissPendingIntent = PendingIntent.getService(context,
             ALARM_FIRING_NOTIFICATION_ID, dismissIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        // With a math mission, the dismiss action opens the alarm screen so the mission cannot be
+        // bypassed by the notification button.
+        final PendingIntent dismissActionPendingIntent = hasMathMission
+            ? PendingIntent.getActivity(context, ALARM_FIRING_NOTIFICATION_ID,
+                createMissionIntent(context, instance, ACTION_MISSION_DISMISS, AlarmActivity.MISSION_ACTION_DISMISS),
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE)
+            : dismissPendingIntent;
 
         NotificationCompat.Builder notification = new NotificationCompat.Builder(context, FIRING_NOTIFICATION_CHANNEL_ID)
             .setContentTitle(instance.getLabelOrDefault(localizedContext))
@@ -463,17 +484,24 @@ public final class AlarmNotifications {
         // Setup Snooze Action only if snooze duration has NOT been set to "None" in the settings
         // or if "Enable alarm snooze actions" is enabled in the alarm editing panel.
         if (instance.mSnoozeDuration != ALARM_SNOOZE_DURATION_DISABLED) {
-            Intent snoozeIntent = AlarmStateManager.createStateChangeIntent(
-                context, instance, AlarmStateManager.ALARM_SNOOZE_TAG, AlarmInstance.SNOOZE_STATE, globalIntentId);
-            snoozeIntent.putExtra(AlarmStateManager.FROM_NOTIFICATION_EXTRA, true);
+            final PendingIntent snoozePendingIntent;
+            if (hasMathMission) {
+                snoozePendingIntent = PendingIntent.getActivity(context, ALARM_FIRING_NOTIFICATION_ID,
+                    createMissionIntent(context, instance, ACTION_MISSION_SNOOZE, AlarmActivity.MISSION_ACTION_SNOOZE),
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            } else {
+                Intent snoozeIntent = AlarmStateManager.createStateChangeIntent(
+                    context, instance, AlarmStateManager.ALARM_SNOOZE_TAG, AlarmInstance.SNOOZE_STATE, globalIntentId);
+                snoozeIntent.putExtra(AlarmStateManager.FROM_NOTIFICATION_EXTRA, true);
 
-            PendingIntent snoozePendingIntent = PendingIntent.getService(context,
-                ALARM_FIRING_NOTIFICATION_ID, snoozeIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+                snoozePendingIntent = PendingIntent.getService(context,
+                    ALARM_FIRING_NOTIFICATION_ID, snoozeIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            }
 
             notification.addAction(R.drawable.ic_snooze, localizedContext.getString(R.string.alarm_alert_snooze_text), snoozePendingIntent);
         }
 
-        notification.addAction(R.drawable.ic_alarm_off, dismissActionTitle, dismissPendingIntent);
+        notification.addAction(R.drawable.ic_alarm_off, dismissActionTitle, dismissActionPendingIntent);
 
         // Setup fullscreen intent
         Intent fullScreenIntent = AlarmInstance.createIntent(context, AlarmActivity.class, instance.mId);
@@ -505,6 +533,21 @@ public final class AlarmNotifications {
 
             nm.notify(ALARM_FIRING_NOTIFICATION_ID, builtNotification);
         }
+    }
+
+    /**
+     * Builds the intent used by the alarm notification quick actions when a math mission is set.
+     * It opens {@link AlarmActivity} and asks it to run the requested action, so the mission has to
+     * be solved before the alarm can be snoozed or dismissed.
+     */
+    @NonNull
+    private static Intent createMissionIntent(@NonNull Context context, @NonNull AlarmInstance instance,
+                                              @NonNull String action, int missionAction) {
+        final Intent intent = AlarmInstance.createIntent(context, AlarmActivity.class, instance.mId);
+        intent.setAction(action);
+        intent.putExtra(AlarmActivity.EXTRA_MISSION_ACTION, missionAction);
+        intent.putExtra(AlarmStateManager.FROM_NOTIFICATION_EXTRA, true);
+        return intent;
     }
 
     public static synchronized void clearNotification(@NonNull Context context, @NonNull AlarmInstance instance) {

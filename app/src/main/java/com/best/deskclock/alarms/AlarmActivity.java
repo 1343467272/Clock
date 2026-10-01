@@ -117,6 +117,13 @@ public class AlarmActivity extends BaseActivity implements View.OnClickListener,
     public static final int MISSION_ACTION_SNOOZE = 1;
     public static final int MISSION_ACTION_DISMISS = 2;
 
+    /**
+     * Extra carried by the intent that launches this activity from an alarm notification quick
+     * action. Its value is one of {@link #MISSION_ACTION_SNOOZE} or {@link #MISSION_ACTION_DISMISS}
+     * and makes the activity trigger the requested action (through the math mission if one is set).
+     */
+    public static final String EXTRA_MISSION_ACTION = "com.best.deskclock.extra.MISSION_ACTION";
+
     private final ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -313,6 +320,27 @@ public class AlarmActivity extends BaseActivity implements View.OnClickListener,
         ThemeUtils.hideSystemBars(getWindow(), getWindow().getDecorView());
 
         initAlarmAndInstance();
+
+        // When launched from a notification quick action, run the requested action so the math
+        // mission is enforced instead of being bypassed by the notification buttons.
+        if (savedInstanceState == null) {
+            handleMissionActionIntent(getIntent());
+        }
+    }
+
+    @Override
+    protected void onNewIntent(@NonNull Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleMissionActionIntent(intent);
+    }
+
+    private void handleMissionActionIntent(@NonNull Intent intent) {
+        final int missionAction = intent.getIntExtra(EXTRA_MISSION_ACTION, 0);
+        if (missionAction == MISSION_ACTION_SNOOZE || missionAction == MISSION_ACTION_DISMISS) {
+            intent.removeExtra(EXTRA_MISSION_ACTION);
+            mBinding.getRoot().post(() -> requestAlarmAction(missionAction));
+        }
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
