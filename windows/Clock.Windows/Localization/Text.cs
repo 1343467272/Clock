@@ -73,7 +73,7 @@ public static class Text
     public const string ThemeSystem = "系统";
     public const string ThemeLight = "浅色";
     public const string ThemeDark = "深色";
-    public const string AlarmSnoozeMin = "闹钟暂停（分钟）";
+    public const string AlarmSnoozeMin = "闹钟贪睡（分钟）";
     public const string AlarmAutoSilenceSec = "闹钟自动静音（秒）";
     public const string TimerDefaults = "定时器默认设置";
     public const string VibrateWhenTimerExpires = "定时器到期时振动";
@@ -115,16 +115,32 @@ public static class Text
     public const string Flash = "闪光";
     public const string DeleteAfterUse = "使用后删除（仅一次）";
     public const string Label = "标签";
-    public const string SnoozeMinutes = "暂停（分钟）";
+    public const string SnoozeMinutes = "贪睡（分钟）";
     public const string AutoSilenceSeconds = "自动静音（秒）";
     public const string Cancel = "取消";
+    public const string Confirm = "确定";
     public const string Save = "保存";
+
+    // Math challenge (matches Android values-zh-rCN math_* strings)
+    public const string MathChallengeCategoryTitle = "数学挑战";
+    public const string MathHardnessLevelTitle = "数学难度";
+    public const string MathHardnessLevelOff = "关闭";
+    public const string MathHardnessLevelEasy = "简单";
+    public const string MathHardnessLevelNormal = "普通";
+    public const string MathHardnessLevelHard = "困难";
+    public const string EnablePerAlarmMathHardnessLevelTitle = "为每个闹钟单独设置数学难度";
+    public const string MathChallengeTitleSnooze = "答对才能贪睡";
+    public const string MathChallengeTitleDismiss = "答对才能关闭";
+    public const string MathChallengePrompt = "{0} + {1} = ?";
+    public const string MathChallengeAnswerHint = "输入答案";
+    public const string MathChallengeNewProblem = "换一题";
+    public const string MathChallengeWrongAnswer = "答案错误";
 
     // Alert window
     public const string AlertAlarmTitle = "闹钟";
     public const string AlertTimerTitle = "定时器";
     public const string TimesUp = "时间到";
-    public const string Snooze = "暂停";
+    public const string Snooze = "贪睡";
     public const string Dismiss = "关闭";
 
     public static string ShortDayName(DayOfWeek day) => day switch

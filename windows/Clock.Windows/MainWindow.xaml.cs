@@ -57,6 +57,7 @@ public partial class MainWindow : Window
             Dispatcher.Invoke(() =>
             {
                 var w = AlertWindow.ShowAlarm(alarm.Uuid, alarm.SilencedAt, alarm.LabelText, alarm.TimeText,
+                    GetEffectiveMathHardness(alarm),
                     () => DismissAlarm(alarm),
                     () => SnoozeAlarm(alarm));
                 _openAlerts.Add(w);
@@ -121,7 +122,8 @@ public partial class MainWindow : Window
 
     private void OnAddAlarm(object sender, RoutedEventArgs e)
     {
-        var w = new AlarmEditWindow { Owner = this };
+        var w = new AlarmEditWindow(null, _state.Settings.EnablePerAlarmMathHardnessLevel,
+            _state.Settings.AlarmMathHardnessLevel) { Owner = this };
         if (w.ShowDialog() == true && w.Result != null)
         {
             var alarm = w.Result;
@@ -137,7 +139,8 @@ public partial class MainWindow : Window
         var alarm = _state.Alarms.FirstOrDefault(a => a.Uuid == uuid);
         if (alarm == null) return;
 
-        var w = new AlarmEditWindow(alarm) { Owner = this };
+        var w = new AlarmEditWindow(alarm, _state.Settings.EnablePerAlarmMathHardnessLevel,
+            _state.Settings.AlarmMathHardnessLevel) { Owner = this };
         if (w.ShowDialog() == true && w.Result != null)
         {
             var merged = w.Result;
@@ -150,6 +153,7 @@ public partial class MainWindow : Window
             alarm.Label = merged.Label;
             alarm.SnoozeDuration = merged.SnoozeDuration;
             alarm.AutoSilenceDuration = merged.AutoSilenceDuration;
+            alarm.MathHardnessLevel = merged.MathHardnessLevel;
             alarm.RepeatType = merged.RepeatType;
             alarm.ShiftWorkDays = merged.ShiftWorkDays;
             alarm.ShiftRestDays = merged.ShiftRestDays;
@@ -185,6 +189,13 @@ public partial class MainWindow : Window
     private void DismissAlarm(AlarmModel alarm) => _alarmService?.AlertClosed(alarm, snoozed: false);
     private void SnoozeAlarm(AlarmModel alarm) => _alarmService?.AlertClosed(alarm, snoozed: true);
 
+    /// <summary>Effective math mission hardness (per-alarm when enabled, otherwise global),
+    /// matching the Android AlarmActivity logic.</summary>
+    private string GetEffectiveMathHardness(AlarmModel alarm)
+        => _state.Settings.EnablePerAlarmMathHardnessLevel
+            ? alarm.MathHardnessLevel
+            : _state.Settings.AlarmMathHardnessLevel;
+
     /// <summary>Closes only alerts that a local or remote sync operation has resolved.</summary>
     private void CloseResolvedAlerts()
     {
@@ -196,7 +207,12 @@ public partial class MainWindow : Window
                     || !alarm.Enabled
                     || alarm.SilencedAt > alert.OpenedSilencedAt;
 
-            if (shouldClose) alert.Close();
+            if (shouldClose)
+            {
+                // Remote/local resolution must be able to close an alert even while a mission is shown.
+                alert.BypassMissionOnClose = true;
+                alert.Close();
+            }
         }
     }
 
@@ -465,6 +481,14 @@ public partial class MainWindow : Window
         };
         AlarmSnoozeBox.Text = _state.Settings.AlarmSnoozeMinutes.ToString();
         AlarmAutoSilenceBox.Text = _state.Settings.AlarmAutoSilenceSeconds.ToString();
+        MathHardnessBox.SelectedIndex = _state.Settings.AlarmMathHardnessLevel switch
+        {
+            MathChallenge.HardnessEasy => 1,
+            MathChallenge.HardnessNormal => 2,
+            MathChallenge.HardnessHard => 3,
+            _ => 0,
+        };
+        PerAlarmMathBox.IsChecked = _state.Settings.EnablePerAlarmMathHardnessLevel;
         TimerVibrateBox.IsChecked = _state.Settings.TimerVibrate;
         TimerFlashBox.IsChecked = _state.Settings.TimerFlashOn;
         TimerAutoSilenceBox.IsChecked = _state.Settings.TimerAutoSilence > 0;
@@ -548,7 +572,31 @@ public partial class MainWindow : Window
             }
         }
 
+        if (sender == MathHardnessBox && MathHardnessBox.SelectedItem is ComboBoxItem { Tag: string mathLevel })
+        {
+            _state.Settings.AlarmMathHardnessLevel = mathLevel;
+            if (!_state.Settings.EnablePerAlarmMathHardnessLevel) ApplyGlobalMathHardnessToAlarms(mathLevel);
+        }
+
+        if (sender == PerAlarmMathBox)
+        {
+            _state.Settings.EnablePerAlarmMathHardnessLevel = PerAlarmMathBox.IsChecked == true;
+            // Enabling assigns the global level to every alarm so each starts from it;
+            // disabling resets any custom levels back to the global value (matches Android).
+            ApplyGlobalMathHardnessToAlarms(_state.Settings.AlarmMathHardnessLevel);
+        }
+
         _state.NotifyChanged();
+    }
+
+    /// <summary>Assigns the global math hardness to every alarm. This field is local-only, so
+    /// the alarm's sync timestamp is deliberately left untouched.</summary>
+    private void ApplyGlobalMathHardnessToAlarms(string level)
+    {
+        foreach (var alarm in _state.Alarms)
+        {
+            alarm.MathHardnessLevel = level;
+        }
     }
 
     private void OnSaveNow(object sender, RoutedEventArgs e) => _state.Save();

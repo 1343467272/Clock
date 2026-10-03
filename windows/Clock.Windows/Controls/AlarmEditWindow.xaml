@@ -54,6 +54,11 @@
             <ComboBox x:Name="AutoSilenceBox" Width="90"/>
         </StackPanel>
 
+        <StackPanel x:Name="MathHardnessPanel" Orientation="Horizontal" Margin="0,8,0,0" Visibility="Collapsed">
+            <TextBlock Text="{x:Static l:Text.MathHardnessLevelTitle}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <ComboBox x:Name="MathHardnessBox" Width="120"/>
+        </StackPanel>
+
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
             <Button Content="{x:Static l:Text.Cancel}" Click="OnCancel" IsCancel="True"/>
             <Button Content="{x:Static l:Text.Save}" Click="OnSave" IsDefault="True"/>

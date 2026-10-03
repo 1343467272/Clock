@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows;
+using System.Windows.Controls;
 using Clock.Windows.Localization;
 using Clock.Windows.Models;
 
@@ -18,7 +19,8 @@ public partial class AlarmEditWindow : Window
 
     private readonly ObservableCollection<DayToggle> _days = new();
 
-    public AlarmEditWindow(AlarmModel? existing = null)
+    public AlarmEditWindow(AlarmModel? existing = null, bool perAlarmMathEnabled = false,
+        string globalMathHardness = MathChallenge.HardnessOff)
     {
         InitializeComponent();
 
@@ -76,7 +78,26 @@ public partial class AlarmEditWindow : Window
             SnoozeBox.SelectedItem = existing.SnoozeDuration;
             AutoSilenceBox.SelectedItem = existing.AutoSilenceDuration;
         }
+
+        // Math mission: only offered per alarm when the global setting enables it.
+        MathHardnessPanel.Visibility = perAlarmMathEnabled ? Visibility.Visible : Visibility.Collapsed;
+        MathHardnessBox.Items.Add(new ComboBoxItem { Content = Text.MathHardnessLevelOff, Tag = MathChallenge.HardnessOff });
+        MathHardnessBox.Items.Add(new ComboBoxItem { Content = Text.MathHardnessLevelEasy, Tag = MathChallenge.HardnessEasy });
+        MathHardnessBox.Items.Add(new ComboBoxItem { Content = Text.MathHardnessLevelNormal, Tag = MathChallenge.HardnessNormal });
+        MathHardnessBox.Items.Add(new ComboBoxItem { Content = Text.MathHardnessLevelHard, Tag = MathChallenge.HardnessHard });
+        MathHardnessBox.SelectedIndex = HardnessIndex(existing?.MathHardnessLevel ?? globalMathHardness);
     }
+
+    private static int HardnessIndex(string? level) => level switch
+    {
+        MathChallenge.HardnessEasy => 1,
+        MathChallenge.HardnessNormal => 2,
+        MathChallenge.HardnessHard => 3,
+        _ => 0,
+    };
+
+    private string SelectedMathHardness()
+        => (MathHardnessBox.SelectedItem as ComboBoxItem)?.Tag as string ?? MathChallenge.HardnessOff;
 
     private void OnCancel(object sender, RoutedEventArgs e) => DialogResult = false;
 
@@ -127,6 +148,7 @@ public partial class AlarmEditWindow : Window
             Label = LabelBox.Text.Trim(),
             SnoozeDuration = SnoozeBox.SelectedItem is int s ? s : 10,
             AutoSilenceDuration = AutoSilenceBox.SelectedItem is int a2 ? a2 : 600,
+            MathHardnessLevel = SelectedMathHardness(),
             RepeatType = RepeatTypeBox.SelectedIndex,
         };
         if (a.RepeatType == AlarmModel.RepeatTypeShift)

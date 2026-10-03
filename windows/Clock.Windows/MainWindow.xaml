@@ -475,6 +475,18 @@
                                 <TextBox x:Name="AlarmAutoSilenceBox" Width="60" LostFocus="OnSettingChanged" TextChanged="OnSettingChanged"/>
                             </StackPanel>
                             <Separator Margin="0,16"/>
+                            <TextBlock Text="{x:Static l:Text.MathChallengeCategoryTitle}" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,8"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <TextBlock Text="{x:Static l:Text.MathHardnessLevelTitle}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <ComboBox x:Name="MathHardnessBox" SelectionChanged="OnSettingChanged" Width="120">
+                                    <ComboBoxItem Content="{x:Static l:Text.MathHardnessLevelOff}" Tag="off"/>
+                                    <ComboBoxItem Content="{x:Static l:Text.MathHardnessLevelEasy}" Tag="easy"/>
+                                    <ComboBoxItem Content="{x:Static l:Text.MathHardnessLevelNormal}" Tag="normal"/>
+                                    <ComboBoxItem Content="{x:Static l:Text.MathHardnessLevelHard}" Tag="hard"/>
+                                </ComboBox>
+                            </StackPanel>
+                            <CheckBox x:Name="PerAlarmMathBox" Content="{x:Static l:Text.EnablePerAlarmMathHardnessLevelTitle}" Checked="OnSettingChanged" Unchecked="OnSettingChanged" Margin="0,8,0,0"/>
+                            <Separator Margin="0,16"/>
                             <TextBlock Text="{x:Static l:Text.TimerDefaults}" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,8"/>
                             <CheckBox x:Name="TimerVibrateBox" Content="{x:Static l:Text.VibrateWhenTimerExpires}" Checked="OnSettingChanged" Unchecked="OnSettingChanged"/>
                             <CheckBox x:Name="TimerFlashBox" Content="{x:Static l:Text.FlashOnExpiry}" Checked="OnSettingChanged" Unchecked="OnSettingChanged"/>

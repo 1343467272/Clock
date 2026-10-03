@@ -46,6 +46,11 @@ public class AlarmModel
 
     public int AutoSilenceDuration { get; set; } = 600;
     public int SnoozeDuration { get; set; } = 10;
+
+    /// <summary>Per-alarm math mission hardness ("off"/"easy"/"normal"/"hard"). Only used when
+    /// the "custom math hardness for each alarm" setting is enabled. Local-only: Android does
+    /// not carry this field on the sync wire, so it is intentionally absent from AlarmRecord.</summary>
+    public string MathHardnessLevel { get; set; } = MathChallenge.HardnessOff;
     public int MissedAlarmRepeatLimit { get; set; } = -1;
     public int CrescendoDuration { get; set; }
     public int AlarmVolume { get; set; } = 5;

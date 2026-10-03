@@ -36,5 +36,12 @@ public class AppSettings
     public int AlarmSnoozeMinutes { get; set; } = 10;
     public int AlarmAutoSilenceSeconds { get; set; } = 600;
 
+    /// <summary>Global math mission hardness ("off"/"easy"/"normal"/"hard") applied to alarms
+    /// when the per-alarm setting is disabled.</summary>
+    public string AlarmMathHardnessLevel { get; set; } = MathChallenge.HardnessOff;
+
+    /// <summary>When true, each alarm uses its own math hardness instead of the global one.</summary>
+    public bool EnablePerAlarmMathHardnessLevel { get; set; }
+
     public AppSettings Clone() => (AppSettings)MemberwiseClone();
 }
