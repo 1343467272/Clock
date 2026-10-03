@@ -123,6 +123,15 @@ public static class SyncMerge
     {
         lock (state)
         {
+            // Mirrors the Android SyncMerger guards: only the current protocol version is
+            // understood, and a snapshot must come from a different device (a restored or
+            // cloned profile can share a device id).
+            if (remote.Version != 1 || string.IsNullOrEmpty(remote.DeviceId)
+                || remote.DeviceId == state.Settings.DeviceId)
+            {
+                return state.LastSyncSummary;
+            }
+
             state.BeginRemoteApply();
             try
             {
